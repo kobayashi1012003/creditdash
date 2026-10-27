@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+/* next-themes writes `class="dark"` on <html>, so the dark variant keys off that. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   CreditDash design tokens.
+   This file is the single source of truth for colour, radius, shadow, type and
+   motion. Nothing anywhere else in the app hardcodes a hex value, a radius, a
+   duration or an easing curve. Swapping the brand means editing this file only.
+   Contrast of every ink/background pair below is verified at WCAG AA or better
+   in both themes.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces and text */
+  --cd-bg: #fafaf9;
+  --cd-surface: #ffffff;
+  --cd-text: #0b0b0c;
+  --cd-text-muted: #6b6b70;
+  --cd-border: #ececea;
+
+  /* Pastels. Each has a background and an ink that is legible on it.
+     Light mode uses the pastel as the fill with a deep hue-matched ink. */
+  --cd-mint: #d7f2e3;
+  --cd-mint-ink: #0e5138;
+  --cd-lavender: #e4ddfb;
+  --cd-lavender-ink: #3b2e7a;
+  --cd-peach: #fde3d3;
+  --cd-peach-ink: #7a3a14;
+  --cd-sky: #d8e9fb;
+  --cd-sky-ink: #14456f;
+  --cd-butter: #fbf1c7;
+  --cd-butter-ink: #5e4a0b;
+
+  /* Focus ring, shared by every interactive element */
+  --cd-focus: #0b0b0c;
+
+  /* Elevation: one soft layer, tinted to the background hue.
+     Hierarchy comes from borders and spacing, not stacked shadows. */
+  --cd-shadow-soft: 0 2px 8px rgb(11 11 12 / 0.04);
+  --cd-shadow-lifted: 0 8px 24px rgb(11 11 12 / 0.08);
+
+  /* Radius. The rule: containers 24, controls and inner surfaces 16,
+     chips and pills 999. No element picks a radius outside this scale. */
+  --cd-radius-widget: 24px;
+  --cd-radius-inner: 16px;
+  --cd-radius-pill: 999px;
+
+  /* Easing. The browser defaults are too weak to read as intentional.
+     ease-in is never used on UI: it delays the first frame, which is exactly
+     the moment the user is watching. */
+  --cd-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --cd-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --cd-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Duration, by element type. Nothing routine goes over 300ms. */
+  --cd-dur-press: 140ms;
+  --cd-dur-hover: 180ms;
+  --cd-dur-pop: 200ms;
+  --cd-dur-menu: 220ms;
+  --cd-dur-panel: 280ms;
+}
+
+.dark {
+  --cd-bg: #0b0b0c;
+  --cd-surface: #151517;
+  --cd-text: #f5f5f4;
+  --cd-text-muted: #9a9aa0;
+  --cd-border: #232326;
+
+  /* Dark mode inverts the pastel relationship: the fill becomes a deep
+     hue-matched tint of the surface and the ink carries the colour. A literal
+     20% alpha pastel would leave chip text well under AA on #151517. */
+  --cd-mint: #15271f;
+  --cd-mint-ink: #8fd9b4;
+  --cd-lavender: #1f1b33;
+  --cd-lavender-ink: #bfb2f2;
+  --cd-peach: #2b1c12;
+  --cd-peach-ink: #f2b98e;
+  --cd-sky: #14222f;
+  --cd-sky-ink: #9cc9f0;
+  --cd-butter: #272015;
+  --cd-butter-ink: #e8d38a;
+
+  --cd-focus: #f5f5f4;
+
+  --cd-shadow-soft: 0 2px 8px rgb(0 0 0 / 0.4);
+  --cd-shadow-lifted: 0 8px 24px rgb(0 0 0 / 0.55);
+}
+
+/* ---------------------------------------------------------------------------
+   Spend categories. A category owns one pastel and keeps it on every screen:
+   wallet chip, compare column, tracker section, calculator row.
+   Eight categories share five pastels along family lines. Travel shares sky,
+   media shares lavender, and "everything else" is deliberately uncoloured so
+   the coloured categories stay meaningful.
+--------------------------------------------------------------------------- */
+:root,
+.dark {
+  --cd-cat-dining: var(--cd-peach);
+  --cd-cat-dining-ink: var(--cd-peach-ink);
+  --cd-cat-groceries: var(--cd-mint);
+  --cd-cat-groceries-ink: var(--cd-mint-ink);
+  --cd-cat-flights: var(--cd-sky);
+  --cd-cat-flights-ink: var(--cd-sky-ink);
+  --cd-cat-hotels: var(--cd-lavender);
+  --cd-cat-hotels-ink: var(--cd-lavender-ink);
+  --cd-cat-gas: var(--cd-butter);
+  --cd-cat-gas-ink: var(--cd-butter-ink);
+  --cd-cat-transit: var(--cd-sky);
+  --cd-cat-transit-ink: var(--cd-sky-ink);
+  --cd-cat-streaming: var(--cd-lavender);
+  --cd-cat-streaming-ink: var(--cd-lavender-ink);
+  --cd-cat-other: var(--cd-surface);
+  --cd-cat-other-ink: var(--cd-text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Expose the tokens to Tailwind as utilities: bg-surface, text-muted,
+   rounded-widget, ease-out, duration-panel, font-display and so on.
+--------------------------------------------------------------------------- */
+@theme inline {
+  --color-bg: var(--cd-bg);
+  --color-surface: var(--cd-surface);
+  --color-ink: var(--cd-text);
+  --color-muted: var(--cd-text-muted);
+  --color-line: var(--cd-border);
+  --color-focus: var(--cd-focus);
+
+  --color-mint: var(--cd-mint);
+  --color-mint-ink: var(--cd-mint-ink);
+  --color-lavender: var(--cd-lavender);
+  --color-lavender-ink: var(--cd-lavender-ink);
+  --color-peach: var(--cd-peach);
+  --color-peach-ink: var(--cd-peach-ink);
+  --color-sky: var(--cd-sky);
+  --color-sky-ink: var(--cd-sky-ink);
+  --color-butter: var(--cd-butter);
+  --color-butter-ink: var(--cd-butter-ink);
+
+  --radius-widget: var(--cd-radius-widget);
+  --radius-inner: var(--cd-radius-inner);
+  --radius-pill: var(--cd-radius-pill);
+
+  --shadow-soft: var(--cd-shadow-soft);
+  --shadow-lifted: var(--cd-shadow-lifted);
+
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-newsreader);
+
+  --ease-out: var(--cd-ease-out);
+  --ease-in-out: var(--cd-ease-in-out);
+  --ease-drawer: var(--cd-ease-drawer);
+
+  --animate-duration-press: var(--cd-dur-press);
+}
+
+/* --------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--cd-bg);
+    color: var(--cd-text);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    /* Money and point balances line up in columns everywhere by default. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One focus treatment for the whole app. Visible, never removed. */
+  :focus-visible {
+    outline: 2px solid var(--cd-focus);
+    outline-offset: 2px;
+    border-radius: var(--cd-radius-inner);
+  }
+
+  /* Touch devices fire :hover on tap, which leaves states stuck after a press.
+     Components gate hover styling behind this query. */
+  @media (hover: hover) and (pointer: fine) {
+    .cd-hoverable:hover {
+      border-color: color-mix(in oklab, var(--cd-border) 55%, var(--cd-text));
+    }
+  }
+}
+
+/* Reduced motion means gentler motion, not none: opacity and colour still
+   carry meaning, movement does not. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
