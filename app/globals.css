@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* next-themes writes `class="dark"` on <html>, so the dark variant keys off that. */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -60,6 +62,38 @@
   --cd-dur-pop: 200ms;
   --cd-dur-menu: 220ms;
   --cd-dur-panel: 280ms;
+  /* ---- shadcn/ui alias tokens ----------------------------------------
+     shadcn components reference these semantic names. Mapping them onto the
+     CreditDash tokens above means a generated component inherits our palette
+     instead of shipping the default neutral look. Never set a raw colour
+     here; always point at a --cd-* token. */
+  --background: var(--cd-bg);
+  --foreground: var(--cd-text);
+  --card: var(--cd-surface);
+  --card-foreground: var(--cd-text);
+  --popover: var(--cd-surface);
+  --popover-foreground: var(--cd-text);
+  --primary: var(--cd-text);
+  --primary-foreground: var(--cd-bg);
+  --secondary: var(--cd-bg);
+  --secondary-foreground: var(--cd-text);
+  --muted: var(--cd-bg);
+  --muted-foreground: var(--cd-text-muted);
+  --accent: var(--cd-bg);
+  --accent-foreground: var(--cd-text);
+  --destructive: #a32b1c;
+  --border: var(--cd-border);
+  --input: var(--cd-border);
+  --ring: var(--cd-focus);
+  --radius: var(--cd-radius-inner);
+  --sidebar: var(--cd-bg);
+  --sidebar-foreground: var(--cd-text);
+  --sidebar-primary: var(--cd-text);
+  --sidebar-primary-foreground: var(--cd-bg);
+  --sidebar-accent: var(--cd-surface);
+  --sidebar-accent-foreground: var(--cd-text);
+  --sidebar-border: var(--cd-border);
+  --sidebar-ring: var(--cd-focus);
 }
 
 .dark {
@@ -87,6 +121,13 @@
 
   --cd-shadow-soft: 0 2px 8px rgb(0 0 0 / 0.4);
   --cd-shadow-lifted: 0 8px 24px rgb(0 0 0 / 0.55);
+  /* shadcn aliases follow the dark values of the tokens above automatically,
+     except the two that differ by mode. */
+  --destructive: #f08c7d;
+  --card: var(--cd-surface);
+  --popover: var(--cd-surface);
+  --sidebar: var(--cd-bg);
+  --sidebar-accent: var(--cd-surface);
 }
 
 /* ---------------------------------------------------------------------------
@@ -146,7 +187,7 @@
   --shadow-soft: var(--cd-shadow-soft);
   --shadow-lifted: var(--cd-shadow-lifted);
 
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-display: var(--font-newsreader);
 
   --ease-out: var(--cd-ease-out);
@@ -154,6 +195,82 @@
   --ease-drawer: var(--cd-ease-drawer);
 
   --animate-duration-press: var(--cd-dur-press);
+
+  --font-heading: var(--font-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
+  --color-sidebar-accent: var(--sidebar-accent);
+
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
+  --color-sidebar-primary: var(--sidebar-primary);
+
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+
+  --color-chart-4: var(--chart-4);
+
+  --color-chart-3: var(--chart-3);
+
+  --color-chart-2: var(--chart-2);
+
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+
+  --color-input: var(--input);
+
+  --color-border: var(--border);
+
+  --color-destructive: var(--destructive);
+
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-accent: var(--accent);
+
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-secondary: var(--secondary);
+
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-primary: var(--primary);
+
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-popover: var(--popover);
+
+  --color-card-foreground: var(--card-foreground);
+
+  --color-card: var(--card);
+
+  --color-foreground: var(--foreground);
+
+  --color-background: var(--background);
+
+  --radius-sm: 10px;
+
+  --radius-md: 12px;
+
+  --radius-lg: var(--cd-radius-inner);
+
+  --radius-xl: var(--cd-radius-inner);
+
+  --radius-2xl: var(--cd-radius-widget);
+
+  --radius-3xl: var(--cd-radius-widget);
+
+  --radius-4xl: var(--cd-radius-widget);
 }
 
 /* --------------------------------------------------------------------------- */
@@ -161,6 +278,7 @@
 @layer base {
   html {
     color-scheme: light;
+    @apply font-sans;
   }
 
   .dark {
@@ -173,6 +291,7 @@
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
     /* Money and point balances line up in columns everywhere by default. */
     font-variant-numeric: tabular-nums;
+    @apply bg-background text-foreground;
   }
 
   /* One focus treatment for the whole app. Visible, never removed. */
@@ -188,6 +307,9 @@
     .cd-hoverable:hover {
       border-color: color-mix(in oklab, var(--cd-border) 55%, var(--cd-text));
     }
+  }
+  * {
+    @apply border-border outline-ring/50;
   }
 }
 
