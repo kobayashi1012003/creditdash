@@ -56,6 +56,8 @@ import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
 import { CardDrawer } from "@/components/wallet/card-drawer";
 import { AddCardSheet } from "@/components/wallet/add-card-sheet";
 import { ImportOffer } from "@/components/wallet/import-offer";
+import { CARD_ART } from "@/data/card-art.generated";
+import { firstCardCss } from "@/lib/data/first-card";
 
 export function WalletView() {
   const entries = useWallet();
@@ -158,10 +160,13 @@ export function WalletView() {
           strategy={rectSortingStrategy}
         >
           <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-            {entries.map((entry) => (
+            {entries.map((entry, i) => (
               <WalletCard
                 key={entry.card.id}
                 entry={entry}
+                // The first row is the page's largest paint on every
+                // width; everything below it can wait to be scrolled to.
+                priority={i < 2}
                 arranging={arranging}
                 isWinner={entry.card.id === winnerId}
                 dimmed={winnerId !== null && entry.card.id !== winnerId}
@@ -199,12 +204,14 @@ function WalletCard({
   arranging,
   isWinner,
   dimmed,
+  priority,
   onOpen,
 }: {
   entry: WalletEntry;
   arranging: boolean;
   isWinner: boolean;
   dimmed: boolean;
+  priority: boolean;
   onOpen: () => void;
 }) {
   const { card, userCard } = entry;
@@ -246,7 +253,7 @@ function WalletCard({
             aria-label={`Move ${label}`}
             className="cursor-grab touch-none rounded-inner active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           >
-            <CardFace card={card} />
+            <CardFace card={card} priority={priority} />
             <span className="pointer-events-none absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-pill bg-bg/85 text-ink backdrop-blur-sm">
               <DotsSixVerticalIcon size={16} weight="bold" />
             </span>
@@ -258,7 +265,7 @@ function WalletCard({
             className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
             aria-label={`Open ${label}`}
           >
-            <CardFace card={card} dimmed={dimmed} interactive />
+            <CardFace card={card} dimmed={dimmed} interactive priority={priority} />
           </button>
         )}
       </div>
@@ -436,17 +443,32 @@ function Picker({
  * Shown while browser storage is read. The picker above it is real; the
  * cards are shaped like the grid so the page does not jump when they arrive.
  */
+/**
+ * One rule per card with art, keyed off the attribute the pre-start script
+ * sets on <html>. Built once, at module load, from the build-time manifest.
+ */
+const FIRST_CARD_CSS = firstCardCss(CARD_ART);
+
 function WalletSkeleton({ picker }: { picker: ReactNode }) {
   return (
     <>
       {picker}
+      {/* Paints the wallet's real first card into the first slot before the
+          app has started; see lib/data/first-card.ts. A card without art,
+          or an empty wallet, leaves a plain skeleton. */}
+      <style dangerouslySetInnerHTML={{ __html: FIRST_CARD_CSS }} />
       <div aria-busy aria-live="polite">
         <span className="sr-only">Loading your wallet</span>
         <div className="mt-6 h-8 w-16 rounded-pill bg-surface" />
         <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <li key={i}>
-              <div className="aspect-[1.586/1] w-full rounded-inner bg-surface" />
+              <div
+                className={cn(
+                  "aspect-[1.586/1] w-full rounded-inner bg-surface bg-cover bg-center",
+                  i === 0 && "first-card-art",
+                )}
+              />
               <div className="mt-3 h-4 w-2/3 rounded-pill bg-surface" />
               <div className="mt-2.5 h-6 w-full rounded-pill bg-surface" />
             </li>

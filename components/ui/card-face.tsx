@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react";
 import type { Card } from "@/data/types";
-import { CARD_ART } from "@/data/card-art.generated";
+import { CARD_ART, type CardArt } from "@/data/card-art.generated";
 import { cn } from "@/lib/cn";
 
 /**
@@ -21,6 +21,12 @@ type CardFaceProps = {
   interactive?: boolean;
   /** Dims the card when another one is the answer to the current question. */
   dimmed?: boolean;
+  /**
+   * Load the art straight away at high priority instead of lazily. For the
+   * first cards on screen, which are the page's largest paint. Not Next's
+   * deprecated `priority`, and not `preload`, which Next advises against
+   * when which image is largest depends on the viewport and the data.
+   */
   priority?: boolean;
   className?: string;
 };
@@ -43,8 +49,12 @@ export function CardFace({
   // between a build and a request: the generated face takes over and the app
   // never shows a broken image.
   const [imageFailed, setImageFailed] = useState(false);
-  const declaredSrc = card.imagePath ?? CARD_ART[card.id];
+  const art = CARD_ART[card.id];
+  const declaredSrc = card.imagePath ?? art?.src;
   const imageSrc = imageFailed ? null : declaredSrc;
+  // An explicit imagePath points outside the manifest, so it has no cut
+  // widths and is served as it is.
+  const loader = !card.imagePath && art ? artLoader(art) : undefined;
 
   // Pointer position as a fraction of the card, -0.5 to 0.5 on each axis.
   // Motion values rather than state: state would re-render the tree on every
@@ -115,8 +125,11 @@ export function CardFace({
         <Image
           src={imageSrc}
           alt={`${card.issuer} ${card.name}`}
+          loader={loader}
+          unoptimized={!loader}
           fill
-          priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           sizes="(max-width: 768px) 90vw, 360px"
           onError={() => setImageFailed(true)}
           className="object-cover"
@@ -143,6 +156,19 @@ export function CardFace({
       />
     </motion.div>
   );
+}
+
+/**
+ * Picks the smallest pre-cut width that still covers what the browser asked
+ * for, falling back to the original. Next's own optimiser cannot do this on
+ * Cloudflare Workers (see scripts/build-card-art-manifest.mjs), so the widths
+ * are cut at build time and this only chooses between them.
+ */
+function artLoader(art: CardArt) {
+  return ({ width }: { width: number }) => {
+    const fit = art.variants.find((w) => w >= width);
+    return fit ? `/cards/w/${fit}/${art.src.split("/").pop()!.replace(/\.[^.]+$/, "")}.webp` : art.src;
+  };
 }
 
 /**

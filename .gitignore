@@ -61,3 +61,6 @@ cloudflare-env.d.ts
 
 # Codex CLI is not used on this project
 .codex/
+
+# Card art widths, cut from public/cards/ at every build
+/public/cards/w/

@@ -288,9 +288,18 @@ function callbackUrl() {
   return `${window.location.origin}/auth/callback`;
 }
 
+/**
+ * Starts downloading the Supabase client without using it, so a sign-in
+ * button pressed a moment later does not wait on it. For the sign-in page
+ * only; every other page leaves signed-out visitors without it.
+ */
+export function prepareSignIn(): void {
+  void supabase();
+}
+
 /** Sends the browser to Google. Resolves only if it could not. */
 export async function signInWithGoogle(): Promise<string | null> {
-  const db = supabase();
+  const db = await supabase();
   if (!db) return "Accounts are not switched on in this build.";
   const { error } = await db.auth.signInWithOAuth({
     provider: "google",
@@ -301,7 +310,7 @@ export async function signInWithGoogle(): Promise<string | null> {
 
 /** Emails a one-time sign-in link. Returns an error to show, or null. */
 export async function sendSignInLink(email: string): Promise<string | null> {
-  const db = supabase();
+  const db = await supabase();
   if (!db) return "Accounts are not switched on in this build.";
   const { error } = await db.auth.signInWithOtp({
     email: email.trim(),
@@ -315,7 +324,7 @@ export async function sendSignInLink(email: string): Promise<string | null> {
 }
 
 export async function signOut(): Promise<void> {
-  await supabase()?.auth.signOut();
+  await (await supabase())?.auth.signOut();
   switchToLocal();
 }
 
@@ -358,7 +367,7 @@ export function declineImport() {
  * asks the server route to do it on the signed-in user's behalf.
  */
 export async function deleteAccount(): Promise<string | null> {
-  const db = supabase();
+  const db = await supabase();
   const { data } = (await db?.auth.getSession()) ?? { data: { session: null } };
   const token = data.session?.access_token;
   if (!db || !token) return "You are not signed in.";

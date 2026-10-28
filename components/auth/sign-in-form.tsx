@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   CheckCircleIcon,
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   ACCOUNTS_ENABLED,
+  prepareSignIn,
   sendSignInLink,
   signInWithGoogle,
   signOut,
@@ -41,6 +42,12 @@ export function SignInForm({ error: initialError }: { error?: string }) {
   const [busy, setBusy] = useState<"google" | "email" | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(explain(initialError));
+
+  // The Supabase client is loaded on demand. Fetch it now, in the
+  // background, so pressing a button sends you on without a wait.
+  useEffect(() => {
+    prepareSignIn();
+  }, []);
 
   if (account) {
     return (

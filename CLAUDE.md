@@ -125,6 +125,13 @@ for accessibility on mobile; the small drop is real network latency.
   (LCP 4.4s) because its largest text, the picker prompt, only painted
   after hydration. The picker now renders for real inside the loading state.
   Anything that is the largest text on a page must not wait for storage.
+- **Since real card art (28 October), measure `/wallet` with
+  `--throttling-method=devtools`.** It scores 90 to 91 that way (LCP 3.4s,
+  CLS 0). Lighthouse's default simulated mode reports about 80, because it
+  records an unthrottled load, where the app hydrates before the skeleton's
+  art arrives, then models the later `<img>` on a slow phone. A real
+  throttled trace shows the skeleton's art as the LCP at about 2.8s. Every
+  other page still scores 100 in the default mode.
 - **Worker bundle: 1.55 MiB gzipped** of the free plan's 3 MiB after
   Phase 6 added the Supabase client (1.34 MiB in Phase 5). Measure with
   `npx wrangler deploy --dry-run --outdir <dir>`.
@@ -318,9 +325,14 @@ rather than a guess that then gets replaced.
 - **Removing a card deletes its credit history** in both modes, matching the
   database cascade.
 - **Keys.** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-  are public by design and inlined at build, so Cloudflare needs them as
-  build variables. `SUPABASE_SECRET_KEY` bypasses RLS: runtime secret only,
-  never `NEXT_PUBLIC_`, never in chat or the repo.
+  are public by design and inlined at build, so they live in the committed
+  `.env.production`. `SUPABASE_SECRET_KEY` bypasses RLS: runtime secret
+  only, never `NEXT_PUBLIC_`, never in chat or the repo.
+- **The browser client loads on demand.** `supabase()` returns a promise
+  and dynamically imports `@supabase/ssr` (about 70 KB). Signed-out
+  visitors never download it; the store loads it only when a session
+  cookie exists, and the sign-in page warms it with `prepareSignIn()`. Do
+  not import `@supabase/*` at the top of any browser module.
 
 ## Credit resets
 
@@ -376,8 +388,36 @@ there.
 The manifest exists because the alternative is requesting
 `/cards/<id>.webp` and waiting for a 404 to learn the file is missing, which
 paints a blank card for a frame and puts a failed request on the wire for
-every card. Most cards have no art, so that is the normal case. `onError`
-still falls back, for a file removed between a build and a request.
+every card. Cards without art are still common. `onError` still falls
+back, for a file removed between a build and a request.
+
+**8 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
+Venture X, Blue Business Plus, Hilton Surpass, Bilt), converted to 1536x969
+WebP with transparent corners flattened onto the art's own dominant colour.
+The owner confirmed permission to use it. 22 more images exist in the
+owner's Downloads for cards not in the catalog yet; adding a card means
+its earn rates, credits and fee too.
+
+**Next's image optimiser does nothing on Workers** without a Cloudflare
+Images binding: `/_next/image` returns the original at every width, so a
+320 KB face shipped to every thumbnail. The manifest script therefore cuts
+480, 720 and 960 px WebP copies into `public/cards/w/` (gitignored, made at
+every build, skipped when current) and `CardFace` passes a `loader` that
+picks the smallest copy that covers the requested width. Never enlarge.
+
+**The Wallet's first card paints before the app starts**
+(`lib/data/first-card.ts`). Real art made the first card the Wallet's
+largest paint, and the wallet can only render after hydration (about 5s on
+a throttled phone). A tiny inline script in `<head>` reads which card is
+first (a key the store keeps current in both modes, else the stored local
+wallet, else the demo seed a new browser is about to get), marks `<html>`,
+and preloads that card's 720 cut; CSS paints it into the skeleton's first
+slot. The real `<img>` then lands in the same box. Any change to the
+skeleton's first slot must keep its size identical to the real card.
+
+`CardFace`'s `priority` means `loading="eager"` plus `fetchPriority="high"`,
+not Next's deprecated `priority` prop, and not `preload`, which Next advises
+against when the largest image depends on the viewport and the data.
 
 ### Client and server boundaries
 

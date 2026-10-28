@@ -10,6 +10,7 @@ import {
   type Persisted,
 } from "@/lib/data/schema";
 import { hasSessionCookie, supabase } from "@/lib/data/supabase";
+import { FIRST_CARD_KEY } from "@/lib/data/first-card";
 import { loadAccount, SyncError, type Remote } from "@/lib/data/remote";
 
 /**
@@ -64,7 +65,27 @@ const UNSAVED: Notice = {
 };
 
 function emit() {
+  rememberFirstCard();
   for (const l of listeners) l();
+}
+
+/**
+ * Keeps the pre-start script's hint current, so the next page load can show
+ * this wallet's first card before the app has started (see first-card.ts).
+ * Cheap, and only written when it changes.
+ */
+let firstCard: string | null = null;
+function rememberFirstCard() {
+  if (!cache) return;
+  const first =
+    [...cache.userCards].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.cardId ?? "";
+  if (first === firstCard) return;
+  firstCard = first;
+  try {
+    window.localStorage.setItem(FIRST_CARD_KEY, first);
+  } catch {
+    // Only a hint. Without it the next load shows a plain skeleton.
+  }
 }
 
 /* --- local mode ----------------------------------------------------------- */
@@ -114,6 +135,7 @@ function enterLocal() {
   offer = null;
   cache = readLocal();
   loaded = true;
+  rememberFirstCard();
 }
 
 /* --- account mode --------------------------------------------------------- */
@@ -205,27 +227,34 @@ async function enterAccount(db: SupabaseClient) {
 
 /**
  * Decides the mode the first time anything asks for state. Signed-out
- * visitors resolve synchronously; a session cookie means a network read,
- * and the skeleton shows until it lands.
+ * visitors resolve synchronously and never download the Supabase client; a
+ * session cookie means loading it and reading the account, and the skeleton
+ * shows until that lands.
  */
 function start() {
   if (started) return;
   started = true;
 
-  const db = supabase();
-  if (db && hasSessionCookie()) {
-    void enterAccount(db);
-  } else {
+  if (!hasSessionCookie()) {
     enterLocal();
+    return;
   }
 
-  // Signing out in another tab, or a session that cannot be refreshed,
-  // should not leave this tab writing to an account it no longer holds.
-  db?.auth.onAuthStateChange((event) => {
-    if (event === "SIGNED_OUT" && mode === "account") {
+  void supabase().then(async (db) => {
+    if (!db) {
       enterLocal();
       emit();
+      return;
     }
+    // Signing out in another tab, or a session that cannot be refreshed,
+    // should not leave this tab writing to an account it no longer holds.
+    db.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" && mode === "account") {
+        enterLocal();
+        emit();
+      }
+    });
+    await enterAccount(db);
   });
 }
 
@@ -327,7 +356,7 @@ export function getRemote() {
 
 /** Re-reads the account, after a bulk write changes many rows at once. */
 export async function reloadAccount() {
-  const db = supabase();
+  const db = await supabase();
   if (db) await enterAccount(db);
 }
 

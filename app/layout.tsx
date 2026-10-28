@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Newsreader } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { ThemeProvider } from "@/components/theme-provider";
+import { firstCardScript } from "@/lib/data/first-card";
+import { CARD_ART } from "@/data/card-art.generated";
 import "./globals.css";
 
 /* Display face. Variable with optical sizing, so one file serves a landing
@@ -58,6 +60,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             __html: "globalThis.__name||=function(f){return f};",
           }}
         />
+        {/* Marks the wallet's first card on <html> before the app starts,
+            so the Wallet skeleton can paint its art straight away. A few
+            hundred bytes; see lib/data/first-card.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: firstCardScript(CARD_ART) }} />
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider
