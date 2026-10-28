@@ -19,11 +19,9 @@ that plan, the plan wins, and the deviation gets recorded here.
 
 ## Where the build has got to
 
-Phases 0 to 5 of `creditdash-plan.md` are done. **Phase 6 is in progress:
-sign-in and the Supabase data layer work locally and pass the RLS test;
-not yet deployed.** Every
-commit is labelled with its phase, so `git log --oneline` is the detailed
-record; this is the summary.
+Phases 0 to 6 of `creditdash-plan.md` are done. **Phase 7 (Stripe) is
+next.** Every commit is labelled with its phase, so `git log --oneline` is
+the detailed record; this is the summary.
 
 **Live at https://creditdash.stevenlen03.workers.dev/** (no custom domain
 yet).
@@ -36,6 +34,12 @@ yet).
 | 3 | Credit reset logic for both bases, unit tested, partial amounts |
 | 4 | Calculator engine, unit tested, Compare correctness |
 | 5 | States, keyboard, legal text, PWA, Lighthouse 100, first deploy |
+| 6 | Supabase Auth (Google, email link), account-backed `lib/data/`, RLS proven, demo import, account deletion |
+
+Phase 6 was verified on the live site: the owner signed in with Google on a
+phone, changed the Tracker there, and saw it on another device after a
+reload. `npm run test:rls` passes 23 checks. See "Accounts" under the data
+layer for how it works.
 
 Phase 5 in more detail, since later phases build on these:
 
@@ -43,9 +47,9 @@ Phase 5 in more detail, since later phases build on these:
   Tracker and Calculators empty states link to the Wallet. Calculators and
   Compare wait for storage instead of flashing "no cards". `error.tsx` in
   `app/` and `app/(app)/`, and `app/not-found.tsx` (real 404 status).
-- **Storage failure is no longer silent.** `store.ts` sets an `unsaved` flag
-  when a read or write throws; `useIsUnsaved()` drives `StorageNotice` at
-  the top of the shell.
+- **Storage failure is no longer silent.** `store.ts` raises a notice when a
+  read or write throws (and, since Phase 6, when the account refuses a
+  write); `useNotice()` drives `StorageNotice` at the top of the shell.
 - **Keyboard.** Skip link and a real `<main id="main">` in both layouts.
   Radio groups and the panel's tab list are one tab stop with arrow keys,
   through `lib/use-roving-focus.ts`; use it for any new radio or tab set.
@@ -66,6 +70,20 @@ Phase 5 in more detail, since later phases build on these:
   `NODE_VERSION` is set. The `workers.dev` URL had to be switched on by
   hand in the Worker's Domains & Routes settings. The owner confirmed the
   live site works on a phone.
+- **Where config lives, after Phase 6 lost it twice.**
+  - The two public Supabase values are in the committed `.env.production`,
+    not dashboard build variables, which a Git reconnect silently reset.
+    Public values only; never a secret in that file.
+  - `wrangler.jsonc` has `keep_vars: true`. Without it every deploy replaces
+    the Worker's plain-text variables with the empty set in the file.
+  - `SUPABASE_SECRET_KEY` is a runtime Secret in the Worker's Variables and
+    Secrets (Production only), never a build variable.
+- **If pushes stop deploying, check the Git connection first.** The project
+  lost it once with no error anywhere: a "disconnected from your Git
+  account" banner in Settings > Build, no new builds, and the Deployments
+  list only showing successes. The fix was re-granting the Cloudflare
+  GitHub app access to the repo. Cloudflare posts nothing back to GitHub,
+  so commit checks cannot be used to tell.
 - **Cloudflare now recommends vinext** over OpenNext for new Next.js apps.
   This project stays on OpenNext, which it is built and tested against;
   switching would be its own decision, not a side effect of another change.
@@ -81,8 +99,9 @@ for accessibility on mobile; the small drop is real network latency.
   (LCP 4.4s) because its largest text, the picker prompt, only painted
   after hydration. The picker now renders for real inside the loading state.
   Anything that is the largest text on a page must not wait for storage.
-- **Worker bundle: 1.34 MiB gzipped** of the free plan's 3 MiB
-  (`npx wrangler deploy --dry-run --outdir <dir>`).
+- **Worker bundle: 1.55 MiB gzipped** of the free plan's 3 MiB after
+  Phase 6 added the Supabase client (1.34 MiB in Phase 5). Measure with
+  `npx wrangler deploy --dry-run --outdir <dir>`.
 - **Reduced motion verified empirically**, using headless Chrome with
   `--force-prefers-reduced-motion`, which the browser pane cannot do: the
   media query matches, card tilt and sheen are off, transitions drop to
