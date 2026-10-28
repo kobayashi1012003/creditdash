@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CardPicker } from "@/components/wallet/card-picker";
 import { CheckmarkRow } from "@/components/ui/checkmark-row";
 import { Button } from "@/components/ui/button";
-import { getCardsById } from "@/lib/wallet";
+import { getCardsById } from "@/lib/catalog";
 import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
 import { usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
