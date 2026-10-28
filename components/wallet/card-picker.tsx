@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { Card } from "@/data/types";
 import type { Category } from "@/lib/categories";
-import { rankCards } from "@/lib/best-card";
+import { rankCards } from "@/lib/calculators/engine";
+import { DEFAULT_VALUATION_MAP } from "@/lib/valuations";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
 import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
@@ -21,7 +22,9 @@ export function CardPicker({
   className?: string;
 }) {
   const [category, setCategory] = useState<Category | null>("dining");
-  const ranked = category ? rankCards(cards, category) : null;
+  const ranked = category
+    ? rankCards(cards, category, DEFAULT_VALUATION_MAP)
+    : null;
   const winnerId = ranked?.[0]?.card.id ?? null;
 
   return (

@@ -28,7 +28,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Card } from "@/data/types";
 import type { Category } from "@/lib/categories";
-import { rankCards } from "@/lib/best-card";
+import { rankCards } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
 import {
@@ -42,6 +42,7 @@ import {
   reorderCards,
   useIsLoading,
   usePlan,
+  useValuations,
   useWallet,
   type WalletEntry,
 } from "@/lib/data";
@@ -55,6 +56,7 @@ import { AddCardSheet } from "@/components/wallet/add-card-sheet";
 export function WalletView() {
   const entries = useWallet();
   const plan = usePlan();
+  const valuations = useValuations();
   const isLoading = useIsLoading();
 
   const [category, setCategory] = useState<Category | null>(null);
@@ -80,7 +82,7 @@ export function WalletView() {
   }
 
   const cards = entries.map((e) => e.card);
-  const ranked = category ? rankCards(cards, category) : null;
+  const ranked = category ? rankCards(cards, category, valuations) : null;
   // Arranging and highlighting are different questions; do not do both.
   const winnerId = arranging ? null : (ranked?.[0]?.card.id ?? null);
   const openEntry = entries.find((e) => e.card.id === openCardId) ?? null;

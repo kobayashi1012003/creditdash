@@ -5,10 +5,10 @@ import { PlusIcon, XIcon } from "@phosphor-icons/react";
 import type { Card } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
-import { rateFor } from "@/lib/best-card";
+import { centsPerPoint, rateFor } from "@/lib/calculators/engine";
 import { cardAnnualCreditValue } from "@/lib/credits";
 import { usd } from "@/lib/format";
-import { addCard, usePlan, useWallet } from "@/lib/data";
+import { addCard, usePlan, useValuations, useWallet } from "@/lib/data";
 import { canAddCard, FREE_CARD_LIMIT } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
@@ -24,6 +24,7 @@ export function CompareView({ all }: { all: Card[] }) {
   const [picking, setPicking] = useState(false);
   const wallet = useWallet();
   const plan = usePlan();
+  const valuations = useValuations();
   const owned = new Set(wallet.map((e) => e.card.id));
   const roomForMore = canAddCard(plan, wallet.length);
 
@@ -52,6 +53,26 @@ export function CompareView({ all }: { all: Card[] }) {
 
   return (
     <div className="space-y-6">
+      {/* "Add card" sits outside the table. Inside it, as a fourth column, it
+          lands off the right edge of a phone and can only be found by
+          discovering the table scrolls sideways. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-muted">
+          {chosen.length} of {MAX} cards
+        </p>
+        {chosen.length < MAX && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPicking((p) => !p)}
+            aria-expanded={picking}
+          >
+            <PlusIcon size={15} />
+            Add card
+          </Button>
+        )}
+      </div>
+
       {/* The table scrolls sideways on a phone rather than reflowing: a
           comparison that cannot be seen side by side is not a comparison. */}
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -83,20 +104,6 @@ export function CompareView({ all }: { all: Card[] }) {
                   </div>
                 </th>
               ))}
-              {chosen.length < MAX && (
-                <th scope="col" className="w-[140px] p-0 pb-5 align-bottom">
-                  <div className="px-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setPicking((p) => !p)}
-                      aria-expanded={picking}
-                    >
-                      <PlusIcon size={16} />
-                      Add card
-                    </Button>
-                  </div>
-                </th>
-              )}
             </tr>
           </thead>
 
@@ -107,7 +114,6 @@ export function CompareView({ all }: { all: Card[] }) {
               value={(c) => (c.annualFee === 0 ? "None" : usd(c.annualFee))}
               /* Lower is better here, so the winner rule flips. */
               score={(c) => -c.annualFee}
-              pad={chosen.length < MAX}
             />
             <Row
               label="Credits a year"
@@ -117,17 +123,20 @@ export function CompareView({ all }: { all: Card[] }) {
                 return v === 0 ? "None" : usd(v);
               }}
               score={(c) => cardAnnualCreditValue(c)}
-              pad={chosen.length < MAX}
             />
 
+            {/* The rate is what people expect to read, but the winner is
+                decided on value. Tinting Hilton's 6x over Amex Gold's 4x on
+                dining would be the wrong answer stated confidently, because
+                those points are worth a third as much. */}
             {ROWS.map((cat) => (
               <Row
                 key={cat}
                 label={CATEGORY_LABELS[cat]}
                 cards={chosen}
                 value={(c) => `${rateFor(c, cat).multiplier}x`}
-                score={(c) => rateFor(c, cat).multiplier}
-                pad={chosen.length < MAX}
+                sublabel={(c) => `${centsFor(c, cat, valuations).toFixed(1)}c`}
+                score={(c) => centsFor(c, cat, valuations)}
               />
             ))}
 
@@ -135,7 +144,6 @@ export function CompareView({ all }: { all: Card[] }) {
               label="Points program"
               cards={chosen}
               value={(c) => PROGRAM_LABELS[c.program]}
-              pad={chosen.length < MAX}
             />
             <Row
               label="Foreign transactions"
@@ -146,14 +154,12 @@ export function CompareView({ all }: { all: Card[] }) {
                   : `${c.foreignTransactionFee}%`
               }
               score={(c) => -c.foreignTransactionFee}
-              pad={chosen.length < MAX}
             />
             <Row
               label="Lounges"
               cards={chosen}
               value={(c) => c.loungeAccess ?? "None"}
               score={(c) => (c.loungeAccess ? 1 : 0)}
-              pad={chosen.length < MAX}
             />
           </tbody>
 
@@ -178,7 +184,6 @@ export function CompareView({ all }: { all: Card[] }) {
                   )}
                 </td>
               ))}
-              {chosen.length < MAX && <td />}
             </tr>
           </tfoot>
         </table>
@@ -211,14 +216,15 @@ function Row({
   label,
   cards,
   value,
+  sublabel,
   score,
-  pad,
 }: {
   label: string;
   cards: Card[];
   value: (c: Card) => string;
+  /** Shown under the value, e.g. what a rate is actually worth. */
+  sublabel?: (c: Card) => string;
   score?: (c: Card) => number;
-  pad?: boolean;
 }) {
   const scores = score ? cards.map(score) : null;
   const best = scores ? Math.max(...scores) : null;
@@ -244,12 +250,16 @@ function Row({
               )}
             >
               {value(card)}
+              {sublabel && (
+                <span className="ml-1.5 text-[12px] opacity-70">
+                  {sublabel(card)}
+                </span>
+              )}
               {wins && <span className="sr-only"> (best)</span>}
             </span>
           </td>
         );
       })}
-      {pad && <td />}
     </tr>
   );
 }
@@ -318,4 +328,13 @@ function EmptyCompare({
       <CardChooser all={all} chosen={chosen} onAdd={onAdd} />
     </div>
   );
+}
+
+/** Cents back per dollar in a category, at the user's valuation. */
+function centsFor(
+  card: Card,
+  category: Category,
+  valuations: ReturnType<typeof useValuations>,
+): number {
+  return rateFor(card, category).multiplier * centsPerPoint(card.program, valuations);
 }

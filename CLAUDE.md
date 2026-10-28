@@ -120,6 +120,27 @@ cycle start (`a2025-11`, `a2025-11:Q2`), because "the second quarter" is a
 different three months depending on when the card was opened. Changing a key
 format means a schema version and a migration, never an edit in place.
 
+## Calculator and ranking maths
+
+`lib/calculators/engine.ts` holds every number the app states about what a
+card is worth: earn rates, caps, break-even, spend value and the "which card"
+ranking. Like the reset logic it has no runtime imports (its type imports are
+erased), so `node --test` runs its tests directly.
+
+Three rules it exists to enforce:
+
+- **Rank on value, never on the multiplier.** 12x Hilton points at 0.5 cents
+  is worth less than 4x Membership Rewards at 1.9. A multiplier-only ranking
+  gives the wrong answer confidently, which is worse than no answer.
+- **Respect the caps.** Amex Gold earns 4x on groceries to $25,000 a year and
+  1x after. Multiplying straight through overstates a $36,000 spender by
+  33,000 points. Spend past a cap falls to the card's everything-else rate,
+  and a capped everything-else rate falls to 1x.
+- **Use the user's valuations, not the seed defaults.** Settings says these
+  drive every dollar figure in the app, so they have to. Signed-in surfaces
+  read `useValuations()`; the public landing page has no user and uses
+  `DEFAULT_VALUATION_MAP`.
+
 ## Card art
 
 Drop a file named after the card id into `public/cards/` and `CardFace` picks

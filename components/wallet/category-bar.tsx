@@ -7,7 +7,7 @@ import {
   categoryStyle,
   type Category,
 } from "@/lib/categories";
-import type { Ranked } from "@/lib/best-card";
+import type { Ranked } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
 
 /**
