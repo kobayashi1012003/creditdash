@@ -18,11 +18,13 @@ export function CategoryBar({
   value,
   onChange,
   compact = false,
+  disabled = false,
   className,
 }: {
   value: Category | null;
   onChange: (next: Category | null) => void;
   compact?: boolean;
+  disabled?: boolean;
   className?: string;
 }) {
   return (
@@ -39,6 +41,7 @@ export function CategoryBar({
             type="button"
             role="radio"
             aria-checked={selected}
+            disabled={disabled}
             onClick={() => onChange(selected ? null : c)}
             style={selected ? categoryStyle(c) : undefined}
             className={cn(
@@ -48,6 +51,7 @@ export function CategoryBar({
               "duration-[var(--cd-dur-press)] ease-out",
               "active:scale-[0.97]",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+              "disabled:pointer-events-none disabled:opacity-40",
               selected
                 ? "border-transparent"
                 : "border-line bg-surface text-muted hover:border-muted hover:text-ink",

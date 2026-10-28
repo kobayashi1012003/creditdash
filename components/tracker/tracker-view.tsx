@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { WarningCircleIcon } from "@phosphor-icons/react";
-import type { Card, PointBalance, UserCard } from "@/data/types";
-import { PROGRAM_LABELS } from "@/data/types";
-import { valuationFor } from "@/data/cards.seed";
+import type { Card, CreditPeriod, UserCard } from "@/data/types";
+import { PERIOD_COUNT, PROGRAM_LABELS } from "@/data/types";
 import {
   annualValue,
   cardAnnualCreditValue,
@@ -15,47 +13,66 @@ import {
 import { categoryStyle } from "@/lib/categories";
 import { longDate, pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import {
+  setCreditUsed,
+  useCreditUsage,
+  useIsLoading,
+  usePointBalances,
+  useValuations,
+  useWallet,
+} from "@/lib/data";
+import { periodKeysToSlots, type CreditUsage } from "@/lib/data/schema";
 import { Widget } from "@/components/ui/widget";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { CheckmarkRow } from "@/components/ui/checkmark-row";
 
-type Entry = { card: Card; userCard: UserCard };
+function slotsFor(
+  usage: CreditUsage,
+  creditId: string,
+  period: CreditPeriod,
+): number[] {
+  return periodKeysToSlots(usage[creditId], period, PERIOD_COUNT[period]);
+}
 
-export function TrackerView({
-  entries,
-  usage: initialUsage,
-  balances,
-}: {
-  entries: Entry[];
-  usage: Record<string, number[]>;
-  balances: PointBalance[];
-}) {
-  // Phase 3 moves this behind lib/data/ and makes it survive a refresh.
-  const [usage, setUsage] = useState(initialUsage);
+export function TrackerView() {
+  const entries = useWallet();
+  const usage = useCreditUsage();
+  const balances = usePointBalances();
+  const valuations = useValuations();
+  const isLoading = useIsLoading();
 
-  function toggle(creditId: string, index: number, amount: number) {
-    setUsage((prev) => {
-      const row = [...(prev[creditId] ?? [])];
-      while (row.length <= index) row.push(0);
-      row[index] = row[index] >= amount ? 0 : amount;
-      return { ...prev, [creditId]: row };
-    });
+  if (isLoading) return <TrackerSkeleton />;
+
+  if (entries.length === 0) {
+    return (
+      <Widget title="Nothing to track yet">
+        <p className="max-w-[52ch] text-[15px] leading-relaxed text-muted">
+          Add a card in the Wallet and any credits it offers show up here, one
+          section per card.
+        </p>
+      </Widget>
+    );
   }
 
   const allCredits = entries.flatMap(({ card }) =>
     card.credits.map((credit) => ({ card, credit })),
   );
 
-  const available = allCredits.reduce((s, { credit }) => s + annualValue(credit), 0);
+  const available = allCredits.reduce(
+    (s, { credit }) => s + annualValue(credit),
+    0,
+  );
   const used = allCredits.reduce(
-    (s, { credit }) => s + usedTotal(usage[credit.id] ?? []),
+    (s, { credit }) =>
+      s + usedTotal(slotsFor(usage, credit.id, credit.period)),
     0,
   );
 
   const expiring = allCredits.filter(
     ({ credit }) =>
       expiringThisMonth(credit) &&
-      usedTotal(usage[credit.id] ?? []) < annualValue(credit),
+      usedTotal(slotsFor(usage, credit.id, credit.period)) <
+        annualValue(credit),
   );
 
   return (
@@ -82,15 +99,20 @@ export function TrackerView({
         <Widget title="Expiring this month">
           {expiring.length === 0 ? (
             <p className="text-sm leading-relaxed text-muted">
-              Nothing expires this month. The next reset is in January.
+              Nothing expires this month.
             </p>
           ) : (
             <ul className="space-y-2.5">
               {expiring.slice(0, 4).map(({ card, credit }) => (
-                <li key={credit.id} className="flex items-baseline justify-between gap-3">
+                <li
+                  key={credit.id}
+                  className="flex items-baseline justify-between gap-3"
+                >
                   <div className="min-w-0">
                     <p className="truncate text-sm">{credit.name}</p>
-                    <p className="truncate text-[13px] text-muted">{card.name}</p>
+                    <p className="truncate text-[13px] text-muted">
+                      {card.name}
+                    </p>
                   </div>
                   <span className="shrink-0 text-sm tabular-nums">
                     {usd(credit.amount)}
@@ -102,21 +124,32 @@ export function TrackerView({
         </Widget>
 
         <Widget title="Points">
-          <ul className="space-y-2.5">
-            {balances.map((b) => (
-              <li key={b.program} className="flex items-baseline justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm">{PROGRAM_LABELS[b.program]}</p>
-                  <p className="text-[13px] text-muted tabular-nums">
-                    {pts(b.balance)}
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm tabular-nums">
-                  {usd(pointsValue(b.balance, valuationFor(b.program)))}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {balances.length === 0 ? (
+            <p className="text-sm leading-relaxed text-muted">
+              No balances entered yet.
+            </p>
+          ) : (
+            <ul className="space-y-2.5">
+              {balances.map((b) => (
+                <li
+                  key={b.program}
+                  className="flex items-baseline justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm">
+                      {PROGRAM_LABELS[b.program]}
+                    </p>
+                    <p className="text-[13px] tabular-nums text-muted">
+                      {pts(b.balance)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm tabular-nums">
+                    {usd(pointsValue(b.balance, valuations[b.program] ?? 1))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Widget>
       </div>
 
@@ -126,7 +159,6 @@ export function TrackerView({
           card={card}
           userCard={userCard}
           usage={usage}
-          onToggle={toggle}
         />
       ))}
     </div>
@@ -137,16 +169,14 @@ function CardCredits({
   card,
   userCard,
   usage,
-  onToggle,
 }: {
   card: Card;
   userCard: UserCard;
-  usage: Record<string, number[]>;
-  onToggle: (creditId: string, index: number, amount: number) => void;
+  usage: CreditUsage;
 }) {
   const available = cardAnnualCreditValue(card);
   const used = card.credits.reduce(
-    (s, c) => s + usedTotal(usage[c.id] ?? []),
+    (s, c) => s + usedTotal(slotsFor(usage, c.id, c.period)),
     0,
   );
 
@@ -167,7 +197,7 @@ function CardCredits({
     <Widget
       title={userCard.nickname ?? card.name}
       action={
-        <p className="text-sm text-muted tabular-nums">
+        <p className="text-sm tabular-nums text-muted">
           {usd(used)} of {usd(available)}
         </p>
       }
@@ -176,7 +206,7 @@ function CardCredits({
 
       <ul className="mt-6 space-y-6">
         {card.credits.map((credit) => {
-          const row = usage[credit.id] ?? [];
+          const row = slotsFor(usage, credit.id, credit.period);
           const tint = credit.category
             ? categoryStyle(credit.category).color
             : "var(--cd-text)";
@@ -195,7 +225,7 @@ function CardCredits({
                       : "anniversary"}
                   </p>
                 </div>
-                <p className="text-[13px] text-muted tabular-nums">
+                <p className="text-[13px] tabular-nums text-muted">
                   {usd(creditUsed)} of {usd(creditTotal)}
                 </p>
               </div>
@@ -204,7 +234,14 @@ function CardCredits({
                 used={row}
                 amount={credit.amount}
                 tint={tint}
-                onToggle={(i) => onToggle(credit.id, i, credit.amount)}
+                onToggle={(i) =>
+                  setCreditUsed(
+                    credit.id,
+                    credit.period,
+                    i,
+                    row[i] >= credit.amount ? 0 : credit.amount,
+                  )
+                }
                 slotLabel={(i) => slotLabel(credit.period, i)}
               />
             </li>
@@ -222,7 +259,7 @@ function CardCredits({
 /**
  * Is the fee worth it? Credits recovered against the fee, as one bar.
  * Deliberately not a ring: this is a single ratio, and a bar reads as
- * "how far along" far faster at a glance.
+ * "how far along" faster at a glance.
  */
 function FeeBar({
   annualFee,
@@ -280,6 +317,23 @@ function FeeBar({
           style={{ width: `${Math.max(2, ratio * 100)}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function TrackerSkeleton() {
+  return (
+    <div aria-busy aria-live="polite" className="@container space-y-6">
+      <span className="sr-only">Loading your tracker</span>
+      <div className="grid gap-5 @md:grid-cols-2 @3xl:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-[164px] rounded-widget border border-line bg-surface"
+          />
+        ))}
+      </div>
+      <div className="h-[280px] rounded-widget border border-line bg-surface" />
     </div>
   );
 }

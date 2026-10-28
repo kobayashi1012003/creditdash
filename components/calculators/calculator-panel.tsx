@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { CalculatorIcon, CaretRightIcon } from "@phosphor-icons/react";
-import type { Card } from "@/data/types";
 import { cn } from "@/lib/cn";
 import { useIsDesktop } from "@/lib/use-media-query";
 import { useStoredFlag } from "@/lib/use-stored-flag";
+import { useWallet } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { CALCULATORS } from "@/components/calculators/registry";
@@ -21,7 +21,8 @@ const STORAGE_KEY = "creditdash:calc-panel-open";
  *
  * Whether it was left open is remembered per browser.
  */
-export function CalculatorPanel({ cards }: { cards: Card[] }) {
+export function CalculatorPanel() {
+  const cards = useWallet().map((e) => e.card);
   const isDesktop = useIsDesktop();
   // Open by default where it costs nothing (a docked desktop column) and
   // closed by default where it would cover the page the user came for.
@@ -104,7 +105,7 @@ function CalculatorBody({
   active,
   onActiveChange,
 }: {
-  cards: Card[];
+  cards: import("@/data/types").Card[];
   active: string;
   onActiveChange: (id: string) => void;
 }) {

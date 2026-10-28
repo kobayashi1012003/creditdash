@@ -1,28 +1,68 @@
 "use client";
 
 import { useState } from "react";
-import { DownloadSimpleIcon, SparkleIcon, TrashIcon } from "@phosphor-icons/react";
-import { useTheme } from "next-themes";
-import type { PointBalance, Program } from "@/data/types";
+import {
+  DownloadSimpleIcon,
+  SparkleIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
+import type { Program } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { DEFAULT_VALUATIONS } from "@/data/cards.seed";
 import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, type Plan } from "@/lib/plan";
 import { pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import {
+  deleteEverything,
+  setPlan,
+  setPointBalance,
+  setValuation,
+  useIsLoading,
+  usePlan,
+  usePointBalances,
+  useValuations,
+  useWallet,
+  walletToCsv,
+} from "@/lib/data";
 import { Widget } from "@/components/ui/widget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export function SettingsView({ balances }: { balances: PointBalance[] }) {
-  const [plan, setPlan] = useState<Plan>("premium");
-  const [valuations, setValuations] = useState(() =>
-    Object.fromEntries(
-      DEFAULT_VALUATIONS.map((v) => [v.program, v.centsPerPoint]),
-    ) as Record<Program, number>,
-  );
-  const { theme } = useTheme();
+export function SettingsView() {
+  const plan = usePlan();
+  const valuations = useValuations();
+  const balances = usePointBalances();
+  const entries = useWallet();
+  const isLoading = useIsLoading();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  function exportCsv() {
+    const blob = new Blob([walletToCsv(entries)], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `creditdash-wallet-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (isLoading) {
+    return (
+      <div aria-busy aria-live="polite" className="space-y-5">
+        <span className="sr-only">Loading your settings</span>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-[180px] rounded-widget border border-line bg-surface"
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -34,6 +74,43 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
           </p>
           <ThemeToggle />
         </div>
+      </Widget>
+
+      <Widget title="Points you hold" id="balances" className="scroll-mt-6">
+        <p className="mb-5 max-w-[58ch] text-sm leading-relaxed text-muted">
+          Entered by hand, because nothing here is linked to an account.
+        </p>
+        <ul className="divide-y divide-line">
+          {DEFAULT_VALUATIONS.map(({ program }) => {
+            const balance =
+              balances.find((b) => b.program === program)?.balance ?? 0;
+            return (
+              <li
+                key={program}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0"
+              >
+                <Label htmlFor={`bal-${program}`} className="text-sm">
+                  {PROGRAM_LABELS[program]}
+                </Label>
+                <Input
+                  id={`bal-${program}`}
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  step="1000"
+                  value={balance}
+                  onChange={(e) =>
+                    setPointBalance(
+                      program as Program,
+                      Math.max(0, Number(e.target.value) || 0),
+                    )
+                  }
+                  className="h-9 w-32 shrink-0 rounded-inner text-right tabular-nums"
+                />
+              </li>
+            );
+          })}
+        </ul>
       </Widget>
 
       <Widget
@@ -49,8 +126,8 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
         </p>
         <ul className="divide-y divide-line">
           {DEFAULT_VALUATIONS.map(({ program }) => {
+            const cpp = valuations[program] ?? 1;
             const balance = balances.find((b) => b.program === program);
-            const cpp = valuations[program];
             return (
               <li
                 key={program}
@@ -60,8 +137,8 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
                   <Label htmlFor={`cpp-${program}`} className="text-sm">
                     {PROGRAM_LABELS[program]}
                   </Label>
-                  {balance && (
-                    <p className="text-[13px] text-muted tabular-nums">
+                  {balance && balance.balance > 0 && (
+                    <p className="text-[13px] tabular-nums text-muted">
                       {pts(balance.balance)} points,{" "}
                       {usd(pointsValue(balance.balance, cpp))}
                     </p>
@@ -75,10 +152,10 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
                   min="0"
                   value={cpp}
                   onChange={(e) =>
-                    setValuations((v) => ({
-                      ...v,
-                      [program]: Math.max(0, Number(e.target.value) || 0),
-                    }))
+                    setValuation(
+                      program as Program,
+                      Math.max(0, Number(e.target.value) || 0),
+                    )
                   }
                   className="h-9 w-20 shrink-0 rounded-inner text-right tabular-nums"
                 />
@@ -123,23 +200,49 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
 
       <Widget title="Your data">
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={exportCsv}
+            disabled={entries.length === 0}
+          >
             <DownloadSimpleIcon size={16} />
             Export as CSV
           </Button>
-          <Button variant="destructive">
-            <TrashIcon size={16} />
-            Delete everything
-          </Button>
+          {confirmingDelete ? (
+            <>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await deleteEverything();
+                  setConfirmingDelete(false);
+                }}
+              >
+                <TrashIcon size={16} />
+                Yes, delete it all
+              </Button>
+              <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>
+                Keep it
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="destructive"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              <TrashIcon size={16} />
+              Delete everything
+            </Button>
+          )}
         </div>
         <p className="mt-4 max-w-[58ch] text-[13px] leading-relaxed text-muted">
-          Your wallet lives in this browser and nowhere else. Clearing site
-          data removes it, and so does the button above.
+          {confirmingDelete
+            ? "This removes every card, credit and balance from this browser. It cannot be undone."
+            : "Your wallet lives in this browser and nowhere else. Clearing site data removes it, and so does the button above."}
         </p>
       </Widget>
 
-      {/* Development only. Phase 2 uses this to exercise the free card limit
-          without building a payment flow first. */}
+      {/* Development only. Lets the free card limit be exercised without a
+          payment flow existing yet. */}
       <Widget
         title="Development"
         action={<span className="text-[13px] text-muted">Not shipped</span>}
@@ -147,8 +250,10 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm">Pretend this account is</p>
-            <p className="text-[13px] text-muted">
-              Switches the demo user between plans to test the card limit.
+            <p className="max-w-[44ch] text-[13px] leading-relaxed text-muted">
+              Switches the demo user between plans so the {FREE_CARD_LIMIT}
+              -card limit can be tested. Cards over the limit are kept, not
+              deleted.
             </p>
           </div>
           <div className="flex gap-2">
@@ -157,7 +262,7 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
                 key={p}
                 variant={plan === p ? "default" : "outline"}
                 size="sm"
-                onClick={() => setPlan(p)}
+                onClick={() => setPlan(p as Plan)}
                 aria-pressed={plan === p}
               >
                 {p === "free" ? "Free" : "Premium"}
@@ -165,9 +270,6 @@ export function SettingsView({ balances }: { balances: PointBalance[] }) {
             ))}
           </div>
         </div>
-        <p className="mt-4 text-[13px] text-muted">
-          Theme is currently set to {theme ?? "system"}.
-        </p>
       </Widget>
     </div>
   );

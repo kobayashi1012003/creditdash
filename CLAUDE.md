@@ -66,11 +66,48 @@ components/ui/     Primitives: CardFace, Widget, EarnChip, ProgressRing,
                    CheckmarkRow, plus restyled shadcn pieces.
 components/shell/  Sidebar, tab bar, page header, wordmark.
 data/              Types and the sample seed. No logic.
+lib/data/          The data layer. The only module that touches storage.
 lib/               Pure helpers: tokens map, formatting, ranking, plan limits.
+scripts/           Build-time generators.
 ```
 
-Pages read data through `lib/wallet.ts`. Phase 2 swaps that file's body for
-`lib/data/` and the pages do not change.
+## The data layer
+
+**Nothing outside `lib/data/` touches storage.** Pages and components call the
+hooks and functions in `lib/data/index.ts` and know nothing about where the
+data lives.
+
+- `schema.ts` is the persisted shape, versioned, mirroring the tables in
+  `creditdash-plan.md` section 6 so each key maps to a Supabase table later.
+  It validates whatever it reads rather than casting: storage can hold a
+  half-written object or something typed into devtools, and a crash on load
+  would lock someone out of their own wallet.
+- `store.ts` is the browser-storage backing. Phase 6 replaces its body with
+  Supabase calls and nothing else changes.
+- `index.ts` is the public API.
+
+**Writes are async** (`await addCard(id)`) even though localStorage is
+synchronous. Supabase will not be, and every call site already awaiting is
+what makes Phase 6 a change inside one directory instead of across the app.
+Do not "simplify" these to synchronous.
+
+**Reads are hooks** over `useSyncExternalStore`, so a change in one component
+or one browser tab reaches every other. `useIsLoading()` is true until storage
+has been read; the server cannot know what is stored, so first paint is a
+skeleton rather than a guess that then gets replaced.
+
+## Card art
+
+Drop a file named after the card id into `public/cards/` and `CardFace` picks
+it up. `scripts/build-card-art-manifest.mjs` runs before dev, build and
+typecheck, and writes `data/card-art.generated.ts` listing what is actually
+there.
+
+The manifest exists because the alternative is requesting
+`/cards/<id>.webp` and waiting for a 404 to learn the file is missing, which
+paints a blank card for a frame and puts a failed request on the wire for
+every card. Most cards have no art, so that is the normal case. `onError`
+still falls back, for a file removed between a build and a request.
 
 ### Client and server boundaries
 
@@ -271,3 +308,4 @@ back.
 | GitHub push in Phase 5 | Pushed in Phase 0 | Owner asked for the repo from the start. Connecting Cloudflare to the repo still happens in Phase 5 |
 | shadcn/ui (8) | shadcn/ui on Base UI primitives | The generator's Base UI target gives the same components over better-maintained primitives, and `pick-ui-library` independently recommends Base UI. Tokens are remapped onto ours so nothing ships in default styling |
 | Seed file in Phase 2 | Written in Phase 1 | Phase 1 needs sample data on every page; writing it twice would be waste. Phase 2 still owns `lib/data/` and persistence |
+| Tracker and Settings persistence in Phase 3 | Done in Phase 2 | Once the store existed, leaving those screens on local state would have been two sources of truth. Phase 3 still owns reset logic and its tests |

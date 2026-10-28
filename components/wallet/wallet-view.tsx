@@ -2,45 +2,96 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PlusIcon, SparkleIcon } from "@phosphor-icons/react";
-import type { Card, UserCard } from "@/data/types";
+import {
+  ArrowsOutCardinalIcon,
+  CheckIcon,
+  DotsSixVerticalIcon,
+  PlusIcon,
+  SparkleIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { Card } from "@/data/types";
 import type { Category } from "@/lib/categories";
-import { rankCards, rateFor } from "@/lib/best-card";
+import { rankCards } from "@/lib/best-card";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
-import { canAddCard, FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, type Plan } from "@/lib/plan";
+import {
+  canAddCard,
+  cardLimit,
+  FREE_CARD_LIMIT,
+  PREMIUM_PRICE_MONTHLY,
+} from "@/lib/plan";
+import {
+  removeCard,
+  reorderCards,
+  useIsLoading,
+  usePlan,
+  useWallet,
+  type WalletEntry,
+} from "@/lib/data";
 import { CardFace } from "@/components/ui/card-face";
 import { EarnChip } from "@/components/ui/earn-chip";
 import { Button } from "@/components/ui/button";
 import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
 import { CardDrawer } from "@/components/wallet/card-drawer";
+import { AddCardSheet } from "@/components/wallet/add-card-sheet";
 
-type Entry = { card: Card; userCard: UserCard };
+export function WalletView() {
+  const entries = useWallet();
+  const plan = usePlan();
+  const isLoading = useIsLoading();
 
-/**
- * The home screen. The category bar answers the one question the product
- * exists for; the grid below is the wallet itself.
- */
-export function WalletView({
-  entries,
-  plan,
-  popular,
-}: {
-  entries: Entry[];
-  plan: Plan;
-  /** Three suggestions for someone with an empty wallet. */
-  popular: Card[];
-}) {
   const [category, setCategory] = useState<Category | null>(null);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [arranging, setArranging] = useState(false);
+
+  const sensors = useSensors(
+    // A small distance threshold keeps a tap on a card from registering as a
+    // drag, so opening a card and moving one stay distinct gestures.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  if (isLoading) return <WalletSkeleton />;
+  if (entries.length === 0) {
+    return (
+      <>
+        <EmptyWallet onAdd={() => setAdding(true)} />
+        <AddCardSheet open={adding} onOpenChange={setAdding} />
+      </>
+    );
+  }
 
   const cards = entries.map((e) => e.card);
   const ranked = category ? rankCards(cards, category) : null;
-  const winnerId = ranked?.[0]?.card.id ?? null;
+  // Arranging and highlighting are different questions; do not do both.
+  const winnerId = arranging ? null : (ranked?.[0]?.card.id ?? null);
   const openEntry = entries.find((e) => e.card.id === openCardId) ?? null;
+  const limit = cardLimit(plan);
 
-  if (entries.length === 0) {
-    return <EmptyWallet popular={popular} />;
+  async function onDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = entries.findIndex((e) => e.card.id === active.id);
+    const to = entries.findIndex((e) => e.card.id === over.id);
+    await reorderCards(from, to);
   }
 
   return (
@@ -52,65 +103,71 @@ export function WalletView({
         <h2 id="picker-heading" className="mb-4 text-sm font-medium">
           Use which card?
         </h2>
-        <CategoryBar value={category} onChange={setCategory} />
+        <CategoryBar
+          value={category}
+          onChange={setCategory}
+          disabled={arranging}
+        />
         <AnswerLine
-          category={category}
-          ranked={ranked}
-          empty="Pick what you are buying and the best card lifts out of the wallet."
+          category={arranging ? null : category}
+          ranked={arranging ? null : ranked}
+          empty={
+            arranging
+              ? "Drag a card to move it, or tab to one and press space."
+              : "Pick what you are buying and the best card lifts out of the wallet."
+          }
           className="mt-5"
         />
       </section>
 
-      <ul className="mt-6 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-        {entries.map(({ card, userCard }) => {
-          const isWinner = card.id === winnerId;
-          const dimmed = winnerId !== null && !isWinner;
-          const top = topRates(card);
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-muted">
+          {entries.length} {entries.length === 1 ? "card" : "cards"}
+          {limit !== Infinity && ` of ${limit}`}
+        </p>
+        {entries.length > 1 && (
+          <Button
+            variant={arranging ? "default" : "ghost"}
+            size="sm"
+            onClick={() => {
+              setArranging((a) => !a);
+              setCategory(null);
+            }}
+            aria-pressed={arranging}
+          >
+            {arranging ? <CheckIcon size={15} /> : <ArrowsOutCardinalIcon size={15} />}
+            {arranging ? "Done" : "Rearrange"}
+          </Button>
+        )}
+      </div>
 
-          return (
-            <li
-              key={card.id}
-              className={cn(
-                "transition-transform duration-[var(--cd-dur-hover)] ease-out",
-                isWinner && "-translate-y-1.5",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => setOpenCardId(card.id)}
-                className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-                aria-label={`Open ${userCard.nickname ?? card.name}`}
-              >
-                <CardFace card={card} dimmed={dimmed} interactive />
-              </button>
-
-              <div className={cn("mt-3", dimmed && "opacity-40")}>
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate font-medium">
-                    {userCard.nickname ?? card.name}
-                  </p>
-                  <p className="shrink-0 text-[13px] text-muted">
-                    {card.annualFee === 0 ? "No fee" : `${usd(card.annualFee)} a year`}
-                  </p>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {top.map((rate) => (
-                    <EarnChip
-                      key={rate.category}
-                      category={rate.category}
-                      multiplier={rate.multiplier}
-                    />
-                  ))}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={entries.map((e) => e.card.id)}
+          strategy={rectSortingStrategy}
+        >
+          <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+            {entries.map((entry) => (
+              <WalletCard
+                key={entry.card.id}
+                entry={entry}
+                arranging={arranging}
+                isWinner={entry.card.id === winnerId}
+                dimmed={winnerId !== null && entry.card.id !== winnerId}
+                onOpen={() => setOpenCardId(entry.card.id)}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
 
       <div className="mt-8">
         {canAddCard(plan, entries.length) ? (
-          <Button variant="outline" size="lg">
+          <Button variant="outline" size="lg" onClick={() => setAdding(true)}>
             <PlusIcon size={18} />
             Add card
           </Button>
@@ -125,11 +182,112 @@ export function WalletView({
         open={openCardId !== null}
         onOpenChange={(next) => !next && setOpenCardId(null)}
       />
+      <AddCardSheet open={adding} onOpenChange={setAdding} />
     </>
   );
 }
 
-/** The two or three rates worth putting on the card face in the grid. */
+function WalletCard({
+  entry,
+  arranging,
+  isWinner,
+  dimmed,
+  onOpen,
+}: {
+  entry: WalletEntry;
+  arranging: boolean;
+  isWinner: boolean;
+  dimmed: boolean;
+  onOpen: () => void;
+}) {
+  const { card, userCard } = entry;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: card.id, disabled: !arranging });
+
+  const name = userCard.nickname ?? card.name;
+  const top = topRates(card);
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn(
+        "transition-[transform,opacity] duration-[var(--cd-dur-hover)] ease-out",
+        isWinner && "-translate-y-1.5",
+        isDragging && "z-10 opacity-80",
+      )}
+    >
+      <div className="relative">
+        {arranging ? (
+          // In rearrange mode the whole card is the drag target, so there is
+          // no small handle to aim at on a phone.
+          <div
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            aria-label={`Move ${name}`}
+            className="cursor-grab touch-none rounded-inner active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+          >
+            <CardFace card={card} />
+            <span className="pointer-events-none absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-pill bg-bg/85 text-ink backdrop-blur-sm">
+              <DotsSixVerticalIcon size={16} weight="bold" />
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+            aria-label={`Open ${name}`}
+          >
+            <CardFace card={card} dimmed={dimmed} interactive />
+          </button>
+        )}
+      </div>
+
+      <div className={cn("mt-3", dimmed && "opacity-40")}>
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="truncate font-medium">{name}</p>
+          {arranging ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => removeCard(card.id)}
+              aria-label={`Remove ${name} from your wallet`}
+            >
+              <TrashIcon size={15} />
+              Remove
+            </Button>
+          ) : (
+            <p className="shrink-0 text-[13px] text-muted">
+              {card.annualFee === 0 ? "No fee" : `${usd(card.annualFee)} a year`}
+            </p>
+          )}
+        </div>
+        {!arranging && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {top.map((rate) => (
+              <EarnChip
+                key={rate.category}
+                category={rate.category}
+                multiplier={rate.multiplier}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/** The two or three rates worth showing under a card in the grid. */
 function topRates(card: Card) {
   return [...card.earnRates]
     .filter((r) => r.category !== "other")
@@ -138,8 +296,8 @@ function topRates(card: Card) {
 }
 
 /**
- * Shown in place of "Add card" once a free wallet is full. Inline and calm,
- * never a pop-up: the plan is explicit that nothing interrupts.
+ * Replaces "Add card" once a free wallet is full. Inline and calm, never a
+ * pop-up: the plan is explicit that nothing interrupts.
  */
 function UpgradePanel({ count }: { count: number }) {
   return (
@@ -164,8 +322,8 @@ function UpgradePanel({ count }: { count: number }) {
   );
 }
 
-/** First run. Three real cards to add beats an illustration and a sentence. */
-function EmptyWallet({ popular }: { popular: Card[] }) {
+/** First run, or after deleting everything. */
+function EmptyWallet({ onAdd }: { onAdd: () => void }) {
   return (
     <section>
       <div className="max-w-[52ch]">
@@ -173,34 +331,36 @@ function EmptyWallet({ popular }: { popular: Card[] }) {
           Add the first card you carry.
         </h2>
         <p className="mt-2.5 text-[15px] leading-relaxed text-muted">
-          Two cards are enough to start getting an answer. You can add more at
-          any time, and nothing is linked to a bank.
+          Two cards are enough to start getting an answer. Nothing is linked to
+          a bank, and you can change your mind at any time.
         </p>
       </div>
-
-      <ul className="mt-7 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-        {popular.map((card) => (
-          <li key={card.id}>
-            <CardFace card={card} interactive />
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{card.name}</p>
-                <p className="text-[13px] text-muted">{card.issuer}</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <PlusIcon size={15} />
-                Add
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      <Button variant="ghost" className="mt-7">
-        Search all cards
+      <Button size="lg" className="mt-6" onClick={onAdd}>
+        <PlusIcon size={18} />
+        Add card
       </Button>
     </section>
   );
 }
 
-export { rateFor };
+/**
+ * Shown while browser storage is read. Shaped like the real grid so the page
+ * does not jump when the wallet arrives.
+ */
+function WalletSkeleton() {
+  return (
+    <div aria-busy aria-live="polite">
+      <span className="sr-only">Loading your wallet</span>
+      <div className="h-[168px] rounded-widget border border-line bg-surface" />
+      <ul className="mt-9 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <li key={i}>
+            <div className="aspect-[1.586/1] w-full rounded-inner bg-surface" />
+            <div className="mt-3 h-4 w-2/3 rounded-pill bg-surface" />
+            <div className="mt-2.5 h-6 w-full rounded-pill bg-surface" />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

@@ -8,6 +8,8 @@ import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { rateFor } from "@/lib/best-card";
 import { cardAnnualCreditValue } from "@/lib/credits";
 import { usd } from "@/lib/format";
+import { addCard, usePlan, useWallet } from "@/lib/data";
+import { canAddCard, FREE_CARD_LIMIT } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,10 @@ const ROWS: Category[] = CATEGORIES.filter((c) => c !== "transit");
 export function CompareView({ all }: { all: Card[] }) {
   const [ids, setIds] = useState<string[]>(["amex-gold", "csr"]);
   const [picking, setPicking] = useState(false);
+  const wallet = useWallet();
+  const plan = usePlan();
+  const owned = new Set(wallet.map((e) => e.card.id));
+  const roomForMore = canAddCard(plan, wallet.length);
 
   const chosen = ids
     .map((id) => all.find((c) => c.id === id))
@@ -156,9 +162,20 @@ export function CompareView({ all }: { all: Card[] }) {
               <td />
               {chosen.map((card) => (
                 <td key={card.id} className="px-2 pt-5">
-                  <Button variant="outline" className="w-full">
-                    Add to wallet
-                  </Button>
+                  {owned.has(card.id) ? (
+                    <p className="py-2 text-center text-[13px] text-muted">
+                      In your wallet
+                    </p>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={!roomForMore}
+                      onClick={() => addCard(card.id)}
+                    >
+                      Add to wallet
+                    </Button>
+                  )}
                 </td>
               ))}
               {chosen.length < MAX && <td />}
@@ -166,6 +183,13 @@ export function CompareView({ all }: { all: Card[] }) {
           </tfoot>
         </table>
       </div>
+
+      {!roomForMore && chosen.some((c) => !owned.has(c.id)) && (
+        <p className="text-[13px] leading-relaxed text-muted">
+          Your free plan holds {FREE_CARD_LIMIT} cards and both are taken.
+          Remove one in the Wallet, or move to Premium, to add another.
+        </p>
+      )}
 
       {picking && (
         <CardChooser

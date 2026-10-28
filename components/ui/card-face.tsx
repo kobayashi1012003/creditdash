@@ -4,12 +4,13 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react";
 import type { Card } from "@/data/types";
+import { CARD_ART } from "@/data/card-art.generated";
 import { cn } from "@/lib/cn";
 
 /**
- * The card itself. Uses the image at `card.imagePath` when one exists in
- * public/cards/, and otherwise draws a face from the card's own data so the
- * app never shows a broken image.
+ * The card itself. Uses the art in public/cards/ when a file exists for the
+ * card, and otherwise draws a face from the card's own data, so the app never
+ * shows a broken image.
  *
  * Standard credit card ratio is 1.586:1 (ISO/IEC 7810 ID-1).
  */
@@ -34,6 +35,16 @@ export function CardFace({
   const ref = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [hovering, setHovering] = useState(false);
+
+  // Card art comes from a manifest of what is actually in public/cards/,
+  // generated at build time. Most cards have no art, so asking the network
+  // and waiting for a 404 would paint a blank card for a frame on the common
+  // path. The onError is still here for the case where a file is removed
+  // between a build and a request: the generated face takes over and the app
+  // never shows a broken image.
+  const [imageFailed, setImageFailed] = useState(false);
+  const declaredSrc = card.imagePath ?? CARD_ART[card.id];
+  const imageSrc = imageFailed ? null : declaredSrc;
 
   // Pointer position as a fraction of the card, -0.5 to 0.5 on each axis.
   // Motion values rather than state: state would re-render the tree on every
@@ -100,13 +111,14 @@ export function CardFace({
         className,
       )}
     >
-      {card.imagePath ? (
+      {imageSrc ? (
         <Image
-          src={card.imagePath}
+          src={imageSrc}
           alt={`${card.issuer} ${card.name}`}
           fill
           priority={priority}
           sizes="(max-width: 768px) 90vw, 360px"
+          onError={() => setImageFailed(true)}
           className="object-cover"
         />
       ) : (
