@@ -300,7 +300,17 @@ but does not quite make sense, replace it with a plain one.
 
 Every screen, every time:
 
-- Works at 375px and at desktop width, with no horizontal scroll.
+- Works at 375px and at desktop width, with no horizontal scroll. Measure it
+  (`scrollWidth - clientWidth`) rather than eyeballing; 35px of drift is
+  invisible in a screenshot and real on a phone.
+- **`sr-only` inside a horizontal scroller needs a positioned ancestor.** It
+  is `position: absolute`, so without one its containing block is `<body>`,
+  it lands at the scroller's unclipped coordinates, and it widens the whole
+  page. `overflow: hidden` does not clip it, which is why this hides well.
+  Add `relative` to the cell or wrapper.
+- **A flex item will not shrink below its content unless you let it.** Five
+  tab bar items with `flex-1` needed 410px on a 375px phone. `min-w-0` plus
+  a truncating label is the fix.
 - Every interactive element has hover, press, focus and disabled states.
 - Focus is visible and never removed. The treatment is global in `globals.css`.
 - Light and dark both checked. Never ship a screen seen in one mode only.

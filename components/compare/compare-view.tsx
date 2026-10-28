@@ -76,7 +76,10 @@ export function CompareView({ all }: { all: Card[] }) {
       {/* The table scrolls sideways on a phone rather than reflowing: a
           comparison that cannot be seen side by side is not a comparison. */}
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <table className="w-full min-w-[520px] border-collapse text-sm">
+        {/* relative so the sr-only caption below is contained by the table
+            rather than by <body>, which would place it at the table's
+            unclipped coordinates outside the scroller. */}
+        <table className="relative w-full min-w-[520px] border-collapse text-sm">
           <caption className="sr-only">
             Comparison of {chosen.map((c) => c.name).join(", ")}
           </caption>
@@ -245,7 +248,11 @@ function Row({
           <td key={card.id} className="px-2 py-3 align-middle">
             <span
               className={cn(
-                "inline-block rounded-inner px-2.5 py-1",
+                // `relative` is load-bearing: sr-only is position:absolute,
+                // and without a positioned ancestor inside the scrolling
+                // table its containing block is <body>. It then sits at the
+                // table's unclipped x and widens the whole page.
+                "relative inline-block rounded-inner px-2.5 py-1",
                 wins && "bg-mint text-mint-ink",
               )}
             >
