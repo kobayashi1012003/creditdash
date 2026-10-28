@@ -2,6 +2,9 @@
   "name": "creditdash",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "predev": "node scripts/build-card-art-manifest.mjs",
     "dev": "next dev",

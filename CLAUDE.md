@@ -17,6 +17,46 @@ to use, what credits are left, and whether each annual fee pays for itself.
 Read `creditdash-plan.md` before starting a phase. Where a skill conflicts with
 that plan, the plan wins, and the deviation gets recorded here.
 
+## Where the build has got to
+
+Phases 0 to 4 of `creditdash-plan.md` are done. **Phase 5 is next.** Every
+commit is labelled with its phase, so `git log --oneline` is the detailed
+record; this is the summary.
+
+| Phase | Delivered |
+|---|---|
+| 0 | Next.js on Cloudflare via OpenNext, design tokens, both themes, repo |
+| 1 | Every page and component with sample data, app shell, motion |
+| 2 | `lib/data/` over browser storage, add/remove/reorder cards, free limit |
+| 3 | Credit reset logic for both bases, unit tested, partial amounts |
+| 4 | Calculator engine, unit tested, Compare correctness |
+
+Phase 5 is polish and first deploy: empty, loading and error states, keyboard
+navigation, privacy and terms written properly, PWA manifest and icons, the
+Cloudflare connection to the GitHub repo, and Lighthouse 90+ for performance
+and accessibility.
+
+### Open items carried forward
+
+Small things found during earlier phases that were never closed. None blocks
+Phase 5; all belong in it.
+
+- **Reduced motion is implemented but never empirically verified.** The global
+  CSS rule and the `useReducedMotion()` guards are in place, but the browser
+  pane cannot emulate the OS setting, so only the code paths were checked.
+  Turn the setting on and load `/wallet` before trusting it.
+- **The sidebar and the tab bar both use `aria-label="Main"`.** Only one is
+  visible at a time so it is not a live duplicate-landmark problem, but they
+  should have distinct names.
+- **The v1 to v2 storage migration can only approximate.** v1 never recorded
+  which anniversary cycle a key meant, so the migration picks the cycle
+  overlapping most of the calendar year. Right for the common case and not
+  improvable from the data that exists. See `lib/data/schema.ts`.
+- **Lighthouse has never been run.** Phase 5 sets the first baseline.
+
+Two classes of bug were caught by measuring rather than looking, and both are
+invisible in a screenshot. Keep measuring: see the quality floor below.
+
 ## Product principles
 
 Apply these on every screen.
@@ -57,6 +97,41 @@ adapter.
 A change is not verified until `npm run preview` serves it. The dev server and
 the Workers runtime disagree, and Phase 0 found two bugs that only appeared in
 the second.
+
+### Setting up on a new machine
+
+The repository carries the code, the docs and the skill *sources*, but three
+things are machine-specific and have to be redone. Do these before starting
+work, or Claude will be running without the tooling the conventions below
+assume.
+
+```bash
+git clone https://github.com/kobayashi1012003/creditdash.git
+cd creditdash
+npm install
+npx impeccable install                        # platform binary and hooks
+npx skills@latest add emilkowalski/skills     # see the symlink note below
+npm test && npm run build                     # confirm the toolchain works
+```
+
+- **Node 22.18 or newer.** The tests run through `node --test` on TypeScript
+  directly, with no transpiler. On an older Node the suite fails with a
+  syntax error that does not name the real cause. `package.json` pins this in
+  `engines`.
+- **`.claude/skills/*` are git symlinks** into `.agents/skills/`. Windows
+  checks them out as plain text files unless Developer Mode is on and
+  `core.symlinks=true`, which leaves Claude with fifteen junk files instead of
+  fifteen skills. Re-running the `skills` installer fixes it either way, so
+  just run it.
+- **The impeccable binary is gitignored** because it is 17MB and built for one
+  platform. Its hooks in `.claude/settings.local.json` are POSIX shell and
+  will not run on Windows. `npx impeccable install` rewrites both correctly
+  for the machine it runs on, so that file may show as modified afterwards.
+  That is expected; commit it if the new machine is now the main one.
+- **Browser storage does not travel.** The demo wallet, the theme and the
+  calculator panel state live in localStorage. A new machine seeds a fresh
+  demo wallet on first load, which is correct, not a fault.
+- **`gh auth login`** for pushing.
 
 ## Structure
 
