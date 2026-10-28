@@ -4,6 +4,10 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-27",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Without this, every deploy from git replaces the Worker's plain-text
+  // variables with the (empty) set in this file, wiping anything added in
+  // the dashboard. Secrets survive either way.
+  "keep_vars": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
