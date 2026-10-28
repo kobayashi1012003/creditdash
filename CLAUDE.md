@@ -19,7 +19,9 @@ that plan, the plan wins, and the deviation gets recorded here.
 
 ## Where the build has got to
 
-Phases 0 to 5 of `creditdash-plan.md` are done. **Phase 6 is next.** Every
+Phases 0 to 5 of `creditdash-plan.md` are done. **Phase 6 is in progress:
+sign-in and the Supabase data layer work locally and pass the RLS test;
+not yet deployed.** Every
 commit is labelled with its phase, so `git log --oneline` is the detailed
 record; this is the summary.
 
@@ -90,6 +92,16 @@ for accessibility on mobile; the small drop is real network latency.
 
 - **The owner has UI tweaks saved for the end of the build.** Ask for them
   before calling the project finished; do not guess at them.
+- **A pricing page, maybe.** The owner suggested one; "See Premium" now
+  goes to the plan section of Settings. Not yet decided or planned.
+- **Email sign-in only reaches the owner.** Supabase's built-in sender
+  delivers only to the project's team, a few emails an hour. Real users
+  need a custom SMTP sender (a free tier such as Resend) set in Supabase
+  Auth settings before launch.
+- **Google sign-in is in Testing mode.** Only listed test users can sign
+  in, and the consent screen names the Supabase project, not CreditDash.
+  Publishing needs a custom domain, the Branding page's domain links, and
+  possibly Google's verification. Do this before real users.
 - **The v1 to v2 storage migration can only approximate.** v1 never recorded
   which anniversary cycle a key meant, so the migration picks the cycle
   overlapping most of the calendar year. Right for the common case and not
@@ -144,6 +156,7 @@ adapter.
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run icons` | Regenerate every app icon from the one drawing |
+| `npm run test:rls` | Row Level Security test against the real Supabase project (needs `SUPABASE_SECRET_KEY` in `.env.local`) |
 
 A change is not verified until `npm run preview` serves it. The dev server and
 the Workers runtime disagree, and Phase 0 found two bugs that only appeared in
@@ -203,23 +216,55 @@ hooks and functions in `lib/data/index.ts` and know nothing about where the
 data lives.
 
 - `schema.ts` is the persisted shape, versioned, mirroring the tables in
-  `creditdash-plan.md` section 6 so each key maps to a Supabase table later.
-  It validates whatever it reads rather than casting: storage can hold a
-  half-written object or something typed into devtools, and a crash on load
-  would lock someone out of their own wallet.
-- `store.ts` is the browser-storage backing. Phase 6 replaces its body with
-  Supabase calls and nothing else changes.
-- `index.ts` is the public API.
+  `creditdash-plan.md` section 6. It validates whatever it reads rather than
+  casting: storage can hold a half-written object or something typed into
+  devtools, and a crash on load would lock someone out of their own wallet.
+- `store.ts` holds the state in one of two modes. **local**: signed out,
+  browser storage, read synchronously on the first frame (the demo user).
+  **account**: signed in, the account read from Supabase once, then every
+  write updates the cache first and the database second. A refused write
+  rolls the cache back and raises a notice (`useNotice()`), so the screen
+  never claims something the database does not hold.
+- `remote.ts` is the Supabase side: loading an account into the same
+  `Persisted` shape, and one function per kind of write.
+- `supabase.ts` is the browser client. Without the env vars it returns null
+  and the app runs as the demo user only (`ACCOUNTS_ENABLED`).
+- `index.ts` is the public API. Each write passes `mutate()` both the state
+  change and its Supabase counterpart; pages cannot tell which mode they are
+  in except through `useAccount()`.
 
 **Writes are async** (`await addCard(id)`) even though localStorage is
-synchronous. Supabase will not be, and every call site already awaiting is
-what makes Phase 6 a change inside one directory instead of across the app.
-Do not "simplify" these to synchronous.
+synchronous. That is what let Phase 6 add Supabase inside this directory
+without touching a page. Do not "simplify" these to synchronous.
 
 **Reads are hooks** over `useSyncExternalStore`, so a change in one component
-or one browser tab reaches every other. `useIsLoading()` is true until storage
-has been read; the server cannot know what is stored, so first paint is a
-skeleton rather than a guess that then gets replaced.
+or one browser tab reaches every other. `useIsLoading()` is true until the
+state has been read; the server cannot know it, so first paint is a skeleton
+rather than a guess that then gets replaced.
+
+### Accounts
+
+- **The database is the guarantee, not the UI.** Every user table has Row
+  Level Security; `profiles.plan`, `stripe_customer_id` and `is_admin`
+  cannot be written by users at all (column grants); the free card limit is
+  a trigger. `npm run test:rls` proves all of it against the real project
+  with two throwaway users. Run it after any migration.
+- **Migrations live in `supabase/migrations/`** and are run once, by hand,
+  in the SQL Editor. Never edit one that has run; add a new file.
+  `FREE_CARD_LIMIT` is duplicated in the limit trigger; change both.
+- **No `proxy.ts`.** Next 16 runs it on Node and OpenNext cannot yet. Nothing
+  server-side reads the session except `app/auth/callback/route.ts` (the
+  PKCE code exchange for Google and the email link) and
+  `app/api/account/route.ts` (account deletion, the only holder of the
+  secret key, acting only on the user its bearer token proves). The browser
+  client refreshes its own session. A server component that needs the user
+  would need a proxy first; avoid needing one.
+- **Removing a card deletes its credit history** in both modes, matching the
+  database cascade.
+- **Keys.** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  are public by design and inlined at build, so Cloudflare needs them as
+  build variables. `SUPABASE_SECRET_KEY` bypasses RLS: runtime secret only,
+  never `NEXT_PUBLIC_`, never in chat or the repo.
 
 ## Credit resets
 

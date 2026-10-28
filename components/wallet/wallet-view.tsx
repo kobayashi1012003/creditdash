@@ -55,6 +55,7 @@ import { Button } from "@/components/ui/button";
 import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
 import { CardDrawer } from "@/components/wallet/card-drawer";
 import { AddCardSheet } from "@/components/wallet/add-card-sheet";
+import { ImportOffer } from "@/components/wallet/import-offer";
 
 export function WalletView() {
   const entries = useWallet();
@@ -95,6 +96,7 @@ export function WalletView() {
   if (entries.length === 0) {
     return (
       <>
+        <ImportOffer />
         <EmptyWallet onAdd={() => setAdding(true)} />
         <AddCardSheet open={adding} onOpenChange={setAdding} />
       </>

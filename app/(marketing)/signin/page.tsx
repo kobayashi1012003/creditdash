@@ -1,63 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EnvelopeSimpleIcon, GoogleLogoIcon } from "@phosphor-icons/react/dist/ssr";
-import { Button } from "@/components/ui/button";
+import { SignInForm } from "@/components/auth/sign-in-form";
 
 export const metadata: Metadata = {
   title: "Sign in",
 };
 
 /**
- * Temporary. The design is final; the two real providers arrive in Phase 6
- * with Supabase Auth. Until then they are visibly disabled rather than
- * hidden, so the page does not have to be redesigned later.
+ * Google, an emailed link, or carrying on as the demo user. The callback
+ * route sends failures back here with `?error=`, which the form explains.
  */
-export default function SignInPage() {
+export default async function SignInPage({ searchParams }: PageProps<"/signin">) {
+  const { error } = await searchParams;
+
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col px-4 py-16 sm:px-6 lg:py-24">
       <h1 className="font-display text-[34px] leading-tight sm:text-[40px]">
         Pick up where you left off.
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted">
-        Accounts are not switched on yet. Continue as the demo user and your
-        wallet saves in this browser.
+        Sign in and your wallet follows you to any device. Or carry on as the
+        demo user, saved in this browser only.
       </p>
 
-      <Button
-        size="lg"
-        className="mt-8 w-full"
-        nativeButton={false}
-        render={<Link href="/wallet" />}
-      >
-        Continue as demo user
-      </Button>
-
-      <div
-        className="my-7 flex items-center gap-4 text-[13px] text-muted"
-        aria-hidden
-      >
-        <span className="h-px flex-1 bg-line" />
-        Coming later
-        <span className="h-px flex-1 bg-line" />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <Button variant="outline" size="lg" className="w-full" disabled>
-          <GoogleLogoIcon size={18} />
-          Continue with Google
-        </Button>
-        <Button variant="outline" size="lg" className="w-full" disabled>
-          <EnvelopeSimpleIcon size={18} />
-          Email me a sign-in link
-        </Button>
-      </div>
+      <SignInForm error={typeof error === "string" ? error : undefined} />
 
       <p className="mt-8 text-[13px] leading-relaxed text-muted">
         We will never ask for a card number, an expiry date, a CVV or a bank
         login. Read the{" "}
         <Link
           href="/privacy"
-          className="underline underline-offset-4 transition-colors duration-[var(--cd-dur-hover)] ease-out hover:text-ink"
+          className="rounded-inner underline underline-offset-4 transition-colors duration-[var(--cd-dur-hover)] ease-out hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           privacy policy
         </Link>

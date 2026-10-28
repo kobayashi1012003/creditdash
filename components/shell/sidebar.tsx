@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { NAV } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import { Wordmark } from "@/components/shell/wordmark";
+import { ACCOUNTS_ENABLED, useAccount, useIsLoading } from "@/lib/data";
 
 /**
  * Desktop navigation. Fixed to the left edge, narrow enough that the content
@@ -59,20 +60,49 @@ export function Sidebar() {
 }
 
 /**
- * The app runs as a demo user until Phase 6. Saying so plainly is better than
- * letting someone assume their data is on an account somewhere.
+ * Where this wallet is saved, said plainly. A demo user should never assume
+ * their data is on an account somewhere, and a signed-in one should be able
+ * to see which account they are in.
  */
 export function DemoBadge({ className }: { className?: string }) {
+  const account = useAccount();
+  const isLoading = useIsLoading();
+  const box = cn("rounded-inner border border-line bg-surface px-3 py-2.5", className);
+
+  // Same height either way, so the badge does not jump as the session loads.
+  if (isLoading) return <div aria-hidden className={cn(box, "h-[58px]")} />;
+
+  if (account) {
+    return (
+      <Link
+        href="/settings#account"
+        className={cn(
+          box,
+          "block transition-colors duration-[var(--cd-dur-hover)] ease-out hover:border-muted",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+        )}
+      >
+        <p className="truncate text-[13px] font-medium">{account.email ?? "Signed in"}</p>
+        <p className="mt-0.5 text-[12px] leading-snug text-muted">
+          Saved to your account.
+        </p>
+      </Link>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "rounded-inner border border-line bg-surface px-3 py-2.5",
-        className,
-      )}
-    >
+    <div className={box}>
       <p className="text-[13px] font-medium">Demo user</p>
       <p className="mt-0.5 text-[12px] leading-snug text-muted">
-        Saved in this browser only. Accounts come later.
+        Saved in this browser only.{" "}
+        {ACCOUNTS_ENABLED && (
+          <Link
+            href="/signin"
+            className="rounded-inner text-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            Sign in
+          </Link>
+        )}
       </p>
     </div>
   );

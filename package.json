@@ -18,7 +18,8 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "pretypecheck": "node scripts/build-card-art-manifest.mjs",
     "test": "node --test \"lib/**/*.test.ts\"",
-    "icons": "node scripts/build-icons.mjs"
+    "icons": "node scripts/build-icons.mjs",
+    "test:rls": "node --env-file=.env.local scripts/rls-test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -27,6 +28,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.5.0",
