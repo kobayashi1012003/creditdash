@@ -1,4 +1,5 @@
 import type { Category } from "@/lib/categories";
+import type { CreditPeriod, ResetBasis } from "@/lib/credits/reset";
 
 /**
  * Shapes mirror the tables in creditdash-plan.md section 6, so Phase 6 can
@@ -17,18 +18,14 @@ export type Program =
 
 export type Network = "amex" | "visa" | "mastercard";
 
-export type CreditPeriod = "monthly" | "quarterly" | "semiannual" | "annual";
-
-/** How many times a credit resets in a year. */
-export const PERIOD_COUNT: Record<CreditPeriod, number> = {
-  monthly: 12,
-  quarterly: 4,
-  semiannual: 2,
-  annual: 1,
-};
-
-/** Whether a credit resets on 1 January or on the card's anniversary. */
-export type ResetBasis = "calendar" | "anniversary";
+/**
+ * The period model lives with the reset logic in lib/credits/reset.ts, which
+ * is dependency-free so `node --test` can run its tests directly. It is
+ * re-exported here so the rest of the app has one place to import card types
+ * from.
+ */
+export type { CreditPeriod, ResetBasis } from "@/lib/credits/reset";
+export { PERIOD_COUNT } from "@/lib/credits/reset";
 
 /**
  * Drives the generated card face used when no image exists in public/cards/.

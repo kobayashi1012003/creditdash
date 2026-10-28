@@ -25,6 +25,17 @@ export function usdExact(amount: number) {
   return money2.format(amount);
 }
 
+/**
+ * $325, or $7.25 when there are cents to show.
+ *
+ * Credit totals need this: a fee is always whole dollars, but a partial
+ * credit of $7.25 rendered as "$7" is simply the wrong number, and padding
+ * every whole figure with ".00" makes a page of money harder to scan.
+ */
+export function money(amount: number) {
+  return Number.isInteger(amount) ? money0.format(amount) : money2.format(amount);
+}
+
 /** 142,000 */
 export function pts(amount: number) {
   return points.format(amount);

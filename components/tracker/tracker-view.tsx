@@ -1,38 +1,23 @@
 "use client";
 
 import { WarningCircleIcon } from "@phosphor-icons/react";
-import type { Card, CreditPeriod, UserCard } from "@/data/types";
-import { PERIOD_COUNT, PROGRAM_LABELS } from "@/data/types";
-import {
-  annualValue,
-  cardAnnualCreditValue,
-  expiringThisMonth,
-  slotLabel,
-  usedTotal,
-} from "@/lib/credits";
-import { categoryStyle } from "@/lib/categories";
-import { longDate, pointsValue, pts, usd } from "@/lib/format";
+import type { Card, UserCard } from "@/data/types";
+import { PROGRAM_LABELS } from "@/data/types";
+import { cardAnnualCreditValue, creditState } from "@/lib/credits";
+import { daysUntilReset } from "@/lib/credits/reset";
+import { longDate, money, pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import {
-  setCreditUsed,
   useCreditUsage,
   useIsLoading,
   usePointBalances,
   useValuations,
   useWallet,
 } from "@/lib/data";
-import { periodKeysToSlots, type CreditUsage } from "@/lib/data/schema";
+import type { CreditUsage } from "@/lib/data/schema";
 import { Widget } from "@/components/ui/widget";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { CheckmarkRow } from "@/components/ui/checkmark-row";
-
-function slotsFor(
-  usage: CreditUsage,
-  creditId: string,
-  period: CreditPeriod,
-): number[] {
-  return periodKeysToSlots(usage[creditId], period, PERIOD_COUNT[period]);
-}
+import { CreditRow } from "@/components/tracker/credit-row";
 
 export function TrackerView() {
   const entries = useWallet();
@@ -54,26 +39,40 @@ export function TrackerView() {
     );
   }
 
-  const allCredits = entries.flatMap(({ card }) =>
-    card.credits.map((credit) => ({ card, credit })),
+  const states = entries.flatMap(({ card, userCard }) =>
+    card.credits.map((credit) => ({
+      card,
+      credit,
+      anniversaryMonth: userCard.anniversaryMonth,
+      state: creditState(credit, userCard.anniversaryMonth, usage),
+    })),
   );
 
-  const available = allCredits.reduce(
-    (s, { credit }) => s + annualValue(credit),
-    0,
-  );
-  const used = allCredits.reduce(
-    (s, { credit }) =>
-      s + usedTotal(slotsFor(usage, credit.id, credit.period)),
-    0,
-  );
+  const available = states.reduce((s, x) => s + x.state.available, 0);
+  const used = states.reduce((s, x) => s + x.state.usedTotal, 0);
 
-  const expiring = allCredits.filter(
-    ({ credit }) =>
-      expiringThisMonth(credit) &&
-      usedTotal(slotsFor(usage, credit.id, credit.period)) <
-        annualValue(credit),
-  );
+  // Not just "ends this month": an anniversary credit can be days from
+  // resetting in May. What matters is the window closing, whenever that is.
+  //
+  // The test is on the closing window, not the year. A credit whose October
+  // is spent but whose year is not would otherwise show here with nothing
+  // left to claim, which is the opposite of a useful reminder.
+  const expiring = states
+    .filter(
+      ({ credit, state }) =>
+        state.expiringSoon &&
+        state.currentIndex !== -1 &&
+        credit.amount - (state.used[state.currentIndex] ?? 0) > 0,
+    )
+    .map((x) => ({
+      ...x,
+      days: daysUntilReset({
+        period: x.credit.period,
+        resetBasis: x.credit.resetBasis,
+        anniversaryMonth: x.anniversaryMonth,
+      }),
+    }))
+    .sort((a, b) => (a.days ?? 99) - (b.days ?? 99));
 
   return (
     // Container, not viewport: how much room these widgets get depends on
@@ -88,7 +87,7 @@ export function TrackerView() {
               label={`${Math.round(available > 0 ? (used / available) * 100 : 0)}%`}
             />
             <div className="min-w-0">
-              <p className="text-2xl leading-none">{usd(used)}</p>
+              <p className="text-2xl leading-none">{money(used)}</p>
               <p className="mt-1.5 text-sm leading-snug text-muted">
                 used of {usd(available)} your cards offer
               </p>
@@ -96,14 +95,14 @@ export function TrackerView() {
           </div>
         </Widget>
 
-        <Widget title="Expiring this month">
+        <Widget title="Resetting soon">
           {expiring.length === 0 ? (
             <p className="text-sm leading-relaxed text-muted">
-              Nothing expires this month.
+              Nothing resets in the next month.
             </p>
           ) : (
             <ul className="space-y-2.5">
-              {expiring.slice(0, 4).map(({ card, credit }) => (
+              {expiring.slice(0, 4).map(({ card, credit, state, days }) => (
                 <li
                   key={credit.id}
                   className="flex items-baseline justify-between gap-3"
@@ -112,10 +111,13 @@ export function TrackerView() {
                     <p className="truncate text-sm">{credit.name}</p>
                     <p className="truncate text-[13px] text-muted">
                       {card.name}
+                      {days !== null && `, ${days} ${days === 1 ? "day" : "days"} left`}
                     </p>
                   </div>
                   <span className="shrink-0 text-sm tabular-nums">
-                    {usd(credit.amount)}
+                    {money(
+                      credit.amount - (state.used[state.currentIndex] ?? 0),
+                    )}
                   </span>
                 </li>
               ))}
@@ -126,28 +128,30 @@ export function TrackerView() {
         <Widget title="Points">
           {balances.length === 0 ? (
             <p className="text-sm leading-relaxed text-muted">
-              No balances entered yet.
+              No balances entered yet. Add them in Settings.
             </p>
           ) : (
             <ul className="space-y-2.5">
-              {balances.map((b) => (
-                <li
-                  key={b.program}
-                  className="flex items-baseline justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm">
-                      {PROGRAM_LABELS[b.program]}
-                    </p>
-                    <p className="text-[13px] tabular-nums text-muted">
-                      {pts(b.balance)}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm tabular-nums">
-                    {usd(pointsValue(b.balance, valuations[b.program] ?? 1))}
-                  </span>
-                </li>
-              ))}
+              {balances
+                .filter((b) => b.balance > 0)
+                .map((b) => (
+                  <li
+                    key={b.program}
+                    className="flex items-baseline justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm">
+                        {PROGRAM_LABELS[b.program]}
+                      </p>
+                      <p className="text-[13px] tabular-nums text-muted">
+                        {pts(b.balance)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm tabular-nums">
+                      {usd(pointsValue(b.balance, valuations[b.program] ?? 1))}
+                    </span>
+                  </li>
+                ))}
             </ul>
           )}
         </Widget>
@@ -176,7 +180,7 @@ function CardCredits({
 }) {
   const available = cardAnnualCreditValue(card);
   const used = card.credits.reduce(
-    (s, c) => s + usedTotal(slotsFor(usage, c.id, c.period)),
+    (s, c) => s + creditState(c, userCard.anniversaryMonth, usage).usedTotal,
     0,
   );
 
@@ -198,55 +202,21 @@ function CardCredits({
       title={userCard.nickname ?? card.name}
       action={
         <p className="text-sm tabular-nums text-muted">
-          {usd(used)} of {usd(available)}
+          {money(used)} of {usd(available)}
         </p>
       }
     >
       <FeeBar annualFee={card.annualFee} creditsUsed={used} />
 
       <ul className="mt-6 space-y-6">
-        {card.credits.map((credit) => {
-          const row = slotsFor(usage, credit.id, credit.period);
-          const tint = credit.category
-            ? categoryStyle(credit.category).color
-            : "var(--cd-text)";
-          const creditUsed = usedTotal(row);
-          const creditTotal = annualValue(credit);
-
-          return (
-            <li key={credit.id}>
-              <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <div>
-                  <p className="text-[15px]">{credit.name}</p>
-                  <p className="text-[13px] text-muted">
-                    {usd(credit.amount)} per period, resets on the{" "}
-                    {credit.resetBasis === "calendar"
-                      ? "calendar year"
-                      : "anniversary"}
-                  </p>
-                </div>
-                <p className="text-[13px] tabular-nums text-muted">
-                  {usd(creditUsed)} of {usd(creditTotal)}
-                </p>
-              </div>
-              <CheckmarkRow
-                period={credit.period}
-                used={row}
-                amount={credit.amount}
-                tint={tint}
-                onToggle={(i) =>
-                  setCreditUsed(
-                    credit.id,
-                    credit.period,
-                    i,
-                    row[i] >= credit.amount ? 0 : credit.amount,
-                  )
-                }
-                slotLabel={(i) => slotLabel(credit.period, i)}
-              />
-            </li>
-          );
-        })}
+        {card.credits.map((credit) => (
+          <CreditRow
+            key={credit.id}
+            credit={credit}
+            anniversaryMonth={userCard.anniversaryMonth}
+            usage={usage}
+          />
+        ))}
       </ul>
 
       <p className="mt-6 text-[13px] text-muted">
@@ -288,7 +258,7 @@ function FeeBar({
             <>Credits have covered the {usd(annualFee)} fee.</>
           ) : (
             <>
-              <span className="font-medium">{usd(remaining)}</span>
+              <span className="font-medium">{money(remaining)}</span>
               <span className="text-muted">
                 {" "}
                 of the {usd(annualFee)} fee still to earn back.

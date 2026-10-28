@@ -13,7 +13,8 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "pretypecheck": "node scripts/build-card-art-manifest.mjs"
+    "pretypecheck": "node scripts/build-card-art-manifest.mjs",
+    "test": "node --test \"lib/**/*.test.ts\""
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

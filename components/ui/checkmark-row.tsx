@@ -13,6 +13,8 @@ type CheckmarkRowProps = {
   /** Category ink, used for the filled state. */
   tint?: string;
   onToggle?: (index: number) => void;
+  /** Ringed so the period in progress is findable at a glance. */
+  currentIndex?: number;
   /** Labels each slot for screen readers, e.g. "January". */
   slotLabel?: (index: number) => string;
   className?: string;
@@ -31,6 +33,7 @@ export function CheckmarkRow({
   amount,
   tint = "var(--cd-text)",
   onToggle,
+  currentIndex = -1,
   slotLabel,
   className,
 }: CheckmarkRowProps) {
@@ -47,6 +50,7 @@ export function CheckmarkRow({
         const full = value >= amount;
         const partial = value > 0 && !full;
         const label = slotLabel?.(i) ?? `Period ${i + 1}`;
+        const isCurrent = i === currentIndex;
 
         return (
           <button
@@ -55,13 +59,13 @@ export function CheckmarkRow({
             onClick={() => onToggle?.(i)}
             disabled={!onToggle}
             aria-pressed={full}
-            aria-label={
-              full
-                ? `${label}, used`
-                : partial
-                  ? `${label}, partly used`
-                  : `${label}, not used`
-            }
+            aria-label={[
+              label,
+              full ? "used" : partial ? "partly used" : "not used",
+              isCurrent ? "current period" : null,
+            ]
+              .filter(Boolean)
+              .join(", ")}
             title={label}
             style={full ? { backgroundColor: tint, borderColor: tint } : undefined}
             className={cn(
@@ -71,6 +75,7 @@ export function CheckmarkRow({
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               onToggle && "active:scale-[0.94] hover:border-muted",
               !onToggle && "cursor-default",
+              isCurrent && "ring-1 ring-muted ring-offset-2 ring-offset-surface",
               full
                 ? "text-surface"
                 : partial

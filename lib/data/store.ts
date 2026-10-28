@@ -3,6 +3,7 @@
 import {
   emptyState,
   parseStored,
+  SCHEMA_VERSION,
   seededState,
   STORAGE_KEY,
   type Persisted,
@@ -35,9 +36,16 @@ function read(): Persisted {
 
   let next: Persisted;
   try {
-    const stored = parseStored(window.localStorage.getItem(STORAGE_KEY));
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const stored = parseStored(raw);
     if (stored) {
       next = stored;
+      // parseStored may have migrated an older payload. Write the result
+      // back, or every future load would migrate the same stale data again
+      // and the stored version would never move forward.
+      if (!raw?.includes(`"version":${SCHEMA_VERSION}`)) {
+        persist(next);
+      }
     } else {
       // First visit, or storage held something unusable. Seed rather than
       // show an empty shell.

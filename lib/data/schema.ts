@@ -1,6 +1,13 @@
 import type { PointBalance, UserCard, Valuation } from "@/data/types";
-import { DEFAULT_VALUATIONS, DEMO_BALANCES, DEMO_USAGE, DEMO_WALLET } from "@/data/cards.seed";
+import {
+  DEFAULT_VALUATIONS,
+  DEMO_BALANCES,
+  DEMO_USAGE,
+  DEMO_WALLET,
+  getCard,
+} from "@/data/cards.seed";
 import type { Plan } from "@/lib/plan";
+import { currentPeriodKey, periodWindows } from "@/lib/credits/reset";
 
 /**
  * The persisted shape, mirroring the tables in creditdash-plan.md section 6
@@ -12,12 +19,15 @@ import type { Plan } from "@/lib/plan";
  */
 
 export const STORAGE_KEY = "creditdash:v1";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * Credit usage keyed the way `credit_usage.period_key` will be: credit id,
- * then a period key, then dollars used. Keys look like `2026-10` for monthly,
- * `2026-Q3`, `2026-H1`, or `2026` for annual.
+ * then a period key, then dollars used.
+ *
+ * Keys come from lib/credits/reset.ts and differ by reset basis, because
+ * "the second quarter" is a different three months for a card opened in
+ * November than for one that resets on the calendar.
  */
 export type CreditUsage = Record<string, Record<string, number>>;
 
@@ -43,11 +53,12 @@ export type Persisted = {
  * genuinely empty wallet rather than back to this.
  */
 export function seededState(): Persisted {
+  const userCards = structuredClone(DEMO_WALLET);
   return {
     version: SCHEMA_VERSION,
     profile: { plan: "premium" },
-    userCards: structuredClone(DEMO_WALLET),
-    creditUsage: slotArraysToPeriodKeys(DEMO_USAGE),
+    userCards,
+    creditUsage: seedUsage(userCards),
     pointBalances: structuredClone(DEMO_BALANCES),
     valuations: structuredClone(DEFAULT_VALUATIONS),
   };
@@ -85,23 +96,31 @@ export function parseStored(raw: string | null): Persisted | null {
   if (typeof value !== "object" || value === null) return null;
   const v = value as Partial<Persisted>;
 
-  if (v.version !== SCHEMA_VERSION) {
-    // Only version 1 exists. A later version adds migrations here instead of
-    // dropping the data.
+  if (typeof v.version !== "number" || v.version > SCHEMA_VERSION) {
+    // Written by a newer build than this one. Re-seeding is safer than
+    // guessing at fields that do not exist yet.
     return null;
   }
 
   const base = emptyState();
+
+  const userCards = Array.isArray(v.userCards)
+    ? v.userCards.filter(isUserCard)
+    : base.userCards;
+
+  let creditUsage = isUsage(v.creditUsage) ? v.creditUsage : base.creditUsage;
+
+  if (v.version < 2) {
+    creditUsage = migrateUsageV1toV2(creditUsage, userCards);
+  }
 
   return {
     version: SCHEMA_VERSION,
     profile: {
       plan: v.profile?.plan === "premium" ? "premium" : "free",
     },
-    userCards: Array.isArray(v.userCards)
-      ? v.userCards.filter(isUserCard)
-      : base.userCards,
-    creditUsage: isUsage(v.creditUsage) ? v.creditUsage : base.creditUsage,
+    userCards,
+    creditUsage,
     pointBalances: Array.isArray(v.pointBalances)
       ? v.pointBalances.filter(isBalance)
       : base.pointBalances,
@@ -109,6 +128,69 @@ export function parseStored(raw: string | null): Persisted | null {
       ? v.valuations.filter(isValuation)
       : base.valuations,
   };
+}
+
+/**
+ * Version 1 keyed every credit on the calendar, including the ones that
+ * actually reset on the card's anniversary. Those keys now look different,
+ * so anything recorded against an anniversary credit has to be moved or it
+ * would silently disappear from the Tracker.
+ *
+ * A bare `YYYY` key meant "the annual period current during that calendar
+ * year". The honest target is the anniversary cycle that overlaps most of
+ * that year, which is always the one containing 1 July: a cycle opening in
+ * month M covers 13-M months of its own year and M-1 of the next, and those
+ * cross over exactly at July.
+ *
+ * Using 31 December instead looks reasonable and is wrong. For a November
+ * card it selects the cycle starting that November, which for most of the
+ * year has not begun, and the credit silently reads as unused.
+ *
+ * Everything on the calendar basis keeps its key untouched, which is the
+ * large majority.
+ */
+function migrateUsageV1toV2(
+  usage: CreditUsage,
+  userCards: UserCard[],
+): CreditUsage {
+  const anniversaryByCredit = new Map<string, number>();
+  for (const userCard of userCards) {
+    const card = getCard(userCard.cardId);
+    if (!card) continue;
+    for (const credit of card.credits) {
+      if (credit.resetBasis === "anniversary" && credit.period === "annual") {
+        anniversaryByCredit.set(credit.id, userCard.anniversaryMonth);
+      }
+    }
+  }
+
+  const out: CreditUsage = {};
+  for (const [creditId, row] of Object.entries(usage)) {
+    const anniversaryMonth = anniversaryByCredit.get(creditId);
+    if (anniversaryMonth === undefined) {
+      out[creditId] = row;
+      continue;
+    }
+
+    const moved: Record<string, number> = {};
+    for (const [key, amount] of Object.entries(row)) {
+      const year = /^(\d{4})$/.exec(key)?.[1];
+      if (!year) {
+        // Already a new-style key, or a shape this version does not know.
+        moved[key] = amount;
+        continue;
+      }
+      const target = currentPeriodKey({
+        period: "annual",
+        resetBasis: "anniversary",
+        anniversaryMonth,
+        on: new Date(Number(year), 6, 1),
+      });
+      if (target) moved[target] = amount;
+    }
+    out[creditId] = moved;
+  }
+  return out;
 }
 
 function isUserCard(x: unknown): x is UserCard {
@@ -139,62 +221,31 @@ function isUsage(x: unknown): x is CreditUsage {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-
-const YEAR = new Date().getFullYear();
-
-/** Period key for slot `i` of a credit, in the given year. */
-export function periodKey(
-  period: "monthly" | "quarterly" | "semiannual" | "annual",
-  slot: number,
-  year = YEAR,
-): string {
-  switch (period) {
-    case "monthly":
-      return `${year}-${String(slot + 1).padStart(2, "0")}`;
-    case "quarterly":
-      return `${year}-Q${slot + 1}`;
-    case "semiannual":
-      return `${year}-H${slot + 1}`;
-    case "annual":
-      return `${year}`;
-  }
-}
-
 /**
  * The seed is written as slot arrays because that reads better in a data
- * file. Storage uses period keys because that is what the database column
- * will be, so the two are converted once on first run.
+ * file. Storage uses period keys, so the two are converted once on first run,
+ * through the same window logic the Tracker uses.
  */
-function slotArraysToPeriodKeys(seed: Record<string, number[]>): CreditUsage {
+function seedUsage(userCards: UserCard[]): CreditUsage {
   const out: CreditUsage = {};
-  for (const [creditId, slots] of Object.entries(seed)) {
-    const period =
-      slots.length === 12
-        ? "monthly"
-        : slots.length === 4
-          ? "quarterly"
-          : slots.length === 2
-            ? "semiannual"
-            : "annual";
-    const row: Record<string, number> = {};
-    slots.forEach((amount, i) => {
-      if (amount > 0) row[periodKey(period, i)] = amount;
-    });
-    out[creditId] = row;
+  for (const userCard of userCards) {
+    const card = getCard(userCard.cardId);
+    if (!card) continue;
+    for (const credit of card.credits) {
+      const slots = DEMO_USAGE[credit.id];
+      if (!slots) continue;
+      const windows = periodWindows({
+        period: credit.period,
+        resetBasis: credit.resetBasis,
+        anniversaryMonth: userCard.anniversaryMonth,
+      });
+      const row: Record<string, number> = {};
+      slots.forEach((amount, i) => {
+        const window = windows[i];
+        if (window && amount > 0) row[window.key] = amount;
+      });
+      out[credit.id] = row;
+    }
   }
   return out;
-}
-
-/** Period keys back to the slot array the CheckmarkRow renders. */
-export function periodKeysToSlots(
-  row: Record<string, number> | undefined,
-  period: "monthly" | "quarterly" | "semiannual" | "annual",
-  slots: number,
-  year = YEAR,
-): number[] {
-  return Array.from(
-    { length: slots },
-    (_, i) => row?.[periodKey(period, i, year)] ?? 0,
-  );
 }

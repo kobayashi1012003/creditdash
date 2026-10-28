@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import type { Card, PointBalance, Program, UserCard } from "@/data/types";
 import { CARDS, getCard } from "@/data/cards.seed";
 import type { Plan } from "@/lib/plan";
-import { periodKey, type CreditUsage } from "@/lib/data/schema";
+import type { CreditUsage } from "@/lib/data/schema";
 import {
   clearAll,
   getServerSnapshot,
@@ -147,14 +147,18 @@ export async function setPlan(plan: Plan): Promise<void> {
   await mutate((s) => ({ ...s, profile: { ...s.profile, plan } }));
 }
 
-/** Records dollars used against one period of one credit. */
+/**
+ * Records dollars used against one period of one credit.
+ *
+ * The caller passes the period key because working it out needs the credit's
+ * reset basis and the card's anniversary month, which belong to the Tracker's
+ * view of a credit, not to storage. lib/credits/reset.ts produces it.
+ */
 export async function setCreditUsed(
   creditId: string,
-  period: "monthly" | "quarterly" | "semiannual" | "annual",
-  slot: number,
+  key: string,
   amount: number,
 ): Promise<void> {
-  const key = periodKey(period, slot);
   await mutate((s) => {
     const row = { ...(s.creditUsage[creditId] ?? {}) };
     if (amount <= 0) {

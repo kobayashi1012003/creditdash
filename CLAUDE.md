@@ -50,6 +50,7 @@ adapter.
 | `npm run build` | Production Next build |
 | `npm run preview` | Build and run in the real Cloudflare Workers runtime |
 | `npm run deploy` | Build and deploy to Cloudflare |
+| `npm test` | Unit tests, `node --test` with native TypeScript |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 
@@ -95,6 +96,29 @@ Do not "simplify" these to synchronous.
 or one browser tab reaches every other. `useIsLoading()` is true until storage
 has been read; the server cannot know what is stored, so first paint is a
 skeleton rather than a guess that then gets replaced.
+
+## Credit resets
+
+`lib/credits/reset.ts` owns when a credit resets, and it is the piece of this
+product most worth being correct: getting it wrong tells someone a credit is
+still available after it has reset, or that they have lost one they still
+have.
+
+Issuers use two bases. A calendar credit's year runs January to December. An
+anniversary credit's year runs from the month the card was opened, so a card
+opened in November has quarters starting in November, February, May and
+August. Never assume January.
+
+The module is deliberately dependency-free, with no imports and no path
+aliases, so `node --test` can run its tests directly with Node's native
+TypeScript support. Keep it that way; the period model (`CreditPeriod`,
+`ResetBasis`, `PERIOD_COUNT`) lives there and `data/types.ts` re-exports it.
+
+Storage keys come from this module. Calendar windows use the plain format
+(`2026`, `2026-H1`, `2026-Q2`, `2026-03`); anniversary windows carry their
+cycle start (`a2025-11`, `a2025-11:Q2`), because "the second quarter" is a
+different three months depending on when the card was opened. Changing a key
+format means a schema version and a migration, never an edit in place.
 
 ## Card art
 
@@ -309,3 +333,4 @@ back.
 | shadcn/ui (8) | shadcn/ui on Base UI primitives | The generator's Base UI target gives the same components over better-maintained primitives, and `pick-ui-library` independently recommends Base UI. Tokens are remapped onto ours so nothing ships in default styling |
 | Seed file in Phase 2 | Written in Phase 1 | Phase 1 needs sample data on every page; writing it twice would be waste. Phase 2 still owns `lib/data/` and persistence |
 | Tracker and Settings persistence in Phase 3 | Done in Phase 2 | Once the store existed, leaving those screens on local state would have been two sources of truth. Phase 3 still owns reset logic and its tests |
+| No test framework named | `node --test`, zero dependencies | Node 26 runs TypeScript directly, so the tests need no runner, no transpiler and no new packages |
