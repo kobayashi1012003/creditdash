@@ -23,8 +23,32 @@ Phases 0 to 6 of `creditdash-plan.md` are done. **Phase 7 (Stripe) is
 next.** Every commit is labelled with its phase, so `git log --oneline` is
 the detailed record; this is the summary.
 
-**Live at https://creditdash.stevenlen03.workers.dev/** (no custom domain
-yet).
+**Live at https://creditdash.co/**. Registered at Porkbun, DNS on
+Cloudflare. The old `creditdash.stevenlen03.workers.dev` address is switched
+off and returns 404.
+
+### The domain
+
+- **Porkbun holds the registration only.** Its nameservers point at
+  Cloudflare, which answers DNS. Add or change records in Cloudflare.
+- **`creditdash.co` and `www.creditdash.co` are Worker custom domains**
+  (Worker > Domains & Routes). They own their DNS records; never add an A
+  or CNAME for either by hand, or the custom domain detaches.
+- **One address everywhere.** Zone rules: Always Use HTTPS on, and a
+  Single Redirect sends `https://www.*` to the root with path and query
+  kept (301). Cloudflare warns that `www` is not a proxied record; that is
+  a false alarm for a Worker custom domain.
+- **Sign-in follows the page's own origin** (`window.location.origin`), so
+  nothing in code names the domain. What does: Supabase URL Configuration
+  (Site URL `https://creditdash.co`; Redirect URLs for `creditdash.co`,
+  `localhost:3000` and `localhost:8787`), and the Google OAuth client's
+  JavaScript origins. A new host needs adding in both. `metadataBase` in
+  `app/layout.tsx` is the only place the domain is written, and only for
+  absolute links in page metadata.
+- **The owner has a second Supabase project** (`annionmanymonths`, ref
+  `chhfwvdgjrphafjipvzx`) in the same org. CreditDash is
+  `wueonwuupzupptfngxou`. Check the ref in the dashboard URL before
+  changing auth settings; editing the wrong one already happened once.
 
 | Phase | Delivered |
 |---|---|
@@ -67,9 +91,9 @@ Phase 5 in more detail, since later phases build on these:
   branches `npx opennextjs-cloudflare upload` (Cloudflare's own default,
   `npx wrangler preview`, skips the OpenNext build and would fail). The
   build image's default Node 24 meets the `engines` pin, so no
-  `NODE_VERSION` is set. The `workers.dev` URL had to be switched on by
-  hand in the Worker's Domains & Routes settings. The owner confirmed the
-  live site works on a phone.
+  `NODE_VERSION` is set. The owner confirmed the live site works on a
+  phone. (The `workers.dev` address it first ran on is now off; see "The
+  domain" above.)
 - **Where config lives, after Phase 6 lost it twice.**
   - The two public Supabase values are in the committed `.env.production`,
     not dashboard build variables, which a Git reconnect silently reset.
@@ -118,9 +142,17 @@ for accessibility on mobile; the small drop is real network latency.
   need a custom SMTP sender (a free tier such as Resend) set in Supabase
   Auth settings before launch.
 - **Google sign-in is in Testing mode.** Only listed test users can sign
-  in, and the consent screen names the Supabase project, not CreditDash.
-  Publishing needs a custom domain, the Branding page's domain links, and
-  possibly Google's verification. Do this before real users.
+  in. The Branding page now has the `creditdash.co` links and authorized
+  domain, so publishing is unblocked; Google may still ask to verify the
+  domain. Do this before real users.
+- **Google's consent screen names the Supabase project**
+  ("continue to wueonwuupzupptfngxou.supabase.co"), because Google names
+  the host it redirects back to. Agreed fix, scheduled after Resend: sign
+  in with Google Identity Services on `creditdash.co` and pass the ID token
+  to `supabase.auth.signInWithIdToken` with a nonce, keeping the redirect
+  flow as a fallback. Supabase's own custom domain would also fix it but
+  costs about $35 a month, against principle 5. The privacy page must then
+  name the Google script as the one third-party script, on sign-in only.
 - **The v1 to v2 storage migration can only approximate.** v1 never recorded
   which anniversary cycle a key meant, so the migration picks the cycle
   overlapping most of the calendar year. Right for the common case and not

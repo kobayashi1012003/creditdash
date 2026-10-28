@@ -14,6 +14,10 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
+  // The canonical address, so absolute URLs in metadata (share previews,
+  // the manifest) name the real domain whichever host served the page.
+  // Nothing at runtime depends on it: sign-in uses the page's own origin.
+  metadataBase: new URL("https://creditdash.co"),
   title: "CreditDash",
   description:
     "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.",
