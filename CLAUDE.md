@@ -132,6 +132,12 @@ for accessibility on mobile; the small drop is real network latency.
   art arrives, then models the later `<img>` on a slow phone. A real
   throttled trace shows the skeleton's art as the LCP at about 2.8s. Every
   other page still scores 100 in the default mode.
+- **Live `/wallet` with devtools throttling: 84 to 85** (LCP 4.0s, CLS 0,
+  accessibility 100), against 90 to 91 under `npm run preview`. Devtools
+  throttling stacks its latency on top of the real trip to Cloudflare, so
+  live numbers run lower. Below the plan's 90 on that strict test; the
+  remaining lever is less JavaScript before hydration (the wallet loads
+  about 350 KB), not the images. Desktop live is 98.
 - **Worker bundle: 1.55 MiB gzipped** of the free plan's 3 MiB after
   Phase 6 added the Supabase client (1.34 MiB in Phase 5). Measure with
   `npx wrangler deploy --dry-run --outdir <dir>`.
