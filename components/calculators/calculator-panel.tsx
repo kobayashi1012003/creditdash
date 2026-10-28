@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CalculatorIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
+import { useRovingFocus } from "@/lib/use-roving-focus";
 import { useIsDesktop } from "@/lib/use-media-query";
 import { useStoredFlag } from "@/lib/use-stored-flag";
-import { useWallet } from "@/lib/data";
+import { useIsLoading, useWallet } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { CALCULATORS } from "@/components/calculators/registry";
@@ -28,6 +29,12 @@ export function CalculatorPanel() {
   // closed by default where it would cover the page the user came for.
   const [open, persist] = useStoredFlag(STORAGE_KEY, isDesktop);
   const [active, setActive] = useState<string>(CALCULATORS[0].id);
+  const isLoading = useIsLoading();
+
+  // With no cards every calculator is empty, and the Tracker beside it
+  // already says what to do. Not hidden while loading: the docked column
+  // appearing a frame late would shift the whole Tracker sideways.
+  if (!isLoading && cards.length === 0) return null;
 
   const body = (
     <CalculatorBody cards={cards} active={active} onActiveChange={setActive} />
@@ -111,18 +118,32 @@ function CalculatorBody({
 }) {
   const current = CALCULATORS.find((c) => c.id === active) ?? CALCULATORS[0];
   const Body = current.Component;
+  const baseId = useId();
+  const { onKeyDown, itemProps } = useRovingFocus(
+    CALCULATORS.length,
+    CALCULATORS.indexOf(current),
+    (i) => onActiveChange(CALCULATORS[i].id),
+  );
 
   return (
     <>
-      <div role="tablist" aria-label="Calculator" className="mb-5 flex flex-wrap gap-1.5">
-        {CALCULATORS.map((c) => {
-          const selected = c.id === active;
+      <div
+        role="tablist"
+        aria-label="Calculator"
+        onKeyDown={onKeyDown}
+        className="mb-5 flex flex-wrap gap-1.5"
+      >
+        {CALCULATORS.map((c, i) => {
+          const selected = c === current;
           return (
             <button
               key={c.id}
+              {...itemProps(i)}
+              id={`${baseId}-tab-${c.id}`}
               role="tab"
               type="button"
               aria-selected={selected}
+              aria-controls={`${baseId}-panel`}
               onClick={() => onActiveChange(c.id)}
               className={cn(
                 "rounded-pill border px-3 py-1.5 text-[13px] font-medium",
@@ -139,7 +160,13 @@ function CalculatorBody({
           );
         })}
       </div>
-      <Body cards={cards} dense />
+      <div
+        role="tabpanel"
+        id={`${baseId}-panel`}
+        aria-labelledby={`${baseId}-tab-${current.id}`}
+      >
+        <Body cards={cards} dense />
+      </div>
     </>
   );
 }

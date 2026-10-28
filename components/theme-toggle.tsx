@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { MoonIcon, MonitorIcon, SunIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
+import { useRovingFocus } from "@/lib/use-roving-focus";
 
 const subscribe = () => () => {};
 
@@ -30,17 +31,25 @@ export function ThemeToggle() {
     () => false,
   );
 
+  const { onKeyDown, itemProps } = useRovingFocus(
+    OPTIONS.length,
+    mounted ? OPTIONS.findIndex((o) => o.value === theme) : -1,
+    (i) => setTheme(OPTIONS[i].value),
+  );
+
   return (
     <div
       role="radiogroup"
       aria-label="Colour theme"
+      onKeyDown={onKeyDown}
       className="inline-flex items-center gap-0.5 rounded-pill border border-line bg-surface p-1"
     >
-      {OPTIONS.map(({ value, label, Icon }) => {
+      {OPTIONS.map(({ value, label, Icon }, i) => {
         const active = mounted && theme === value;
         return (
           <button
             key={value}
+            {...itemProps(i)}
             type="button"
             role="radio"
             aria-checked={active}

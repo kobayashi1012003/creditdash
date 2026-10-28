@@ -31,6 +31,14 @@ let cache: Persisted | null = null;
 /** Set once storage has actually been read, so the UI can show a skeleton. */
 let loaded = false;
 
+/**
+ * True once a read or a write has failed. Private mode, blocked site data
+ * and a full quota all end up here. The app keeps working from memory, but
+ * nothing will survive a reload, and saying so is the difference between a
+ * notice now and a lost wallet later.
+ */
+let unsaved = false;
+
 function read(): Persisted {
   if (cache) return cache;
 
@@ -56,6 +64,7 @@ function read(): Persisted {
     // Private mode, blocked site data, or a quota error. The app still works
     // for this session; it just will not be remembered.
     next = seededState();
+    unsaved = true;
   }
 
   cache = next;
@@ -66,8 +75,13 @@ function read(): Persisted {
 function persist(state: Persisted) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // A later write succeeding means the problem has cleared, for example
+    // after space was freed.
+    unsaved = false;
   } catch {
-    // Saving is best effort. Losing it is better than crashing on it.
+    // Losing a save is better than crashing on it, but it is not silent:
+    // the shell reads this flag and tells the user.
+    unsaved = true;
   }
 }
 
@@ -107,6 +121,10 @@ export function getServerSnapshot(): Persisted {
 
 export function isLoaded() {
   return loaded;
+}
+
+export function isUnsaved() {
+  return unsaved;
 }
 
 /**

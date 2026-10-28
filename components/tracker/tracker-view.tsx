@@ -1,6 +1,7 @@
 "use client";
 
-import { WarningCircleIcon } from "@phosphor-icons/react";
+import Link from "next/link";
+import { PlusIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { cardAnnualCreditValue, creditState } from "@/lib/credits";
@@ -18,6 +19,7 @@ import type { CreditUsage } from "@/lib/data/schema";
 import { Widget } from "@/components/ui/widget";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { CreditRow } from "@/components/tracker/credit-row";
+import { Button } from "@/components/ui/button";
 
 export function TrackerView() {
   const entries = useWallet();
@@ -35,6 +37,14 @@ export function TrackerView() {
           Add a card in the Wallet and any credits it offers show up here, one
           section per card.
         </p>
+        <Button
+          className="mt-5"
+          nativeButton={false}
+          render={<Link href="/wallet" />}
+        >
+          <PlusIcon size={17} />
+          Add a card
+        </Button>
       </Widget>
     );
   }
@@ -279,12 +289,15 @@ function FeeBar({
         role="img"
         aria-label={`${Math.round(ratio * 100)} percent of the annual fee recovered`}
       >
+        {/* Scaled, not sized: width would relayout on every frame. The
+            rounded ends squash slightly at small ratios, which at this
+            height nobody can see. */}
         <div
           className={cn(
-            "h-full rounded-pill transition-[width] duration-[var(--cd-dur-panel)] ease-out",
+            "h-full origin-left rounded-pill transition-transform duration-[var(--cd-dur-panel)] ease-out",
             covered ? "bg-[var(--cd-mint-ink)]" : "bg-ink",
           )}
-          style={{ width: `${Math.max(2, ratio * 100)}%` }}
+          style={{ transform: `scaleX(${Math.max(0.02, ratio)})` }}
         />
       </div>
     </div>

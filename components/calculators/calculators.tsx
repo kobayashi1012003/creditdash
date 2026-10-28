@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import type { Card, Program } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { cardAnnualCreditValue } from "@/lib/credits";
@@ -222,7 +223,13 @@ export function PointsCalculator({ cards, dense, className }: CalcProps) {
 function NoCards() {
   return (
     <p className="text-sm leading-relaxed text-muted">
-      Add a card to your wallet and this calculator fills in.
+      <Link
+        href="/wallet"
+        className="rounded-inner font-medium text-ink underline underline-offset-4 transition-colors duration-[var(--cd-dur-hover)] ease-out hover:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      >
+        Add a card to your wallet
+      </Link>{" "}
+      and this calculator fills in.
     </p>
   );
 }

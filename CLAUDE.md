@@ -19,9 +19,10 @@ that plan, the plan wins, and the deviation gets recorded here.
 
 ## Where the build has got to
 
-Phases 0 to 4 of `creditdash-plan.md` are done. **Phase 5 is next.** Every
-commit is labelled with its phase, so `git log --oneline` is the detailed
-record; this is the summary.
+Phases 0 to 4 of `creditdash-plan.md` are done. **Phase 5 is in progress:
+the code is done and verified, the first deploy is not.** Every commit is
+labelled with its phase, so `git log --oneline` is the detailed record; this
+is the summary.
 
 | Phase | Delivered |
 |---|---|
@@ -31,28 +32,61 @@ record; this is the summary.
 | 3 | Credit reset logic for both bases, unit tested, partial amounts |
 | 4 | Calculator engine, unit tested, Compare correctness |
 
-Phase 5 is polish and first deploy: empty, loading and error states, keyboard
-navigation, privacy and terms written properly, PWA manifest and icons, the
-Cloudflare connection to the GitHub repo, and Lighthouse 90+ for performance
-and accessibility.
+Phase 5 so far:
+
+- **States.** Empty wallet offers three one-tap starter cards plus search.
+  Tracker and Calculators empty states link to the Wallet. Calculators and
+  Compare wait for storage instead of flashing "no cards". `error.tsx` in
+  `app/` and `app/(app)/`, and `app/not-found.tsx` (real 404 status).
+- **Storage failure is no longer silent.** `store.ts` sets an `unsaved` flag
+  when a read or write throws; `useIsUnsaved()` drives `StorageNotice` at
+  the top of the shell.
+- **Keyboard.** Skip link and a real `<main id="main">` in both layouts.
+  Radio groups and the panel's tab list are one tab stop with arrow keys,
+  through `lib/use-roving-focus.ts`; use it for any new radio or tab set.
+  Drawer opens with focus inside, Escape returns focus to the trigger.
+- **Legal.** Privacy and Terms rewritten to describe what the app actually
+  does. Still marked "Draft for legal review": the contact address and
+  governing law are unset and need the owner.
+- **PWA.** `app/manifest.ts` (opens on `/wallet`), icons from
+  `npm run icons` (`scripts/build-icons.mjs`, uses `sharp`, a devDependency
+  for that script only). Output is committed; rerun only when the mark
+  changes.
+- **Not done: the deploy.** Connecting Cloudflare to the GitHub repo needs
+  the owner's Cloudflare account, and the Phase 5 "done when" (live URL
+  works on a phone) can only be checked after it.
+
+### Baselines
+
+Measured against `npm run preview`, Lighthouse 13.6, 27 October 2026.
+
+- **Lighthouse: 100 on every page** for performance, accessibility, best
+  practices and SEO on mobile; 99 to 100 on desktop. `/wallet` started at 85
+  (LCP 4.4s) because its largest text, the picker prompt, only painted
+  after hydration. The picker now renders for real inside the loading state.
+  Anything that is the largest text on a page must not wait for storage.
+- **Worker bundle: 1.34 MiB gzipped** of the free plan's 3 MiB
+  (`npx wrangler deploy --dry-run --outdir <dir>`).
+- **Reduced motion verified empirically**, using headless Chrome with
+  `--force-prefers-reduced-motion`, which the browser pane cannot do: the
+  media query matches, card tilt and sheen are off, transitions drop to
+  0.01ms.
 
 ### Open items carried forward
 
-Small things found during earlier phases that were never closed. None blocks
-Phase 5; all belong in it.
-
-- **Reduced motion is implemented but never empirically verified.** The global
-  CSS rule and the `useReducedMotion()` guards are in place, but the browser
-  pane cannot emulate the OS setting, so only the code paths were checked.
-  Turn the setting on and load `/wallet` before trusting it.
-- **The sidebar and the tab bar both use `aria-label="Main"`.** Only one is
-  visible at a time so it is not a live duplicate-landmark problem, but they
-  should have distinct names.
 - **The v1 to v2 storage migration can only approximate.** v1 never recorded
   which anniversary cycle a key meant, so the migration picks the cycle
   overlapping most of the calendar year. Right for the common case and not
   improvable from the data that exists. See `lib/data/schema.ts`.
-- **Lighthouse has never been run.** Phase 5 sets the first baseline.
+- **One accepted axe warning.** `label-content-name-mismatch` (experimental,
+  zero weight) flags the wallet card buttons, because the generated face
+  prints the issuer and network, which "Open <card name>" does not repeat.
+  The label does contain the printed card name, and the nickname case, the
+  one that would actually break voice control, is fixed.
+- **`/review-animations` has not been run for Phase 5.** It can only be
+  started by the user. The two rule breaks a search found (a `width`
+  transition on the Tracker fee bar, `transition-all` on the unused Switch)
+  are fixed.
 
 Two classes of bug were caught by measuring rather than looking, and both are
 invisible in a screenshot. Keep measuring: see the quality floor below.
@@ -93,6 +127,7 @@ adapter.
 | `npm test` | Unit tests, `node --test` with native TypeScript |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run icons` | Regenerate every app icon from the one drawing |
 
 A change is not verified until `npm run preview` serves it. The dev server and
 the Workers runtime disagree, and Phase 0 found two bugs that only appeared in

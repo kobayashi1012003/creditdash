@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowsOutCardinalIcon,
   CheckIcon,
   DotsSixVerticalIcon,
+  MagnifyingGlassIcon,
   PlusIcon,
   SparkleIcon,
   TrashIcon,
@@ -27,6 +28,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Card } from "@/data/types";
+import { getCard } from "@/data/cards.seed";
 import type { Category } from "@/lib/categories";
 import { rankCards } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
@@ -38,6 +40,7 @@ import {
   PREMIUM_PRICE_MONTHLY,
 } from "@/lib/plan";
 import {
+  addCard,
   removeCard,
   reorderCards,
   useIsLoading,
@@ -71,7 +74,24 @@ export function WalletView() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  if (isLoading) return <WalletSkeleton />;
+  if (isLoading) {
+    // The picker needs no stored data, so it renders for real while the
+    // wallet loads. It is the largest text on the page, and painting it with
+    // the server HTML rather than after hydration is most of the difference
+    // in Largest Contentful Paint. A category tapped early is kept.
+    return (
+      <WalletSkeleton
+        picker={
+          <Picker
+            category={category}
+            onChange={setCategory}
+            ranked={null}
+            arranging={false}
+          />
+        }
+      />
+    );
+  }
   if (entries.length === 0) {
     return (
       <>
@@ -98,29 +118,12 @@ export function WalletView() {
 
   return (
     <>
-      <section
-        aria-labelledby="picker-heading"
-        className="rounded-widget border border-line bg-surface p-5 sm:p-6"
-      >
-        <h2 id="picker-heading" className="mb-4 text-sm font-medium">
-          Use which card?
-        </h2>
-        <CategoryBar
-          value={category}
-          onChange={setCategory}
-          disabled={arranging}
-        />
-        <AnswerLine
-          category={arranging ? null : category}
-          ranked={arranging ? null : ranked}
-          empty={
-            arranging
-              ? "Drag a card to move it, or tab to one and press space."
-              : "Pick what you are buying and the best card lifts out of the wallet."
-          }
-          className="mt-5"
-        />
-      </section>
+      <Picker
+        category={category}
+        onChange={setCategory}
+        ranked={ranked}
+        arranging={arranging}
+      />
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-muted">
@@ -214,6 +217,10 @@ function WalletCard({
   } = useSortable({ id: card.id, disabled: !arranging });
 
   const name = userCard.nickname ?? card.name;
+  // A nickname replaces the name under the card, but the face still prints
+  // the real one. Both go in the label, so "Open Venture X" works for
+  // someone using voice control who reads it off the card.
+  const label = userCard.nickname ? `${userCard.nickname}, ${card.name}` : card.name;
   const top = topRates(card);
 
   return (
@@ -234,7 +241,7 @@ function WalletCard({
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            aria-label={`Move ${name}`}
+            aria-label={`Move ${label}`}
             className="cursor-grab touch-none rounded-inner active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           >
             <CardFace card={card} />
@@ -247,7 +254,7 @@ function WalletCard({
             type="button"
             onClick={onOpen}
             className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-            aria-label={`Open ${name}`}
+            aria-label={`Open ${label}`}
           >
             <CardFace card={card} dimmed={dimmed} interactive />
           </button>
@@ -324,12 +331,26 @@ function UpgradePanel({ count }: { count: number }) {
   );
 }
 
+/**
+ * Three widely held cards, one tap each, so a new wallet can be useful
+ * before anyone has opened the catalog. A no-fee card is in the set on
+ * purpose: not everyone starting out pays an annual fee.
+ */
+const POPULAR_CARD_IDS = ["csp", "amex-gold", "bilt"];
+
 /** First run, or after deleting everything. */
 function EmptyWallet({ onAdd }: { onAdd: () => void }) {
+  const popular = POPULAR_CARD_IDS.map(getCard).filter(
+    (c): c is Card => Boolean(c),
+  );
+
   return (
-    <section>
+    <section aria-labelledby="empty-wallet-heading">
       <div className="max-w-[52ch]">
-        <h2 className="font-display text-2xl leading-tight">
+        <h2
+          id="empty-wallet-heading"
+          className="font-display text-2xl leading-tight"
+        >
           Add the first card you carry.
         </h2>
         <p className="mt-2.5 text-[15px] leading-relaxed text-muted">
@@ -337,32 +358,99 @@ function EmptyWallet({ onAdd }: { onAdd: () => void }) {
           a bank, and you can change your mind at any time.
         </p>
       </div>
-      <Button size="lg" className="mt-6" onClick={onAdd}>
-        <PlusIcon size={18} />
-        Add card
+
+      <h3 className="mt-8 text-sm font-medium">Popular to start with</h3>
+      {/* Three across at every width. Full-width faces on a phone would push
+          the search two screens down; CardFace scales by container query,
+          so a small face still reads as the card. */}
+      <ul className="mt-3 grid max-w-[900px] grid-cols-3 gap-x-3 gap-y-6 sm:gap-x-5">
+        {popular.map((card) => (
+          <li key={card.id} className="min-w-0">
+            <button
+              type="button"
+              onClick={() => addCard(card.id)}
+              className="group block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+            >
+              <CardFace card={card} interactive />
+              <span className="mt-2.5 line-clamp-2 text-[13px] leading-snug font-medium sm:text-[15px]">
+                {card.name}
+              </span>
+              <span className="mt-1 inline-flex items-center gap-1 text-[13px] text-muted transition-colors duration-[var(--cd-dur-hover)] ease-out group-hover:text-ink">
+                <PlusIcon size={13} weight="bold" />
+                Add
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <Button variant="outline" size="lg" className="mt-8" onClick={onAdd}>
+        <MagnifyingGlassIcon size={18} />
+        Search all cards
       </Button>
     </section>
   );
 }
 
 /**
- * Shown while browser storage is read. Shaped like the real grid so the page
- * does not jump when the wallet arrives.
+ * The "Use which card?" panel. Its own component because it renders in two
+ * states: live over the wallet, and for real above the loading skeleton.
  */
-function WalletSkeleton() {
+function Picker({
+  category,
+  onChange,
+  ranked,
+  arranging,
+}: {
+  category: Category | null;
+  onChange: (next: Category | null) => void;
+  ranked: ReturnType<typeof rankCards> | null;
+  arranging: boolean;
+}) {
   return (
-    <div aria-busy aria-live="polite">
-      <span className="sr-only">Loading your wallet</span>
-      <div className="h-[168px] rounded-widget border border-line bg-surface" />
-      <ul className="mt-9 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-        {[0, 1, 2].map((i) => (
-          <li key={i}>
-            <div className="aspect-[1.586/1] w-full rounded-inner bg-surface" />
-            <div className="mt-3 h-4 w-2/3 rounded-pill bg-surface" />
-            <div className="mt-2.5 h-6 w-full rounded-pill bg-surface" />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <section
+      aria-labelledby="picker-heading"
+      className="rounded-widget border border-line bg-surface p-5 sm:p-6"
+    >
+      <h2 id="picker-heading" className="mb-4 text-sm font-medium">
+        Use which card?
+      </h2>
+      <CategoryBar value={category} onChange={onChange} disabled={arranging} />
+      <AnswerLine
+        category={arranging ? null : category}
+        ranked={arranging ? null : ranked}
+        empty={
+          arranging
+            ? "Drag a card to move it, or tab to one and press space."
+            : "Pick what you are buying and the best card lifts out of the wallet."
+        }
+        className="mt-5"
+      />
+    </section>
+  );
+}
+
+/**
+ * Shown while browser storage is read. The picker above it is real; the
+ * cards are shaped like the grid so the page does not jump when they arrive.
+ */
+function WalletSkeleton({ picker }: { picker: ReactNode }) {
+  return (
+    <>
+      {picker}
+      <div aria-busy aria-live="polite">
+        <span className="sr-only">Loading your wallet</span>
+        <div className="mt-6 h-8 w-16 rounded-pill bg-surface" />
+        <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <li key={i}>
+              <div className="aspect-[1.586/1] w-full rounded-inner bg-surface" />
+              <div className="mt-3 h-4 w-2/3 rounded-pill bg-surface" />
+              <div className="mt-2.5 h-6 w-full rounded-pill bg-surface" />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
   );
 }

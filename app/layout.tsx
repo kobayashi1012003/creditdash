@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   title: "CreditDash",
   description:
     "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.",
+  // iOS ignores most of the manifest and reads these instead when the app
+  // is added to the home screen.
+  appleWebApp: {
+    capable: true,
+    title: "CreditDash",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {

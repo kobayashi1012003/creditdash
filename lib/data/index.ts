@@ -10,6 +10,7 @@ import {
   getServerSnapshot,
   getSnapshot,
   isLoaded,
+  isUnsaved,
   mutate,
   subscribe,
 } from "@/lib/data/store";
@@ -39,6 +40,14 @@ export function useIsLoading(): boolean {
     () => isLoaded(),
     () => false,
   );
+}
+
+/**
+ * True when this browser is refusing to save. Changes still apply for the
+ * session but will be gone after a reload, so the shell says so.
+ */
+export function useIsUnsaved(): boolean {
+  return useSyncExternalStore(subscribe, isUnsaved, () => false);
 }
 
 /* --- reads ---------------------------------------------------------------- */

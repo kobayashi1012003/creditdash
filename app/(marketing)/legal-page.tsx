@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
 /**
- * Shared frame for the two legal pages. Phase 5 writes the real text; these
- * exist now so the footer does not link into a 404.
+ * Shared frame for the two legal pages. The wording is a plain-language
+ * draft that describes what the app actually does today; it stays marked as
+ * unreviewed until a lawyer has read it and the open items below are set.
  */
 export function LegalPage({
   title,
@@ -22,13 +23,14 @@ export function LegalPage({
 
       <div className="mt-8 rounded-inner border border-line bg-surface p-5">
         <p className="text-sm leading-relaxed">
-          <strong className="font-medium">Draft, not reviewed.</strong> This is
-          placeholder wording written during development. It has not been
-          checked by a lawyer and does not yet bind anyone. Do not rely on it.
+          <strong className="font-medium">Draft for legal review.</strong> This
+          describes how CreditDash works today in plain language, but it has
+          not been checked by a lawyer. The contact address and governing law
+          are still to be set before launch.
         </p>
       </div>
 
-      <div className="mt-8 space-y-5 text-[16px] leading-relaxed text-muted [&_h2]:mt-9 [&_h2]:text-[20px] [&_h2]:text-ink [&_h2]:font-display [&_h2]:leading-tight">
+      <div className="mt-8 space-y-5 text-[16px] leading-relaxed text-muted [&_h2]:mt-9 [&_h2]:text-[20px] [&_h2]:text-ink [&_h2]:font-display [&_h2]:leading-tight [&_strong]:font-medium [&_strong]:text-ink [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
         {children}
       </div>
     </article>

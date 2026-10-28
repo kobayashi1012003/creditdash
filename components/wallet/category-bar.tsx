@@ -1,6 +1,7 @@
 "use client";
 
 import type { Card } from "@/data/types";
+import { useRovingFocus } from "@/lib/use-roving-focus";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -27,21 +28,33 @@ export function CategoryBar({
   disabled?: boolean;
   className?: string;
 }) {
+  // One tab stop, arrows choosing as they go, which is what makes this fast
+  // from a keyboard: Tab in, arrow to "Gas", the answer is already showing.
+  const { onKeyDown, itemProps } = useRovingFocus(
+    CATEGORIES.length,
+    value ? CATEGORIES.indexOf(value) : -1,
+    (i) => onChange(CATEGORIES[i]),
+  );
+
   return (
     <div
       role="radiogroup"
       aria-label="Spend category"
+      onKeyDown={onKeyDown}
       className={cn("flex flex-wrap", compact ? "gap-1.5" : "gap-2", className)}
     >
-      {CATEGORIES.map((c) => {
+      {CATEGORIES.map((c, i) => {
         const selected = value === c;
         return (
           <button
             key={c}
+            {...itemProps(i)}
             type="button"
             role="radio"
             aria-checked={selected}
             disabled={disabled}
+            // Clicking the chosen category again clears it, so the wallet
+            // can go back to showing every card at full strength.
             onClick={() => onChange(selected ? null : c)}
             style={selected ? categoryStyle(c) : undefined}
             className={cn(

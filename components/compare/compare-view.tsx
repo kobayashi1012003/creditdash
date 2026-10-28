@@ -8,7 +8,13 @@ import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { centsPerPoint, rateFor } from "@/lib/calculators/engine";
 import { cardAnnualCreditValue } from "@/lib/credits";
 import { usd } from "@/lib/format";
-import { addCard, usePlan, useValuations, useWallet } from "@/lib/data";
+import {
+  addCard,
+  useIsLoading,
+  usePlan,
+  useValuations,
+  useWallet,
+} from "@/lib/data";
 import { canAddCard, FREE_CARD_LIMIT } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
@@ -27,6 +33,9 @@ export function CompareView({ all }: { all: Card[] }) {
   const valuations = useValuations();
   const owned = new Set(wallet.map((e) => e.card.id));
   const roomForMore = canAddCard(plan, wallet.length);
+  // Until the wallet is read, "owned" and "room for more" are both guesses.
+  // The buttons stay disabled rather than offering a card already held.
+  const isLoading = useIsLoading();
 
   const chosen = ids
     .map((id) => all.find((c) => c.id === id))
@@ -179,7 +188,7 @@ export function CompareView({ all }: { all: Card[] }) {
                     <Button
                       variant="outline"
                       className="w-full"
-                      disabled={!roomForMore}
+                      disabled={isLoading || !roomForMore}
                       onClick={() => addCard(card.id)}
                     >
                       Add to wallet
@@ -192,7 +201,7 @@ export function CompareView({ all }: { all: Card[] }) {
         </table>
       </div>
 
-      {!roomForMore && chosen.some((c) => !owned.has(c.id)) && (
+      {!isLoading && !roomForMore && chosen.some((c) => !owned.has(c.id)) && (
         <p className="text-[13px] leading-relaxed text-muted">
           Your free plan holds {FREE_CARD_LIMIT} cards and both are taken.
           Remove one in the Wallet, or move to Premium, to add another.

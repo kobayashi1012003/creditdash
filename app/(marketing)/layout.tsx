@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Wordmark } from "@/components/shell/wordmark";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SkipLink } from "@/components/shell/skip-link";
 
 /** Public pages. No sidebar, no tab bar. */
 export default function MarketingLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-col">
+      <SkipLink />
       {/* One line, 68px tall, everything fits at lg. */}
       <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
         <div className="mx-auto flex h-[68px] w-full max-w-[1200px] items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
@@ -36,7 +38,9 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main id="main" tabIndex={-1} className="flex-1 outline-none">
+        {children}
+      </main>
 
       <footer className="border-t border-line">
         <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-x-8 gap-y-5 px-4 py-10 sm:px-6 lg:px-10">
