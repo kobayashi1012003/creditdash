@@ -19,10 +19,12 @@ that plan, the plan wins, and the deviation gets recorded here.
 
 ## Where the build has got to
 
-Phases 0 to 4 of `creditdash-plan.md` are done. **Phase 5 is in progress:
-the code is done and verified, the first deploy is not.** Every commit is
-labelled with its phase, so `git log --oneline` is the detailed record; this
-is the summary.
+Phases 0 to 5 of `creditdash-plan.md` are done. **Phase 6 is next.** Every
+commit is labelled with its phase, so `git log --oneline` is the detailed
+record; this is the summary.
+
+**Live at https://creditdash.stevenlen03.workers.dev/** (no custom domain
+yet).
 
 | Phase | Delivered |
 |---|---|
@@ -31,8 +33,9 @@ is the summary.
 | 2 | `lib/data/` over browser storage, add/remove/reorder cards, free limit |
 | 3 | Credit reset logic for both bases, unit tested, partial amounts |
 | 4 | Calculator engine, unit tested, Compare correctness |
+| 5 | States, keyboard, legal text, PWA, Lighthouse 100, first deploy |
 
-Phase 5 so far:
+Phase 5 in more detail, since later phases build on these:
 
 - **States.** Empty wallet offers three one-tap starter cards plus search.
   Tracker and Calculators empty states link to the Wallet. Calculators and
@@ -52,13 +55,24 @@ Phase 5 so far:
   `npm run icons` (`scripts/build-icons.mjs`, uses `sharp`, a devDependency
   for that script only). Output is committed; rerun only when the mark
   changes.
-- **Not done: the deploy.** Connecting Cloudflare to the GitHub repo needs
-  the owner's Cloudflare account, and the Phase 5 "done when" (live URL
-  works on a phone) can only be checked after it.
+- **Deploy.** Cloudflare Workers Builds is connected to the GitHub repo, so
+  every push to `main` deploys. Build command `npx opennextjs-cloudflare
+  build`, deploy command `npx opennextjs-cloudflare deploy`, non-production
+  branches `npx opennextjs-cloudflare upload` (Cloudflare's own default,
+  `npx wrangler preview`, skips the OpenNext build and would fail). The
+  build image's default Node 24 meets the `engines` pin, so no
+  `NODE_VERSION` is set. The `workers.dev` URL had to be switched on by
+  hand in the Worker's Domains & Routes settings. The owner confirmed the
+  live site works on a phone.
+- **Cloudflare now recommends vinext** over OpenNext for new Next.js apps.
+  This project stays on OpenNext, which it is built and tested against;
+  switching would be its own decision, not a side effect of another change.
 
 ### Baselines
 
-Measured against `npm run preview`, Lighthouse 13.6, 27 October 2026.
+Measured against `npm run preview`, Lighthouse 13.6, 27 October 2026. The
+live site, measured the same day, scores 98 to 100 for performance and 100
+for accessibility on mobile; the small drop is real network latency.
 
 - **Lighthouse: 100 on every page** for performance, accessibility, best
   practices and SEO on mobile; 99 to 100 on desktop. `/wallet` started at 85
@@ -74,6 +88,8 @@ Measured against `npm run preview`, Lighthouse 13.6, 27 October 2026.
 
 ### Open items carried forward
 
+- **The owner has UI tweaks saved for the end of the build.** Ask for them
+  before calling the project finished; do not guess at them.
 - **The v1 to v2 storage migration can only approximate.** v1 never recorded
   which anniversary cycle a key meant, so the migration picks the cycle
   overlapping most of the calendar year. Right for the common case and not
