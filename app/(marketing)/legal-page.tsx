@@ -25,8 +25,8 @@ export function LegalPage({
         <p className="text-sm leading-relaxed">
           <strong className="font-medium">Draft for legal review.</strong> This
           describes how CreditDash works today in plain language, but it has
-          not been checked by a lawyer. The contact address and governing law
-          are still to be set before launch.
+          not been checked by a lawyer, and the governing law is still to be
+          set.
         </p>
       </div>
 

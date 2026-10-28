@@ -3,12 +3,18 @@ import { LegalPage } from "../legal-page";
 
 export const metadata: Metadata = { title: "Privacy" };
 
+/**
+ * Says what the app actually does, so it changes whenever that does. Phase 6
+ * (accounts) once shipped with this page still claiming data never left the
+ * browser; re-read it after any change to sign-in, storage or providers.
+ */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy" updated="27 October 2026">
+    <LegalPage title="Privacy" updated="28 October 2026">
       <p>
         CreditDash is built to need as little about you as possible. This page
-        says what it holds, where, and what you can do about it.
+        says what it holds, where, who else is involved, and what you can do
+        about it.
       </p>
 
       <h2>What you enter</h2>
@@ -18,7 +24,10 @@ export default function PrivacyPage() {
         <li>Your points balances, and what you think a point is worth.</li>
         <li>Your plan, your theme, and whether you left the calculator panel open.</li>
       </ul>
-      <p>That is all of it. There are no other fields.</p>
+      <p>
+        If you sign in, CreditDash also holds your email address, so it knows
+        which account is yours. There are no other fields.
+      </p>
 
       <h2>What CreditDash never asks for</h2>
       <p>
@@ -29,33 +38,78 @@ export default function PrivacyPage() {
 
       <h2>Where it is stored</h2>
       <p>
-        Today, everything you enter is saved in your own browser, on your own
-        device, using the browser&apos;s local storage. It is not sent to
-        CreditDash or anyone else, and CreditDash cannot see it. Another
-        browser or device starts with its own separate copy.
+        <strong>If you have not signed in</strong>, everything you enter is
+        saved in your own browser, on your own device. It is not sent to
+        CreditDash or anyone else. Clearing this site&apos;s data deletes it,
+        and there is no other copy.
       </p>
       <p>
-        Clearing this site&apos;s data in your browser deletes it, and so does{" "}
-        <strong>Delete everything</strong> in Settings. Neither can be undone,
-        because there is no other copy. <strong>Export as CSV</strong> in
-        Settings gives you one to keep.
+        <strong>If you sign in</strong>, your wallet is saved to your account
+        so it follows you between devices. It is stored in a database run by
+        Supabase, CreditDash&apos;s database provider, and sent there over an
+        encrypted connection. The database only lets each signed-in person
+        read and change their own rows, so no other user can see your wallet.
+        The person who runs CreditDash can technically access the database to
+        fix problems, and does not otherwise look at anyone&apos;s wallet.
+      </p>
+      <p>
+        When you first sign in, you are asked whether to copy a wallet already
+        in that browser into your account. Nothing is copied unless you choose
+        to.
       </p>
 
-      <h2>What the server sees</h2>
+      <h2>Your controls</h2>
+      <ul>
+        <li>
+          <strong>Export as CSV</strong> in Settings downloads a copy of your
+          wallet.
+        </li>
+        <li>
+          <strong>Delete everything</strong> in Settings empties your wallet,
+          in this browser or in your account, and cannot be undone.
+        </li>
+        <li>
+          <strong>Delete account</strong> in Settings removes your account and
+          everything saved to it, immediately and for good.
+        </li>
+      </ul>
+
+      <h2>Who else is involved</h2>
+      <ul>
+        <li>
+          <strong>Cloudflare</strong> hosts the site. Like any website,
+          loading a page sends the server your IP address, your browser type
+          and the address of the page. Cloudflare uses this to deliver and
+          protect the site, and short-lived request logs are kept to find and
+          fix errors.
+        </li>
+        <li>
+          <strong>Supabase</strong> runs sign-in and stores signed-in
+          accounts, as described above.
+        </li>
+        <li>
+          <strong>Google</strong>, only if you choose Continue with Google.
+          Google confirms who you are and shares your email address, name and
+          profile picture with CreditDash&apos;s sign-in. CreditDash only uses
+          the email address.
+        </li>
+        <li>
+          <strong>Resend</strong>, only if you ask for an emailed sign-in link.
+          It receives your email address in order to deliver that one email.
+        </li>
+      </ul>
       <p>
-        CreditDash is hosted on Cloudflare. Like any website, loading a page
-        sends the server your IP address, your browser type and the address
-        of the page. Cloudflare uses this to deliver and protect the site, and
-        short-lived request logs are kept to find and fix errors. None of what
-        you enter is part of these requests.
+        None of them is given your wallet for any purpose of their own.
       </p>
 
       <h2>Cookies and tracking</h2>
       <p>
-        CreditDash sets no cookies of its own and runs no analytics, tracking
-        pixels or third-party scripts. Fonts are served from the same site, so
-        loading a page does not contact a font provider. Cloudflare may set a
-        strictly necessary security cookie to protect the site from abuse.
+        CreditDash runs no analytics, tracking pixels or advertising scripts,
+        and fonts are served from the same site. When you sign in, it sets
+        cookies that keep you signed in; they are strictly necessary, and
+        signing out removes them. Your theme and panel preferences are kept in
+        your browser&apos;s local storage. Cloudflare may set a strictly
+        necessary security cookie to protect the site from abuse.
       </p>
 
       <h2>Advertising</h2>
@@ -64,18 +118,11 @@ export default function PrivacyPage() {
         advertising or for anything else.
       </p>
 
-      <h2>When accounts arrive</h2>
+      <h2>Payments</h2>
       <p>
-        Signing in, and saving your wallet to a server so it follows you
-        between devices, are planned. Before any of your data leaves your
-        browser, this page will be updated to say what moves, where it is
-        stored and who can read it, and you will be asked first. The plan is
-        that only you can read your data, and that deleting your account
-        deletes all of it.
-      </p>
-      <p>
-        If Premium is paid for, payment is handled by Stripe. Your card
-        details go to Stripe directly and never reach CreditDash.
+        Premium cannot be bought yet. When it can, payment will be handled by
+        Stripe: your card details go to Stripe directly and never reach
+        CreditDash, and this page will be updated before then.
       </p>
 
       <h2>Children</h2>
@@ -92,7 +139,16 @@ export default function PrivacyPage() {
       </p>
 
       <h2>Contact</h2>
-      <p>A contact address will be published here before launch.</p>
+      <p>
+        Questions about your data, or a request about it:{" "}
+        <a
+          href="mailto:hello@creditdash.co"
+          className="rounded-inner text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          hello@creditdash.co
+        </a>
+        .
+      </p>
     </LegalPage>
   );
 }

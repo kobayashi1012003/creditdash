@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Terms" };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms" updated="27 October 2026">
+    <LegalPage title="Terms" updated="28 October 2026">
       <p>
         These terms cover your use of CreditDash. Using it means you accept
         them. They are short on purpose; if something here is unclear, it is
@@ -49,15 +49,17 @@ export default function TermsPage() {
       <h2>Your data</h2>
       <p>
         You are responsible for what you enter and for keeping it accurate.
-        Your data is stored in your browser (see{" "}
+        Without an account, your data lives only in your browser, so
+        CreditDash cannot recover it if it is cleared. With an account, it is
+        saved to that account, and deleting the account deletes it for good
+        (see{" "}
         <Link
           href="/privacy"
           className="rounded-inner text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           Privacy
         </Link>
-        ), so CreditDash cannot recover it if it is cleared. Export a copy from
-        Settings if you want one.
+        ). Export a copy from Settings if you want one.
       </p>
 
       <h2>Plans and payment</h2>
@@ -93,7 +95,14 @@ export default function TermsPage() {
       </p>
 
       <h2>Contact</h2>
-      <p>A contact address will be published here before launch.</p>
+      <p>
+        <a
+          href="mailto:hello@creditdash.co"
+          className="rounded-inner text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          hello@creditdash.co
+        </a>
+      </p>
     </LegalPage>
   );
 }

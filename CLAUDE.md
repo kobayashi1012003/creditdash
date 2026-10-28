@@ -79,8 +79,10 @@ Phase 5 in more detail, since later phases build on these:
   through `lib/use-roving-focus.ts`; use it for any new radio or tab set.
   Drawer opens with focus inside, Escape returns focus to the trigger.
 - **Legal.** Privacy and Terms rewritten to describe what the app actually
-  does. Still marked "Draft for legal review": the contact address and
-  governing law are unset and need the owner.
+  does. Still marked "Draft for legal review"; the governing law is unset
+  and needs the owner. Contact is `hello@creditdash.co`. **Re-read Privacy
+  after any change to sign-in, storage or providers**: Phase 6 shipped with
+  it still saying data never left the browser, fixed on 28 October.
 - **PWA.** `app/manifest.ts` (opens on `/wallet`), icons from
   `npm run icons` (`scripts/build-icons.mjs`, uses `sharp`, a devDependency
   for that script only). Output is committed; rerun only when the mark
@@ -137,10 +139,13 @@ for accessibility on mobile; the small drop is real network latency.
   before calling the project finished; do not guess at them.
 - **A pricing page, maybe.** The owner suggested one; "See Premium" now
   goes to the plan section of Settings. Not yet decided or planned.
-- **Email sign-in only reaches the owner.** Supabase's built-in sender
-  delivers only to the project's team, a few emails an hour. Real users
-  need a custom SMTP sender (a free tier such as Resend) set in Supabase
-  Auth settings before launch.
+- **Email is set up.** Sign-in links go through Resend (custom SMTP in
+  Supabase, sender `signin@creditdash.co`; free plan, 100 a day, Supabase
+  caps auth email near 30 an hour). DKIM, SPF on `send`, and DMARC
+  `p=none` are verified; a test link landed in Gmail's Primary tab.
+  `hello@creditdash.co` is Cloudflare Email Routing forwarding to the
+  owner's Gmail, which replies as it through a second Resend key. The
+  email templates are still Supabase's defaults.
 - **Google sign-in is in Testing mode.** Only listed test users can sign
   in. The Branding page now has the `creditdash.co` links and authorized
   domain, so publishing is unblocked; Google may still ask to verify the
