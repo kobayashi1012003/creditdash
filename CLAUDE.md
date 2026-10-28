@@ -118,11 +118,9 @@ npm test && npm run build                     # confirm the toolchain works
   directly, with no transpiler. On an older Node the suite fails with a
   syntax error that does not name the real cause. `package.json` pins this in
   `engines`.
-- **`.claude/skills/*` are git symlinks** into `.agents/skills/`. Windows
-  checks them out as plain text files unless Developer Mode is on and
-  `core.symlinks=true`, which leaves Claude with fifteen junk files instead of
-  fifteen skills. Re-running the `skills` installer fixes it either way, so
-  just run it.
+- **`.claude/skills/` is not in the repo.** It holds per-machine links into
+  `.agents/skills/` (junctions on Windows), so a fresh clone has none until
+  the two installers above run.
 - **The impeccable binary is gitignored** because it is 17MB and built for one
   platform. Its hooks in `.claude/settings.local.json` are POSIX shell and
   will not run on Windows. `npx impeccable install` rewrites both correctly
@@ -406,7 +404,9 @@ Every screen, every time:
 
 ## Skills in this project
 
-Installed under `.agents/skills/` and `.claude/skills/`:
+**`.agents/skills/` is the tracked source of skill content. `.claude/skills/`
+is per-machine links into it, gitignored**, recreated by `npx impeccable
+install` and the `skills` installer. Never commit skill content there.
 
 - **impeccable** (`/impeccable <command>`): design direction, critique, audit,
   polish. Writes `PRODUCT.md` and `DESIGN.md`. Its detector hook runs
