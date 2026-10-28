@@ -411,8 +411,10 @@ largest paint, and the wallet can only render after hydration (about 5s on
 a throttled phone). A tiny inline script in `<head>` reads which card is
 first (a key the store keeps current in both modes, else the stored local
 wallet, else the demo seed a new browser is about to get), marks `<html>`,
-and preloads that card's 720 cut; CSS paints it into the skeleton's first
-slot. The real `<img>` then lands in the same box. Any change to the
+and preloads that card's smallest cut (480 px: on a throttled phone it
+shares the connection with the JavaScript, and the 720 took 3.2s on the
+live site); CSS paints it into the skeleton's first slot. The real `<img>`
+then lands in the same box. Any change to the
 skeleton's first slot must keep its size identical to the real card.
 
 `CardFace`'s `priority` means `loading="eager"` plus `fetchPriority="high"`,

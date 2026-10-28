@@ -31,10 +31,17 @@ export const FIRST_CARD_ATTR = "data-first-card";
 
 const SEED_FIRST = [...DEMO_WALLET].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.cardId ?? "";
 
-/** The URL the skeleton paints for a card: the 720 cut, else the original. */
+/**
+ * The URL the skeleton paints for a card: the smallest cut, else the
+ * original. Small on purpose. On a throttled phone this download shares the
+ * connection with the app's JavaScript; measured on the live site, the 720
+ * cut (69 KB) took 3.2s to arrive, against 29 KB for the 480. It is on
+ * screen for a moment before the full-quality card replaces it in the same
+ * box, so a slightly soft second is the better trade.
+ */
 function slotUrl(a: CardArt): string {
   const name = a.src.split("/").pop()!.replace(/\.[^.]+$/, "");
-  return a.variants.includes(720) ? `/cards/w/720/${name}.webp` : a.src;
+  return a.variants.length > 0 ? `/cards/w/${a.variants[0]}/${name}.webp` : a.src;
 }
 
 /**
@@ -55,7 +62,7 @@ export function firstCardScript(art: Record<string, CardArt>): string {
  * element with the `.first-card-art` class. One rule per card with art, so
  * a card without art leaves the slot as a plain skeleton.
  *
- * The 720 cut covers the slot at 2x on a phone and 1x on desktop; the
+ * See slotUrl for why the skeleton uses the smallest cut; the
  * original is the fallback for art too small to have been cut.
  */
 export function firstCardCss(art: Record<string, CardArt>): string {
