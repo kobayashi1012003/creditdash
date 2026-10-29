@@ -38,7 +38,9 @@ function check(error: { message: string; hint?: string | null } | null) {
 
 export async function loadAccount(db: SupabaseClient, userId: string) {
   const [profile, cards, usage, balances, valuations, subs] = await Promise.all([
-    db.from("profiles").select("plan").eq("user_id", userId).maybeSingle(),
+    // "*" rather than naming premium_gift, so a database that has not had
+    // that migration yet still loads the account.
+    db.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     db
       .from("user_cards")
       .select("id, card_id, nickname, opened_on, anniversary_month, sort_order")
@@ -113,7 +115,8 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
         cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
       }
     : null;
-  return { state, rowIds, billing };
+  const gifted = profile.data?.premium_gift === true;
+  return { state, rowIds, billing, gifted };
 }
 
 /** The latest Stripe subscription, as Settings shows it. Written by the webhook only. */

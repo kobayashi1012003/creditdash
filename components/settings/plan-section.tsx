@@ -89,8 +89,15 @@ export function PlanSection({
   }
 
   const billing = account?.billing ?? null;
-  const ending = plan === "premium" && billing?.cancelAtPeriodEnd;
-  const hiddenIfFree = Math.max(0, saved - FREE_CARD_LIMIT);
+  // Gifted and not also paying: there is no live subscription to manage.
+  // An ended one (they paid once, then cancelled) does not count.
+  const paying = billing !== null && ["active", "trialing", "past_due"].includes(billing.status);
+  const giftOnly = plan === "premium" && account?.gifted === true && !paying;
+  // A gift outlasts any cancelled subscription, so nothing is ending and
+  // cancelling hides no cards.
+  const gifted = account?.gifted === true;
+  const ending = plan === "premium" && !gifted && billing?.cancelAtPeriodEnd;
+  const hiddenIfFree = gifted ? 0 : Math.max(0, saved - FREE_CARD_LIMIT);
 
   function manage() {
     // Warn before the portal, where cancelling happens, if cancelling would
@@ -111,6 +118,13 @@ export function PlanSection({
         Sign in to upgrade
       </Button>
     ) : null;
+  } else if (giftOnly) {
+    premiumAction = (
+      <p className="mt-4 text-[13px] leading-relaxed text-muted">
+        Premium was given to this account, so there is nothing to pay and
+        nothing to cancel.
+      </p>
+    );
   } else if (account) {
     premiumAction = (
       <Button variant="outline" className="mt-4 w-full" onClick={manage} disabled={busy}>
@@ -138,7 +152,9 @@ export function PlanSection({
           price={`$${PREMIUM_PRICE_MONTHLY} a month`}
           current={plan === "premium"}
           status={
-            plan === "premium" && billing?.periodEnd
+            giftOnly
+              ? "On the house"
+              : plan === "premium" && billing?.periodEnd
               ? ending
                 ? `Ends ${longDate(billing.periodEnd)}`
                 : `Renews ${longDate(billing.periodEnd)}`

@@ -376,6 +376,14 @@ rather than a guess that then gets replaced.
 - **Deleting an account deletes its Stripe customer first**, which cancels
   any subscription at once. If Stripe refuses, the account is kept, so a
   charge is never left running with no account to cancel it from.
+- **Gifted Premium** (migration `20261030000000_premium_gift.sql`): the
+  owner sets `profiles.premium_gift = true` in the SQL Editor (the
+  statement is in the migration's header). A trigger then holds `plan` at
+  premium whatever the webhook writes; clearing the flag returns the plan
+  to what the `subscriptions` rows say. Users cannot write the flag.
+  Settings shows "On the house" and no billing button unless they are
+  also paying. Never gift by setting `plan` alone: the next Stripe event
+  for someone who has paid before would undo it.
 - **Migration** `20261029000000_subscriptions.sql`. Users read their own
   rows only; nobody but the server writes them.
 

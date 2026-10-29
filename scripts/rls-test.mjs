@@ -146,6 +146,35 @@ try {
   const editSub = await a.db.from("subscriptions").update({ status: "canceled" }).eq("stripe_subscription_id", subId).select();
   expect(Boolean(editSub.error) || editSub.data.length === 0, "A cannot change their own subscription row");
 
+  // --- gifted Premium (migration 20261030000000) --------------------------
+  const selfGift = await b.db.from("profiles").update({ premium_gift: true }).eq("user_id", b.id);
+  expect(Boolean(selfGift.error), "B cannot gift themselves Premium");
+
+  await admin.from("profiles").update({ premium_gift: true }).eq("user_id", b.id);
+  const gifted = await b.db.from("profiles").select("plan").eq("user_id", b.id).single();
+  expect(gifted.data?.plan === "premium", "A gift makes B Premium", gifted.data?.plan);
+
+  // What the Stripe webhook does when a customer has no live subscription.
+  await admin.from("profiles").update({ plan: "free" }).eq("user_id", b.id);
+  const held = await b.db.from("profiles").select("plan").eq("user_id", b.id).single();
+  expect(held.data?.plan === "premium", "A gift survives the webhook writing Free", held.data?.plan);
+
+  await admin.from("profiles").update({ premium_gift: false }).eq("user_id", b.id);
+  const withdrawn = await b.db.from("profiles").select("plan").eq("user_id", b.id).single();
+  expect(withdrawn.data?.plan === "free", "Withdrawing the gift returns B to Free", withdrawn.data?.plan);
+
+  await admin.from("profiles").update({ premium_gift: true }).eq("user_id", a.id);
+  await admin.from("profiles").update({ premium_gift: false }).eq("user_id", a.id);
+  const stillPaying = await a.db.from("profiles").select("plan").eq("user_id", a.id).single();
+  expect(
+    stillPaying.data?.plan === "premium",
+    "Withdrawing a gift keeps Premium for someone still paying",
+    stillPaying.data?.plan,
+  );
+  // A back on Free for the card limit checks below.
+  await admin.from("subscriptions").delete().eq("stripe_subscription_id", subId);
+  await admin.from("profiles").update({ plan: "free" }).eq("user_id", a.id);
+
   // --- signed out sees nothing --------------------------------------------
   const anon = createClient(url, publishable, noSession);
   const anonRead = await anon.from("user_cards").select("*");

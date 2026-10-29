@@ -45,7 +45,13 @@ let loaded = false;
 let started = false;
 let mode: "local" | "account" = "local";
 
-export type Account = { userId: string; email: string | null; billing: Billing | null };
+export type Account = {
+  userId: string;
+  email: string | null;
+  billing: Billing | null;
+  /** Premium given by the owner, not bought; nothing in Stripe to manage. */
+  gifted: boolean;
+};
 let account: Account | null = null;
 let remote: Remote | null = null;
 
@@ -201,9 +207,9 @@ async function enterAccount(db: SupabaseClient) {
   }
 
   try {
-    const { state, rowIds, billing } = await loadAccount(db, user.id);
+    const { state, rowIds, billing, gifted } = await loadAccount(db, user.id);
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null, billing };
+    account = { userId: user.id, email: user.email ?? null, billing, gifted };
     remote = { db, userId: user.id, rowIds };
     cache = state;
     offer = computeOffer(user.id, state);
@@ -212,7 +218,7 @@ async function enterAccount(db: SupabaseClient) {
     // look like the account had been replaced, so show an empty one and say
     // why. Nothing is written in this state.
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null, billing: null };
+    account = { userId: user.id, email: user.email ?? null, billing: null, gifted: false };
     remote = null;
     cache = emptyState();
     notice = {

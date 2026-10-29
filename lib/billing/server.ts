@@ -130,6 +130,8 @@ export async function syncCustomer(customerId: string): Promise<boolean> {
     if (upsertError) throw new BillingError("db_failed", 500);
   }
 
+  // A gifted account stays Premium whatever this writes: a trigger on
+  // profiles enforces premium_gift (migration 20261030000000).
   const { error: planError } = await db
     .from("profiles")
     .update({ plan: planFromSubscriptions(list.data) })
