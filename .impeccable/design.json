@@ -1,0 +1,927 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T05:40:14.778Z",
+  "title": "Design System: CreditDash",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f7f7f4",
+        "oklch": "oklch(97.5% 0.004 106.5)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#252521",
+          "#43423c",
+          "#626259",
+          "#838379",
+          "#a6a69e",
+          "#cac9c3",
+          "#efefeb"
+        ]
+      },
+      "bg-dark": {
+        "role": "neutral",
+        "displayName": "Paper (dark theme)",
+        "canonical": "#12110f",
+        "oklch": "oklch(17.8% 0.004 84.6)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272521",
+          "#45423b",
+          "#656158",
+          "#868279",
+          "#a8a59d",
+          "#ccc9c3",
+          "#f0eeea"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Raised Paper",
+        "canonical": "#fcfcfa",
+        "oklch": "oklch(99.1% 0.003 106.4)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#252521",
+          "#43423c",
+          "#626259",
+          "#838379",
+          "#a6a69e",
+          "#cac9c3",
+          "#efefeb"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Raised Paper (dark theme)",
+        "canonical": "#1b1a17",
+        "oklch": "oklch(21.8% 0.006 91.6)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423b",
+          "#646158",
+          "#858279",
+          "#a7a59d",
+          "#cbc9c3",
+          "#f0eeea"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Demo Grey",
+        "canonical": "#efefea",
+        "oklch": "oklch(95.1% 0.007 106.5)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#252521",
+          "#43423c",
+          "#626259",
+          "#838379",
+          "#a6a69e",
+          "#cac9c3",
+          "#efefeb"
+        ]
+      },
+      "panel-dark": {
+        "role": "neutral",
+        "displayName": "Demo Grey (dark theme)",
+        "canonical": "#22211d",
+        "oklch": "oklch(24.7% 0.008 95.4)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423b",
+          "#646158",
+          "#858279",
+          "#a7a59d",
+          "#cbc9c3",
+          "#efeeea"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Warm Ink",
+        "canonical": "#16150f",
+        "oklch": "oklch(19.5% 0.012 99.5)",
+        "tonalRamp": [
+          "#0c0b08",
+          "#262520",
+          "#44423a",
+          "#636257",
+          "#848377",
+          "#a7a59c",
+          "#cac9c2",
+          "#efefea"
+        ]
+      },
+      "ink-dark": {
+        "role": "primary",
+        "displayName": "Warm Ink (dark theme)",
+        "canonical": "#f4f3ee",
+        "oklch": "oklch(96.4% 0.007 97.4)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423b",
+          "#636158",
+          "#848379",
+          "#a7a59d",
+          "#cac9c3",
+          "#efeeeb"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Stone",
+        "canonical": "#65645f",
+        "oklch": "oklch(50.3% 0.008 97.5)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#43423b",
+          "#636158",
+          "#848379",
+          "#a7a59d",
+          "#cac9c3",
+          "#efeeeb"
+        ]
+      },
+      "muted-dark": {
+        "role": "neutral",
+        "displayName": "Stone (dark theme)",
+        "canonical": "#a3a29b",
+        "oklch": "oklch(71.1% 0.010 100.0)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#43423b",
+          "#636258",
+          "#848379",
+          "#a6a59d",
+          "#cac9c3",
+          "#efefeb"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e4e3de",
+        "oklch": "oklch(91.5% 0.007 97.4)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423b",
+          "#636158",
+          "#848379",
+          "#a7a59d",
+          "#cac9c3",
+          "#efeeeb"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark theme)",
+        "canonical": "#2c2a26",
+        "oklch": "oklch(28.6% 0.008 84.6)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272521",
+          "#45423b",
+          "#656158",
+          "#868279",
+          "#a8a59d",
+          "#ccc9c3",
+          "#f0eeea"
+        ]
+      },
+      "band": {
+        "role": "secondary",
+        "displayName": "Warm Charcoal Band",
+        "canonical": "#26231e",
+        "oklch": "oklch(25.8% 0.010 80.6)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272520",
+          "#45413b",
+          "#666058",
+          "#878279",
+          "#a9a49d",
+          "#ccc9c3",
+          "#f0eeea"
+        ]
+      },
+      "band-dark": {
+        "role": "secondary",
+        "displayName": "Warm Charcoal Band (dark theme)",
+        "canonical": "#1f1d19",
+        "oklch": "oklch(23.1% 0.008 84.6)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272521",
+          "#45423b",
+          "#656158",
+          "#868279",
+          "#a8a59d",
+          "#ccc9c3",
+          "#f0eeea"
+        ]
+      },
+      "band-ink": {
+        "role": "secondary",
+        "displayName": "Band Ink",
+        "canonical": "#f4f3ee",
+        "oklch": "oklch(96.4% 0.007 97.4)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423b",
+          "#636158",
+          "#848379",
+          "#a7a59d",
+          "#cac9c3",
+          "#efeeeb"
+        ]
+      },
+      "band-muted": {
+        "role": "secondary",
+        "displayName": "Band Stone",
+        "canonical": "#a39f95",
+        "oklch": "oklch(70.3% 0.015 88.7)",
+        "tonalRamp": [
+          "#0c0b08",
+          "#27251e",
+          "#464238",
+          "#666153",
+          "#888274",
+          "#a9a599",
+          "#ccc9c0",
+          "#f1eee9"
+        ]
+      },
+      "band-line": {
+        "role": "secondary",
+        "displayName": "Band Hairline",
+        "canonical": "#3a362f",
+        "oklch": "oklch(33.5% 0.013 81.7)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#28251f",
+          "#464139",
+          "#676055",
+          "#888176",
+          "#aaa49b",
+          "#cdc9c1",
+          "#f1eee9"
+        ]
+      },
+      "band-line-dark": {
+        "role": "secondary",
+        "displayName": "Band Hairline (dark theme)",
+        "canonical": "#34312b",
+        "oklch": "oklch(31.4% 0.011 84.6)",
+        "tonalRamp": [
+          "#0c0b08",
+          "#272520",
+          "#45423a",
+          "#666157",
+          "#878278",
+          "#a9a59c",
+          "#ccc9c2",
+          "#f0eeea"
+        ]
+      },
+      "destructive": {
+        "role": "error",
+        "displayName": "Brick",
+        "canonical": "#a32b1c",
+        "oklch": "oklch(47.6% 0.159 30.7)",
+        "tonalRamp": [
+          "#1a0402",
+          "#40160f",
+          "#6b2b22",
+          "#994336",
+          "#be6556",
+          "#d98f82",
+          "#f2b9af",
+          "#ffe5dd"
+        ]
+      },
+      "destructive-dark": {
+        "role": "error",
+        "displayName": "Brick (dark theme)",
+        "canonical": "#f08c7d",
+        "oklch": "oklch(74.3% 0.125 29.4)",
+        "tonalRamp": [
+          "#1a0402",
+          "#401510",
+          "#6b2b23",
+          "#994338",
+          "#be6558",
+          "#d98f83",
+          "#f2b9b0",
+          "#ffe4de"
+        ]
+      },
+      "mint": {
+        "role": "tertiary",
+        "displayName": "Mint",
+        "canonical": "#d7f2e3",
+        "oklch": "oklch(93.7% 0.035 161.4)",
+        "tonalRamp": [
+          "#050e09",
+          "#182a21",
+          "#2e493b",
+          "#476a58",
+          "#688c79",
+          "#90ad9d",
+          "#b9cfc3",
+          "#e4f3eb"
+        ]
+      },
+      "mint-ink": {
+        "role": "tertiary",
+        "displayName": "Mint Ink",
+        "canonical": "#0e5138",
+        "oklch": "oklch(38.8% 0.077 162.7)",
+        "tonalRamp": [
+          "#001006",
+          "#002e1b",
+          "#005034",
+          "#00744e",
+          "#32976e",
+          "#6fb795",
+          "#a3d7bd",
+          "#d7f8e6"
+        ]
+      },
+      "mint-dark": {
+        "role": "tertiary",
+        "displayName": "Mint (dark theme)",
+        "canonical": "#15271f",
+        "oklch": "oklch(25.4% 0.028 164.5)",
+        "tonalRamp": [
+          "#060d09",
+          "#1a2922",
+          "#32483d",
+          "#4b695b",
+          "#6c8b7c",
+          "#93aca0",
+          "#bccec5",
+          "#e6f2ec"
+        ]
+      },
+      "mint-ink-dark": {
+        "role": "tertiary",
+        "displayName": "Mint Ink (dark theme)",
+        "canonical": "#8fd9b4",
+        "oklch": "oklch(82.6% 0.091 161.8)",
+        "tonalRamp": [
+          "#001006",
+          "#002f1a",
+          "#005132",
+          "#00754c",
+          "#2c986c",
+          "#6cb793",
+          "#a2d8bc",
+          "#d6f8e6"
+        ]
+      },
+      "lavender": {
+        "role": "tertiary",
+        "displayName": "Lavender",
+        "canonical": "#e4ddfb",
+        "oklch": "oklch(91.2% 0.041 296.3)",
+        "tonalRamp": [
+          "#0c0913",
+          "#262234",
+          "#443d58",
+          "#645a80",
+          "#857ba2",
+          "#a79fc0",
+          "#cbc5de",
+          "#efecfc"
+        ]
+      },
+      "lavender-ink": {
+        "role": "tertiary",
+        "displayName": "Lavender Ink",
+        "canonical": "#3b2e7a",
+        "oklch": "oklch(36.1% 0.124 286.3)",
+        "tonalRamp": [
+          "#0a081c",
+          "#231f44",
+          "#3f3970",
+          "#5d55a0",
+          "#7d76c5",
+          "#a09ddd",
+          "#c5c3f4",
+          "#ebebff"
+        ]
+      },
+      "lavender-dark": {
+        "role": "tertiary",
+        "displayName": "Lavender (dark theme)",
+        "canonical": "#1f1b33",
+        "oklch": "oklch(23.9% 0.045 290.2)",
+        "tonalRamp": [
+          "#0b0915",
+          "#252236",
+          "#423d5c",
+          "#615b84",
+          "#817ca7",
+          "#a4a0c4",
+          "#c8c5e1",
+          "#eeecfe"
+        ]
+      },
+      "lavender-ink-dark": {
+        "role": "tertiary",
+        "displayName": "Lavender Ink (dark theme)",
+        "canonical": "#bfb2f2",
+        "oklch": "oklch(79.7% 0.090 293.6)",
+        "tonalRamp": [
+          "#0c071b",
+          "#271d43",
+          "#45366e",
+          "#65529d",
+          "#8673c2",
+          "#a79ada",
+          "#cbc1f2",
+          "#efeaff"
+        ]
+      },
+      "peach": {
+        "role": "tertiary",
+        "displayName": "Peach",
+        "canonical": "#fde3d3",
+        "oklch": "oklch(93.3% 0.036 53.7)",
+        "tonalRamp": [
+          "#120905",
+          "#312117",
+          "#533c2d",
+          "#795945",
+          "#9c7a65",
+          "#ba9f8d",
+          "#dac4b7",
+          "#f9ebe3"
+        ]
+      },
+      "peach-ink": {
+        "role": "tertiary",
+        "displayName": "Peach Ink",
+        "canonical": "#7a3a14",
+        "oklch": "oklch(42.6% 0.102 47.6)",
+        "tonalRamp": [
+          "#190500",
+          "#3f1803",
+          "#68300d",
+          "#95491b",
+          "#bb6a3f",
+          "#d59372",
+          "#efbca3",
+          "#ffe7d6"
+        ]
+      },
+      "peach-dark": {
+        "role": "tertiary",
+        "displayName": "Peach (dark theme)",
+        "canonical": "#2b1c12",
+        "oklch": "oklch(24.2% 0.030 54.5)",
+        "tonalRamp": [
+          "#100905",
+          "#2f2219",
+          "#513d31",
+          "#755b4a",
+          "#977c6a",
+          "#b7a091",
+          "#d7c5ba",
+          "#f7ece5"
+        ]
+      },
+      "peach-ink-dark": {
+        "role": "tertiary",
+        "displayName": "Peach Ink (dark theme)",
+        "canonical": "#f2b98e",
+        "oklch": "oklch(82.8% 0.087 58.2)",
+        "tonalRamp": [
+          "#180600",
+          "#3d1b00",
+          "#653300",
+          "#914d00",
+          "#b66f32",
+          "#d19769",
+          "#ecbf9e",
+          "#ffe8d3"
+        ]
+      },
+      "sky": {
+        "role": "tertiary",
+        "displayName": "Sky",
+        "canonical": "#d8e9fb",
+        "oklch": "oklch(92.7% 0.031 249.7)",
+        "tonalRamp": [
+          "#060c12",
+          "#1b2631",
+          "#344454",
+          "#4e647a",
+          "#6e859c",
+          "#95a7bb",
+          "#bdcbda",
+          "#e7f0f9"
+        ]
+      },
+      "sky-ink": {
+        "role": "tertiary",
+        "displayName": "Sky Ink",
+        "canonical": "#14456f",
+        "oklch": "oklch(38.1% 0.088 248.6)",
+        "tonalRamp": [
+          "#000c1c",
+          "#032644",
+          "#0f4471",
+          "#1d65a0",
+          "#4387c5",
+          "#76aadd",
+          "#a7cef4",
+          "#d9f2ff"
+        ]
+      },
+      "sky-dark": {
+        "role": "tertiary",
+        "displayName": "Sky (dark theme)",
+        "canonical": "#14222f",
+        "oklch": "oklch(24.6% 0.032 247.4)",
+        "tonalRamp": [
+          "#060c12",
+          "#1b2631",
+          "#334454",
+          "#4c647a",
+          "#6d859d",
+          "#94a8bb",
+          "#bccbda",
+          "#e6f0fa"
+        ]
+      },
+      "sky-ink-dark": {
+        "role": "tertiary",
+        "displayName": "Sky Ink (dark theme)",
+        "canonical": "#9cc9f0",
+        "oklch": "oklch(81.8% 0.073 245.0)",
+        "tonalRamp": [
+          "#000c1a",
+          "#042740",
+          "#12456b",
+          "#216699",
+          "#4688bd",
+          "#78abd6",
+          "#a9ceef",
+          "#daf2ff"
+        ]
+      },
+      "butter": {
+        "role": "tertiary",
+        "displayName": "Butter",
+        "canonical": "#fbf1c7",
+        "oklch": "oklch(95.6% 0.055 96.2)",
+        "tonalRamp": [
+          "#0f0b00",
+          "#2c2507",
+          "#4c4215",
+          "#6f6126",
+          "#908248",
+          "#b1a578",
+          "#d2caa8",
+          "#f4efd9"
+        ]
+      },
+      "butter-ink": {
+        "role": "tertiary",
+        "displayName": "Butter Ink",
+        "canonical": "#5e4a0b",
+        "oklch": "oklch(41.9% 0.080 89.5)",
+        "tonalRamp": [
+          "#120a00",
+          "#322200",
+          "#553e00",
+          "#7b5c00",
+          "#9e7e1a",
+          "#bca35f",
+          "#dac897",
+          "#faeecf"
+        ]
+      },
+      "butter-dark": {
+        "role": "tertiary",
+        "displayName": "Butter (dark theme)",
+        "canonical": "#272015",
+        "oklch": "oklch(24.8% 0.022 78.7)",
+        "tonalRamp": [
+          "#0e0b06",
+          "#2a241b",
+          "#494133",
+          "#6b5f4d",
+          "#8d806d",
+          "#aea494",
+          "#d0c8bc",
+          "#f3eee6"
+        ]
+      },
+      "butter-ink-dark": {
+        "role": "tertiary",
+        "displayName": "Butter Ink (dark theme)",
+        "canonical": "#e8d38a",
+        "oklch": "oklch(86.8% 0.095 93.9)",
+        "tonalRamp": [
+          "#110a00",
+          "#302400",
+          "#524000",
+          "#775e00",
+          "#9a8018",
+          "#b8a45e",
+          "#d8c997",
+          "#f8efce"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline (46px to 68px) and the closing call on the band. Two-tone."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings, 30px / 40px / 44px, claim in ink and consequence in muted."
+      },
+      "page-title": {
+        "displayName": "Page title",
+        "purpose": "App page headers, 32px to 40px."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Running totals and prices, tabular, with a 15px muted unit."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Widget headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Body copy, 40ch to 56ch measure; hero lead at 16px."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Panel titles, chips, captions, footer links."
+      },
+      "measure": {
+        "displayName": "Measure",
+        "purpose": "Geist Mono for chart axes and reset dates only; loaded in the marketing layout only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "soft",
+        "value": "0 2px 8px rgb(38 35 30 / 0.05)",
+        "dark": "0 2px 8px rgb(0 0 0 / 0.4)",
+        "purpose": "Resting widget. Does no work on its own."
+      },
+      {
+        "name": "lifted",
+        "value": "0 18px 40px -12px rgb(38 35 30 / 0.22)",
+        "dark": "0 8px 24px rgb(0 0 0 / 0.55)",
+        "purpose": "Card faces in the isometric stack and the floating mobile calculator button."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Press, hover, popovers, menus; the stack cards settling."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Movement between two on-screen points, such as the demo pointer."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Drawers, the calculator panel, the stack winner travel."
+      },
+      {
+        "name": "dur-press",
+        "value": "140ms",
+        "purpose": "Button and chip press, scale 0.97."
+      },
+      {
+        "name": "dur-hover",
+        "value": "180ms",
+        "purpose": "Hover and colour changes."
+      },
+      {
+        "name": "dur-pop",
+        "value": "200ms",
+        "purpose": "Tooltips and small popovers."
+      },
+      {
+        "name": "dur-menu",
+        "value": "220ms",
+        "purpose": "Dropdowns and selects."
+      },
+      {
+        "name": "dur-panel",
+        "value": "280ms",
+        "purpose": "Drawers, calculator panel, the stack veil fade."
+      },
+      {
+        "name": "stack-winner",
+        "value": "900ms, keyframes at 0 / 0.38 / 0.62 / 1 on ease-drawer",
+        "purpose": "Signature only: the winning card slides out, rises, and settles on top. Off under reduced motion."
+      },
+      {
+        "name": "stack-tour",
+        "value": "2800ms interval",
+        "purpose": "Signature only: auto-cycles four categories until first touch; pauses off screen."
+      },
+      {
+        "name": "demo-pointer",
+        "value": "520ms move, 160ms press, 420ms rest, on ease-in-out",
+        "purpose": "Signature only: the credit demo pointer ticking monthly slots; first click hands over control."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "Sidebar and header nav appear; hero splits 11/13."
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per screen: ink on the page, 6px corners.",
+      "html": "<button class=\"ds-btn-primary\">Open the demo</button>",
+      "css": ".ds-btn-primary { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: var(--cd-radius-control); border: 1px solid transparent; font-size: 14px; font-weight: 500; cursor: pointer; transition-property: background-color, border-color, color, transform, opacity; transition-duration: var(--cd-dur-press); transition-timing-function: var(--cd-ease-out); background: var(--cd-text); color: var(--cd-bg); } .ds-btn-primary:hover { background: color-mix(in oklab, var(--cd-text) 90%, transparent); } .ds-btn-primary:focus-visible { outline: 2px solid var(--cd-focus); outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action: surface fill and a hairline that darkens on hover.",
+      "html": "<button class=\"ds-btn-outline\">See how it works</button>",
+      "css": ".ds-btn-outline { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: var(--cd-radius-control); border: 1px solid transparent; font-size: 14px; font-weight: 500; cursor: pointer; transition-property: background-color, border-color, color, transform, opacity; transition-duration: var(--cd-dur-press); transition-timing-function: var(--cd-ease-out); background: var(--cd-surface); color: var(--cd-text); border-color: var(--cd-border); } .ds-btn-outline:hover { border-color: var(--cd-text-muted); } .ds-btn-outline:focus-visible { outline: 2px solid var(--cd-focus); outline-offset: 2px; } .ds-btn-outline:active { transform: scale(0.97); } .ds-btn-outline:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Quiet header action such as Sign in.",
+      "html": "<button class=\"ds-btn-ghost\">Sign in</button>",
+      "css": ".ds-btn-ghost { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: var(--cd-radius-control); border: 1px solid transparent; font-size: 14px; font-weight: 500; cursor: pointer; transition-property: background-color, border-color, color, transform, opacity; transition-duration: var(--cd-dur-press); transition-timing-function: var(--cd-ease-out); height: 32px; padding: 0 14px; font-size: 13px; background: transparent; color: var(--cd-text-muted); } .ds-btn-ghost:hover { background: var(--cd-surface); color: var(--cd-text); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--cd-focus); outline-offset: 2px; } .ds-btn-ghost:active { transform: scale(0.97); } .ds-btn-ghost:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Category Chips",
+      "kind": "chip",
+      "refersTo": "category-chip",
+      "description": "Spend category radio group; the selected chip takes its category pastel and ink.",
+      "html": "<div class=\"ds-chips\" role=\"radiogroup\" aria-label=\"Spend category\"><button class=\"ds-chip is-selected\" role=\"radio\" aria-checked=\"true\">Dining</button><button class=\"ds-chip\" role=\"radio\" aria-checked=\"false\">Groceries</button><button class=\"ds-chip\" role=\"radio\" aria-checked=\"false\">Flights</button><button class=\"ds-chip\" role=\"radio\" aria-checked=\"false\">Gas</button></div>",
+      "css": ".ds-chips { display: flex; flex-wrap: wrap; gap: 6px; } .ds-chip { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; padding: 6px 12px; font-size: 13px; font-weight: 500; border-radius: var(--cd-radius-control); border: 1px solid var(--cd-border); background: var(--cd-surface); color: var(--cd-text-muted); cursor: pointer; transition-property: background-color, border-color, color, transform; transition-duration: var(--cd-dur-press); transition-timing-function: var(--cd-ease-out); } .ds-chip:hover { border-color: var(--cd-text-muted); color: var(--cd-text); } .ds-chip.is-selected { background: var(--cd-cat-dining); color: var(--cd-cat-dining-ink); border-color: transparent; } .ds-chip:focus-visible { outline: 2px solid var(--cd-focus); outline-offset: 2px; } .ds-chip:active { transform: scale(0.97); } .ds-chip:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Earn Chip",
+      "kind": "chip",
+      "refersTo": "earn-chip",
+      "description": "Earn rate badge under a card face, in its category colour.",
+      "html": "<span class=\"ds-earn\">4x Groceries</span>",
+      "css": ".ds-earn { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--cd-radius-control); font-size: 13px; font-weight: 500; background: var(--cd-cat-groceries); color: var(--cd-cat-groceries-ink); }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text field: 8px corners, hairline border, focus colour on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search cards\" aria-label=\"Search cards\" />",
+      "css": ".ds-input { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; height: 32px; width: 240px; padding: 4px 10px; border-radius: var(--cd-radius-inner); border: 1px solid var(--cd-border); background: transparent; color: var(--cd-text); font-size: 14px; outline: none; transition: border-color var(--cd-dur-hover) var(--cd-ease-out); } .ds-input::placeholder { color: var(--cd-text-muted); } .ds-input:hover { border-color: var(--cd-text-muted); } .ds-input:focus-visible { border-color: var(--cd-focus); box-shadow: 0 0 0 3px color-mix(in oklab, var(--cd-focus) 50%, transparent); }"
+    },
+    {
+      "name": "Widget",
+      "kind": "card",
+      "refersTo": "widget",
+      "description": "The base app panel: surface, hairline, soft shadow, 12px.",
+      "html": "<section class=\"ds-widget\"><h2 class=\"ds-widget-title\">Credits left this month</h2><p class=\"ds-widget-figure\">$120 <span>of $200</span></p></section>",
+      "css": ".ds-widget { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; width: 320px; padding: 24px; border-radius: var(--cd-radius-widget); border: 1px solid var(--cd-border); background: var(--cd-surface); color: var(--cd-text); box-shadow: var(--cd-shadow-soft); } .ds-widget-title { margin: 0 0 16px; font-size: 20px; font-weight: 500; letter-spacing: -0.03em; line-height: 1.25; } .ds-widget-figure { margin: 0; font-size: 40px; font-weight: 500; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; } .ds-widget-figure span { font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--cd-text-muted); }"
+    },
+    {
+      "name": "Demo Panel with CheckmarkRow",
+      "kind": "custom",
+      "refersTo": "demo-panel",
+      "description": "Landing demo panel on panel grey holding monthly credit slots; full slots fill with the category ink, the current period is ringed.",
+      "html": "<div class=\"ds-panel\"><p class=\"ds-panel-title\">Dining credit</p><p class=\"ds-panel-note\">$10 a month</p><div class=\"ds-slots\" role=\"group\" aria-label=\"monthly credit\"><button class=\"ds-slot is-full\" aria-pressed=\"true\" aria-label=\"January, used\"><svg viewBox=\"0 0 256 256\" width=\"15\" height=\"15\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M232.49 80.49l-128 128a12 12 0 0 1-17 0l-56-56a12 12 0 1 1 17-17L96 183 215.51 63.51a12 12 0 0 1 17 17Z\"/></svg></button><button class=\"ds-slot is-full\" aria-pressed=\"true\" aria-label=\"February, used\"><svg viewBox=\"0 0 256 256\" width=\"15\" height=\"15\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M232.49 80.49l-128 128a12 12 0 0 1-17 0l-56-56a12 12 0 1 1 17-17L96 183 215.51 63.51a12 12 0 0 1 17 17Z\"/></svg></button><button class=\"ds-slot is-current\" aria-pressed=\"false\" aria-label=\"March, not used, current period\"></button><button class=\"ds-slot\" aria-pressed=\"false\" aria-label=\"April, not used\"></button><button class=\"ds-slot\" aria-pressed=\"false\" aria-label=\"May, not used\"></button><button class=\"ds-slot\" aria-pressed=\"false\" aria-label=\"June, not used\"></button></div></div>",
+      "css": ".ds-panel { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; width: 340px; padding: 28px; border-radius: var(--cd-radius-widget); background: var(--cd-panel); color: var(--cd-text); } .ds-panel-title { margin: 0; font-size: 15px; font-weight: 500; } .ds-panel-note { margin: 4px 0 20px; font-size: 13px; color: var(--cd-text-muted); } .ds-slots { display: flex; gap: 6px; } .ds-slot { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: var(--cd-radius-inner); border: 1px solid var(--cd-border); background: var(--cd-bg); color: var(--cd-surface); cursor: pointer; transition-property: background-color, border-color, transform, color; transition-duration: var(--cd-dur-press); transition-timing-function: var(--cd-ease-out); } .ds-slot.is-full { background: var(--cd-cat-dining-ink); border-color: var(--cd-cat-dining-ink); } .ds-slot.is-current { box-shadow: 0 0 0 2px var(--cd-panel), 0 0 0 3px var(--cd-text-muted); } .ds-slot:hover { border-color: var(--cd-text-muted); } .ds-slot.is-full:hover { border-color: var(--cd-cat-dining-ink); } .ds-slot:active { transform: scale(0.97); } .ds-slot:focus-visible { outline: 2px solid var(--cd-focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Band with Two-Tone Headline",
+      "kind": "custom",
+      "refersTo": "band",
+      "description": "The warm charcoal band that closes marketing pages: claim in band ink, consequence in band muted, inverted primary button.",
+      "html": "<section class=\"ds-band\"><h2 class=\"ds-band-h\">Find out which card to use. <span>It takes one tap.</span></h2><button class=\"ds-band-btn\">Open the demo</button></section>",
+      "css": ".ds-band { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; padding: 56px 40px; background: var(--cd-band); color: var(--cd-band-text); } .ds-band-h { margin: 0; max-width: 16ch; font-size: 44px; font-weight: 500; line-height: 1.02; letter-spacing: -0.04em; } .ds-band-h span { color: var(--cd-band-muted); } .ds-band-btn { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: var(--cd-radius-control); border: 1px solid transparent; font-size: 14px; font-weight: 500; cursor: pointer; transition-property: background-color, border-color, color, transform, opacity; transition-duration: var(--cd-dur-press); transition-timing-function: var(--cd-ease-out); margin-top: 32px; background: var(--cd-band-text); color: var(--cd-band); } .ds-band-btn:hover { background: color-mix(in oklab, var(--cd-band-text) 90%, transparent); } .ds-band-btn:focus-visible { outline: 2px solid var(--cd-band-text); outline-offset: 2px; } .ds-band-btn:active { transform: scale(0.97); } .ds-band-btn:disabled { opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Marketing Header Nav",
+      "kind": "nav",
+      "description": "Sticky header anchor links: muted, ink with an underline on hover.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Sections\"><a href=\"#\">Which card</a><a href=\"#\">Credits</a><a href=\"#\">Annual fees</a><a href=\"#\">Pricing</a></nav>",
+      "css": ".ds-nav { font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; display: flex; gap: 32px; font-size: 14px; } .ds-nav a { color: var(--cd-text-muted); text-decoration: none; text-underline-offset: 4px; border-radius: var(--cd-radius-control); transition: color var(--cd-dur-hover) var(--cd-ease-out); } .ds-nav a:hover { color: var(--cd-text); text-decoration: underline; } .ds-nav a:focus-visible { outline: 2px solid var(--cd-focus); outline-offset: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Product Sheet",
+    "overview": "A clean editorial product page laid on near-white paper. The ground is never pure white, headlines are a sans set tight and in two tones, controls are small and square-shouldered, and the only colour in the room belongs to the real credit cards and the five category pastels. The owner pinned the world to the Zaro reference on 28 October 2026: near-white ground, grey and lavender demo panels, a warm charcoal band near the end, a dark footer.\n\nThe system has two kinds of surface and treats them differently. **Persuade** (landing, sign in) proves the answer instead of describing it: the hero's right half is the working category picker, drawn as an isometric stack of the real card faces, and the credits section is the real CheckmarkRow being ticked by a pointer. **Operate** (wallet, tracker, calculators, compare, settings) keeps its layouts and inherits the same tokens; there, scanability and consistency outrank expression and the brand lives in type, spacing and radius, not decoration.\n\nDensity is calm. Sections breathe (80px, 112px at desktop), panels pad at 20px to 28px, and grouping comes from hairline borders and tonal steps before it comes from shadow.",
+    "keyCharacteristics": [
+      "Near-white ground in three tonal steps (page, raised surface, demo panel).",
+      "Geist at every size; display is weight 500 with negative tracking.",
+      "Two-tone headlines: the claim in ink, the consequence in muted.",
+      "Square-shouldered radii (12 / 8 / 6); pill only for tracks and dots.",
+      "One warm charcoal band that closes the marketing pages.",
+      "Colour belongs to cards and categories; there is no brand accent hue.",
+      "The real components do the demonstrating, in motion."
+    ],
+    "rules": [
+      {
+        "name": "The Near-White Rule",
+        "body": "Never pure white, never pure black. The page is `bg`, raised is `surface`, a demo sits on `panel`; depth is a tonal step first.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cards Are The Colour Rule",
+        "body": "No accent hue exists. Saturated colour comes from card art and category pastels only, so a pastel always means a category.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Tone Rule",
+        "body": "A headline states its claim in ink and its consequence in muted (`band-muted` on the band). One sentence, two weights of attention.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Measures Rule",
+        "body": "Geist Mono is for measurements and axis labels only, and loads only in the marketing layout, so the app never pays for it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Numerals are tabular everywhere by default, so money and point balances line up in a column.",
+        "section": "typography"
+      },
+      {
+        "name": "The Border Before Shadow Rule",
+        "body": "Separate with a hairline or a tonal step first. No stacked shadows, no coloured halos.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Shoulder Rule",
+        "body": "Nothing picks a radius outside this scale, and pill is never a button or chip shape.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** put every colour, radius, duration and curve in `app/globals.css` and reference the token.",
+      "**Do** write headlines two-tone: claim in ink, consequence in muted.",
+      "**Do** keep the ground near-white in three steps (`bg`, `surface`, `panel`).",
+      "**Do** demonstrate with the real component, in motion if it helps, rather than a picture of it.",
+      "**Do** say the answer in words next to any visual that encodes it; a highlighted card alone leaves the user to work out why it won.",
+      "**Do** give every interactive element hover, press, focus and disabled states, and check both themes.",
+      "**Do** use container queries when the available width is not the viewport's.",
+      "**Do** write real sample data and label it as sample on the page."
+    ],
+    "donts": [
+      "**Don't** use an em dash or en dash in any visible string. Not one, anywhere.",
+      "**Don't** introduce an accent hue, a gradient fill, gradient text or a glowing blob; colour belongs to cards and categories.",
+      "**Don't** use a pill radius on a button or chip, or any radius outside the scale.",
+      "**Don't** use Geist Mono for anything but measurements and axis labels, or load it in the app layout.",
+      "**Don't** put an uppercase wide-tracking eyebrow above a heading; the two-tone headline carries the section.",
+      "**Don't** use Instrument Serif or Fraunces.",
+      "**Don't** nest a widget inside a widget.",
+      "**Don't** use a status dot the reader cannot decode, number sections, or add scroll cues.",
+      "**Don't** build a fake product screenshot out of divs.",
+      "**Don't** centre everything; reach for a deliberate asymmetry.",
+      "**Don't** ship a shadcn component in its default styling."
+    ]
+  }
+}

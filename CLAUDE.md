@@ -20,7 +20,9 @@ that plan, the plan wins, and the deviation gets recorded here.
 ## Where the build has got to
 
 Phases 0 to 6 of `creditdash-plan.md` are done. **Phase 7 (Stripe) is
-next.** Every commit is labelled with its phase, so `git log --oneline` is
+next.** On 28 October 2026 the site was redesigned to the owner's Zaro
+reference (landing rebuilt, off-white ground, new wordmark, Geist
+headlines); see the landing's brief in `.impeccable/surfaces/`. Every commit is labelled with its phase, so `git log --oneline` is
 the detailed record; this is the summary.
 
 **Live at https://creditdash.co/**. Registered at Porkbun, DNS on
@@ -450,11 +452,18 @@ editing that one file.
 
 | Token | Light | Dark |
 |---|---|---|
-| `--cd-bg` | `#FAFAF9` | `#0B0B0C` |
-| `--cd-surface` | `#FFFFFF` | `#151517` |
-| `--cd-text` | `#0B0B0C` | `#F5F5F4` |
-| `--cd-text-muted` | `#6B6B70` | `#9A9AA0` |
-| `--cd-border` | `#ECECEA` | `#232326` |
+| `--cd-bg` | `#F7F7F4` | `#12110F` |
+| `--cd-surface` | `#FCFCFA` | `#1B1A17` |
+| `--cd-panel` | `#EFEFEA` | `#22211D` |
+| `--cd-text` | `#16150F` | `#F4F3EE` |
+| `--cd-text-muted` | `#65645F` | `#A3A29B` |
+| `--cd-border` | `#E4E3DE` | `#2C2A26` |
+| `--cd-band` | `#26231E` | `#1F1D19` |
+
+Near-white, never pure white: the page is `bg`, anything raised is
+`surface`, demo panels are `panel`. `band` is the warm charcoal of the
+landing's privacy section, closing call and footer; it stays dark in both
+themes and has its own `band-text`, `band-muted` and `band-line`.
 
 Five pastels: mint, lavender, peach, sky, butter. Each has a `-ink` companion
 that is legible on it. In light mode the pastel is the fill and the ink is a
@@ -473,18 +482,29 @@ coloured categories keep their meaning.
 
 ### Shape
 
-One radius scale, applied consistently: containers `rounded-widget` (24px),
-inputs, inner surfaces and card faces `rounded-inner` (16px), buttons, chips
-and category selectors `rounded-pill` (999px). Buttons are pills, matching the
-chips. Nothing picks a radius outside this scale.
+One radius scale, square-shouldered rather than soft: containers
+`rounded-widget` (12px), inputs and inner surfaces `rounded-inner` (8px),
+buttons, chips and category selectors `rounded-control` (6px), card faces
+`rounded-card` (12px, a real card's corner). `rounded-pill` (999px) is only
+for tracks, dots, switches and round icon buttons. Nothing picks a radius
+outside this scale.
 
 Elevation is one soft layer tinted to the background. Grouping comes from
 borders and spacing before it comes from shadow.
 
 ### Type
 
-`--font-sans` is Geist, `--font-display` is Newsreader. Both load through
-`next/font`, never a `<link>`. Swap either by changing the token.
+`--font-sans` and `--font-display` are both Geist; `.font-display` sets
+weight 500 and -0.03em tracking in `globals.css`. Headlines are two-tone:
+the claim in ink, the consequence in `text-muted`. Geist Mono
+(`font-mono`) loads only in the marketing layout and is only for
+measurements and axis labels. Fonts load through `next/font`, never a
+`<link>`.
+
+The logo is `components/shell/wordmark.tsx`: the owner's CREDIT DASH
+lettering as a CSS mask of `public/brand/wordmark.png` (black on
+transparency, cut from the owner's artwork), painted with `currentColor`
+so it follows the theme. Size it by height.
 
 Instrument Serif and Fraunces are banned: they are the two most recognisable
 generated-site display serifs. (This is a deliberate change from
@@ -632,7 +652,8 @@ back.
 
 | Plan says | Built as | Why |
 |---|---|---|
-| Instrument Serif (3.4) | Newsreader | Instrument Serif is one of the two most recognisable generated-site display serifs, which fights the plan's own anti-generic goal in 3.2 |
+| Instrument Serif (3.4) | Geist at display sizes (Newsreader until 28 October 2026) | Instrument Serif is one of the two most recognisable generated-site display serifs. The owner then asked for a sans to match their wordmark and the Zaro reference |
+| Pill buttons, 24px containers (3) | 6px controls, 12px containers, near-white #F7F7F4 | Owner's redesign to the Zaro reference, 28 October 2026 |
 | Lucide icons (8) | Phosphor | Lucide is the default icon set in generated UI; Phosphor has weights and better finance glyphs |
 | Dark pastels at 20% opacity (3.3) | Opaque hue-matched dark tints | 20% alpha on `#151517` puts chip text below WCAG AA |
 | GitHub push in Phase 5 | Pushed in Phase 0 | Owner asked for the repo from the start. Connecting Cloudflare to the repo still happens in Phase 5 |

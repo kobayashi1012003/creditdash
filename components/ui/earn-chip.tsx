@@ -18,7 +18,7 @@ export function EarnChip({ category, multiplier, className }: EarnChipProps) {
     <span
       style={categoryStyle(category)}
       className={cn(
-        "inline-flex items-center rounded-pill px-3 py-1 text-[13px] font-medium",
+        "inline-flex items-center rounded-control px-2.5 py-1 text-[13px] font-medium",
         category === "other" && "border border-line",
         className,
       )}

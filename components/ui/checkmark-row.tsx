@@ -17,6 +17,9 @@ type CheckmarkRowProps = {
   currentIndex?: number;
   /** Labels each slot for screen readers, e.g. "January". */
   slotLabel?: (index: number) => string;
+  /** Slots fill a grid cell instead of a fixed 32px, so a row can be laid
+   *  out as one deliberate line at any width. */
+  fluid?: boolean;
   className?: string;
 };
 
@@ -35,6 +38,7 @@ export function CheckmarkRow({
   onToggle,
   currentIndex = -1,
   slotLabel,
+  fluid = false,
   className,
 }: CheckmarkRowProps) {
   const count = PERIOD_COUNT[period];
@@ -69,7 +73,8 @@ export function CheckmarkRow({
             title={label}
             style={full ? { backgroundColor: tint, borderColor: tint } : undefined}
             className={cn(
-              "relative grid size-8 place-items-center rounded-inner border",
+              "relative grid place-items-center rounded-inner border",
+              fluid ? "aspect-square w-full min-w-0" : "size-8",
               "transition-[background-color,border-color,transform,color]",
               "duration-[var(--cd-dur-press)] ease-out",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",

@@ -42,7 +42,7 @@ export function ThemeToggle() {
       role="radiogroup"
       aria-label="Colour theme"
       onKeyDown={onKeyDown}
-      className="inline-flex items-center gap-0.5 rounded-pill border border-line bg-surface p-1"
+      className="inline-flex items-center gap-0.5 rounded-inner border border-line bg-surface p-1"
     >
       {OPTIONS.map(({ value, label, Icon }, i) => {
         const active = mounted && theme === value;
@@ -56,7 +56,7 @@ export function ThemeToggle() {
             aria-label={label}
             onClick={() => setTheme(value)}
             className={cn(
-              "grid size-8 place-items-center rounded-pill",
+              "grid size-8 place-items-center rounded-control",
               "transition-[background-color,color,transform] duration-[var(--cd-dur-press)] ease-out",
               "active:scale-[0.97]",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",

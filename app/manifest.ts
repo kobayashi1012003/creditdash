@@ -18,8 +18,8 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     // The light-theme --cd-bg. A manifest cannot follow the OS theme, and
     // the splash screen is on screen for well under a second.
-    background_color: "#fafaf9",
-    theme_color: "#fafaf9",
+    background_color: "#f7f7f4",
+    theme_color: "#f7f7f4",
     categories: ["finance", "productivity"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

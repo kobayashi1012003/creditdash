@@ -146,7 +146,7 @@ function CalculatorBody({
               aria-controls={`${baseId}-panel`}
               onClick={() => onActiveChange(c.id)}
               className={cn(
-                "rounded-pill border px-3 py-1.5 text-[13px] font-medium",
+                "rounded-control border px-3 py-1.5 text-[13px] font-medium",
                 "transition-[background-color,border-color,color,transform]",
                 "duration-[var(--cd-dur-press)] ease-out active:scale-[0.97]",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",

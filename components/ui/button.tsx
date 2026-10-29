@@ -3,8 +3,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
 /**
- * Restyled from the shadcn generator to the CreditDash tokens. Buttons are
- * pills, like chips; inner surfaces and inputs keep the 16px radius.
+ * Restyled from the shadcn generator to the CreditDash tokens. Buttons share
+ * the 6px control radius with chips; inner surfaces and inputs are 8px.
  *
  * Press feedback is a 0.97 scale over the press duration rather than the
  * generated 1px nudge, so the whole control responds to the touch.
@@ -12,7 +12,7 @@ import { cn } from "@/lib/cn";
 const buttonVariants = cva(
   [
     "group/button inline-flex shrink-0 select-none items-center justify-center gap-2",
-    "rounded-pill border border-transparent whitespace-nowrap",
+    "rounded-control border border-transparent whitespace-nowrap",
     "text-sm font-medium",
     "transition-[background-color,border-color,color,transform,opacity]",
     "duration-[var(--cd-dur-press)] ease-out",

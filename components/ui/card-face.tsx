@@ -115,7 +115,7 @@ export function CardFace({
         // Container query context: the type and chip inside scale with the
         // card's own width, so one component works in the hero and in a
         // dense grid without separate size variants.
-        "@container relative aspect-[1.586/1] w-full overflow-hidden rounded-inner",
+        "@container relative aspect-[1.586/1] w-full overflow-hidden rounded-card",
         "transition-opacity duration-[var(--cd-dur-hover)] ease-out",
         dimmed && "opacity-40",
         className,
@@ -152,7 +152,7 @@ export function CardFace({
           dark page. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-inner ring-1 ring-inset ring-black/10 dark:ring-white/10"
+        className="pointer-events-none absolute inset-0 rounded-card ring-1 ring-inset ring-black/10 dark:ring-white/10"
       />
     </motion.div>
   );

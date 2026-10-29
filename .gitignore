@@ -64,3 +64,9 @@ cloudflare-env.d.ts
 
 # Card art widths, cut from public/cards/ at every build
 /public/cards/w/
+
+# impeccable working files: review captures, hook cache, per-machine config.
+# The design sidecar and surface briefs are committed.
+.impeccable/review/
+.impeccable/hook.cache.json
+.impeccable/config.local.json

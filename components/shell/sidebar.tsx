@@ -24,7 +24,7 @@ export function Sidebar() {
         href="/wallet"
         className="mb-8 inline-flex w-fit rounded-inner px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
-        <Wordmark />
+        <Wordmark className="h-[26px]" />
       </Link>
 
       <nav aria-label="Main">

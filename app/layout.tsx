@@ -1,19 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Newsreader } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { ThemeProvider } from "@/components/theme-provider";
 import { firstCardScript } from "@/lib/data/first-card";
 import { CARD_ART } from "@/data/card-art.generated";
 import "./globals.css";
-
-/* Display face. Variable with optical sizing, so one file serves a landing
-   headline and a widget heading. Loaded through next/font, never a <link>. */
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
-  subsets: ["latin"],
-  display: "swap",
-  axes: ["opsz"],
-});
 
 export const metadata: Metadata = {
   // The canonical address, so absolute URLs in metadata (share previews,
@@ -34,8 +24,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0c" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#12110f" },
   ],
 };
 
@@ -44,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${GeistSans.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${GeistSans.variable} h-full antialiased`}
     >
       <head>
         {/*

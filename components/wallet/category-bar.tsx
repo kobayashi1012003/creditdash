@@ -58,7 +58,7 @@ export function CategoryBar({
             onClick={() => onChange(selected ? null : c)}
             style={selected ? categoryStyle(c) : undefined}
             className={cn(
-              "rounded-pill border font-medium",
+              "rounded-control border font-medium",
               compact ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-sm",
               "transition-[background-color,border-color,color,transform]",
               "duration-[var(--cd-dur-press)] ease-out",
@@ -86,19 +86,22 @@ export function AnswerLine({
   category,
   ranked,
   empty,
+  live = true,
   className,
 }: {
   category: Category | null;
   ranked: Ranked[] | null;
   /** Shown before a category is picked. */
   empty: string;
+  /** Announce changes. Off while something other than the user is driving. */
+  live?: boolean;
   className?: string;
 }) {
   const top = ranked?.[0];
 
   return (
     <p
-      aria-live="polite"
+      aria-live={live ? "polite" : "off"}
       className={cn("text-[15px] leading-relaxed", className)}
     >
       {top && category ? (

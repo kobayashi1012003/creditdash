@@ -251,7 +251,7 @@ function WalletCard({
             {...attributes}
             {...listeners}
             aria-label={`Move ${label}`}
-            className="cursor-grab touch-none rounded-inner active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+            className="cursor-grab touch-none rounded-card active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           >
             <CardFace card={card} priority={priority} />
             <span className="pointer-events-none absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-pill bg-bg/85 text-ink backdrop-blur-sm">
@@ -465,7 +465,7 @@ function WalletSkeleton({ picker }: { picker: ReactNode }) {
             <li key={i}>
               <div
                 className={cn(
-                  "aspect-[1.586/1] w-full rounded-inner bg-surface bg-cover bg-center",
+                  "aspect-[1.586/1] w-full rounded-card bg-surface bg-cover bg-center",
                   i === 0 && "first-card-art",
                 )}
               />

@@ -16,11 +16,21 @@
 
 :root {
   /* Surfaces and text */
-  --cd-bg: #fafaf9;
-  --cd-surface: #ffffff;
-  --cd-text: #0b0b0c;
-  --cd-text-muted: #6b6b70;
-  --cd-border: #ececea;
+  /* Near-white, never pure: the page is #F7F7F4, anything raised on it is
+     a step lighter, and demo panels a step darker. */
+  --cd-bg: #f7f7f4;
+  --cd-surface: #fcfcfa;
+  --cd-panel: #efefea;
+  --cd-text: #16150f;
+  --cd-text-muted: #65645f;
+  --cd-border: #e4e3de;
+
+  /* The warm charcoal band: the privacy section, the closing call and the
+     footer. It has its own text pair because it stays dark in both themes. */
+  --cd-band: #26231e;
+  --cd-band-text: #f4f3ee;
+  --cd-band-muted: #a39f95;
+  --cd-band-line: #3a362f;
 
   /* Pastels. Each has a background and an ink that is legible on it.
      Light mode uses the pastel as the fill with a deep hue-matched ink. */
@@ -36,17 +46,21 @@
   --cd-butter-ink: #5e4a0b;
 
   /* Focus ring, shared by every interactive element */
-  --cd-focus: #0b0b0c;
+  --cd-focus: #16150f;
 
   /* Elevation: one soft layer, tinted to the background hue.
      Hierarchy comes from borders and spacing, not stacked shadows. */
-  --cd-shadow-soft: 0 2px 8px rgb(11 11 12 / 0.04);
-  --cd-shadow-lifted: 0 8px 24px rgb(11 11 12 / 0.08);
+  --cd-shadow-soft: 0 2px 8px rgb(38 35 30 / 0.05);
+  --cd-shadow-lifted: 0 18px 40px -12px rgb(38 35 30 / 0.22);
 
-  /* Radius. The rule: containers 24, controls and inner surfaces 16,
-     chips and pills 999. No element picks a radius outside this scale. */
-  --cd-radius-widget: 24px;
-  --cd-radius-inner: 16px;
+  /* Radius. Square-shouldered, not soft: containers 12, inner surfaces and
+     inputs 8, buttons, chips and category selectors 6. Card faces keep a
+     real card's corner (12). Pill is only for tracks, dots and switches.
+     No element picks a radius outside this scale. */
+  --cd-radius-widget: 12px;
+  --cd-radius-inner: 8px;
+  --cd-radius-control: 6px;
+  --cd-radius-card: 12px;
   --cd-radius-pill: 999px;
 
   /* Easing. The browser defaults are too weak to read as intentional.
@@ -97,11 +111,16 @@
 }
 
 .dark {
-  --cd-bg: #0b0b0c;
-  --cd-surface: #151517;
-  --cd-text: #f5f5f4;
-  --cd-text-muted: #9a9aa0;
-  --cd-border: #232326;
+  --cd-bg: #12110f;
+  --cd-surface: #1b1a17;
+  --cd-panel: #22211d;
+  --cd-text: #f4f3ee;
+  --cd-text-muted: #a3a29b;
+  --cd-border: #2c2a26;
+
+  /* A step lifted from the page, so the band still reads as a band. */
+  --cd-band: #1f1d19;
+  --cd-band-line: #34312b;
 
   /* Dark mode inverts the pastel relationship: the fill becomes a deep
      hue-matched tint of the surface and the ink carries the colour. A literal
@@ -117,7 +136,7 @@
   --cd-butter: #272015;
   --cd-butter-ink: #e8d38a;
 
-  --cd-focus: #f5f5f4;
+  --cd-focus: #f4f3ee;
 
   --cd-shadow-soft: 0 2px 8px rgb(0 0 0 / 0.4);
   --cd-shadow-lifted: 0 8px 24px rgb(0 0 0 / 0.55);
@@ -167,6 +186,11 @@
   --color-ink: var(--cd-text);
   --color-muted: var(--cd-text-muted);
   --color-line: var(--cd-border);
+  --color-panel: var(--cd-panel);
+  --color-band: var(--cd-band);
+  --color-band-ink: var(--cd-band-text);
+  --color-band-muted: var(--cd-band-muted);
+  --color-band-line: var(--cd-band-line);
   --color-focus: var(--cd-focus);
 
   --color-mint: var(--cd-mint);
@@ -182,13 +206,16 @@
 
   --radius-widget: var(--cd-radius-widget);
   --radius-inner: var(--cd-radius-inner);
+  --radius-control: var(--cd-radius-control);
+  --radius-card: var(--cd-radius-card);
   --radius-pill: var(--cd-radius-pill);
 
   --shadow-soft: var(--cd-shadow-soft);
   --shadow-lifted: var(--cd-shadow-lifted);
 
   --font-sans: var(--font-sans);
-  --font-display: var(--font-newsreader);
+  --font-display: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 
   --ease-out: var(--cd-ease-out);
   --ease-in-out: var(--cd-ease-in-out);
@@ -258,9 +285,9 @@
 
   --color-background: var(--background);
 
-  --radius-sm: 10px;
+  --radius-sm: var(--cd-radius-control);
 
-  --radius-md: 12px;
+  --radius-md: var(--cd-radius-inner);
 
   --radius-lg: var(--cd-radius-inner);
 
@@ -299,6 +326,23 @@
     outline: 2px solid var(--cd-focus);
     outline-offset: 2px;
     border-radius: var(--cd-radius-inner);
+  }
+
+  /* Display type is Geist set tight, not a serif. A heading that sets its
+     own tracking or weight overrides these, since utilities win. */
+  .font-display {
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+
+  ::selection {
+    background-color: var(--cd-lavender);
+    color: var(--cd-lavender-ink);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--cd-text);
   }
 
   /* Touch devices fire :hover on tap, which leaves states stuck after a press.
