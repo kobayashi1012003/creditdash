@@ -155,17 +155,17 @@ export function CompareView({ all }: { all: Card[] }) {
               score={(c) => cardAnnualCreditValue(c)}
             />
 
-            {/* The rate is what people expect to read, but the winner is
-                decided on value. Tinting Hilton's 6x over Amex Gold's 4x on
-                dining would be the wrong answer stated confidently, because
-                those points are worth a third as much. */}
+            {/* The rate is what people read, but the winner is decided on
+                value. Tinting Hilton's 6x over Amex Gold's 4x on dining
+                would be the wrong answer stated confidently, because those
+                points are worth a third as much. Cents per point is held
+                back from the table for now (owner, 29 October 2026). */}
             {ROWS.map((cat) => (
               <Row
                 key={cat}
                 label={CATEGORY_LABELS[cat]}
                 cards={chosen}
                 value={(c) => `${rateFor(c, cat).multiplier}x`}
-                sublabel={(c) => `${centsFor(c, cat, valuations).toFixed(1)}c`}
                 score={(c) => centsFor(c, cat, valuations)}
               />
             ))}
@@ -239,14 +239,11 @@ function Row({
   label,
   cards,
   value,
-  sublabel,
   score,
 }: {
   label: string;
   cards: Card[];
   value: (c: Card) => string;
-  /** Shown under the value, e.g. what a rate is actually worth. */
-  sublabel?: (c: Card) => string;
   score?: (c: Card) => number;
 }) {
   const scores = score ? cards.map(score) : null;
@@ -277,11 +274,6 @@ function Row({
               )}
             >
               {value(card)}
-              {sublabel && (
-                <span className="ml-1.5 text-[12px] opacity-70">
-                  {sublabel(card)}
-                </span>
-              )}
               {wins && <span className="sr-only"> (best)</span>}
             </span>
           </td>
