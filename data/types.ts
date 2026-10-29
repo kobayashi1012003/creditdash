@@ -58,6 +58,8 @@ export type CardCredit = {
   period: CreditPeriod;
   resetBasis: ResetBasis;
   category?: Category;
+  /** The condition most likely to cost someone the credit. */
+  notes?: string;
 };
 
 export type Card = {
@@ -78,6 +80,12 @@ export type Card = {
   /** Percent, 0 when the card charges none. */
   foreignTransactionFee: number;
   loungeAccess: string | null;
+  /**
+   * Details that are easy to miss and change what the card is worth:
+   * enrollment, spend thresholds, recent and announced changes. One
+   * sentence each.
+   */
+  finePrint?: string[];
 };
 
 /** A card the demo user owns. Mirrors `user_cards`. */

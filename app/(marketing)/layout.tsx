@@ -100,8 +100,9 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
             <div>
               <Wordmark className="h-10 sm:h-12" />
               <p className="mt-5 max-w-[42ch] text-[13px] leading-relaxed text-band-muted">
-                Not financial advice. Card details are sample data and can be
-                wrong. Check anything that matters with your issuer.
+                Not financial advice. Card details are checked against each
+                issuer but change often. Confirm anything that matters with
+                your issuer.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">

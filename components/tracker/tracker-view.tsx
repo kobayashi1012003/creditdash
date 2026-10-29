@@ -230,7 +230,7 @@ function CardCredits({
       </ul>
 
       <p className="mt-6 text-[13px] text-muted">
-        Sample data, last verified {longDate(card.lastVerified)}.
+        Last checked {longDate(card.lastVerified)}. Confirm with {card.issuer}.
       </p>
     </Widget>
   );

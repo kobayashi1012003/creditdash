@@ -32,9 +32,10 @@ export default function TermsPage() {
 
       <h2>Verify with your issuer</h2>
       <p>
-        Card details in the app are sample data. They can be out of date or
-        simply wrong, because earn rates, credits, fees and benefits change
-        often and without notice. Check anything that matters against your
+        Card details in the app are checked against each issuer&apos;s own pages,
+        and each card shows the date it was last checked. They can still be
+        out of date or wrong, because earn rates, credits, fees and benefits
+        change often and without notice. Check anything that matters against your
         issuer before you act on it.
       </p>
 

@@ -186,7 +186,7 @@ export default function LandingPage() {
         </div>
         <p className="mt-5 text-[13px] text-muted">
           Payments are not switched on yet. The demo is the whole app, with
-          sample data.
+          a sample wallet.
         </p>
       </section>
 

@@ -67,7 +67,7 @@ export function AddCardSheet({
           {results.length === 0 ? (
             <p className="py-6 text-sm leading-relaxed text-muted">
               {query.trim()
-                ? `Nothing matches "${query.trim()}". The catalog is small sample data for now.`
+                ? `Nothing matches "${query.trim()}". The catalog covers a small set of cards for now.`
                 : "Every card in the catalog is already in your wallet."}
             </p>
           ) : (

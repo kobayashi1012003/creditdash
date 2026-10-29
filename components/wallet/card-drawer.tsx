@@ -14,7 +14,7 @@ import { CardFace } from "@/components/ui/card-face";
 import { EarnChip } from "@/components/ui/earn-chip";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
-import { longDate, monthName, usd } from "@/lib/format";
+import { longDate, monthName, usd, usdExact } from "@/lib/format";
 import { useIsDesktop } from "@/lib/use-media-query";
 
 const PERIOD_LABEL: Record<string, string> = {
@@ -119,7 +119,7 @@ export function CardDrawer({
                   This card has no credits to track.
                 </p>
               ) : (
-                <ul className="space-y-2.5">
+                <ul className="space-y-3">
                   {card.credits.map((credit) => (
                     <li
                       key={credit.id}
@@ -131,9 +131,12 @@ export function CardDrawer({
                           {PERIOD_LABEL[credit.period]}, resets on the{" "}
                           {credit.resetBasis === "calendar" ? "calendar year" : "anniversary"}
                         </p>
+                        {credit.notes && (
+                          <p className="mt-0.5 text-[13px] text-muted">{credit.notes}</p>
+                        )}
                       </div>
                       <span className="shrink-0 text-sm tabular-nums">
-                        {usd(credit.amount)}
+                        {Number.isInteger(credit.amount) ? usd(credit.amount) : usdExact(credit.amount)}
                       </span>
                     </li>
                   ))}
@@ -141,9 +144,23 @@ export function CardDrawer({
               )}
             </section>
 
+            {card.finePrint && card.finePrint.length > 0 && (
+              <section>
+                <h3 className="mb-3 text-sm font-medium">Worth knowing</h3>
+                <ul className="space-y-2 text-[13px] leading-relaxed text-muted">
+                  {card.finePrint.map((line) => (
+                    <li key={line} className="border-b border-line pb-2 last:border-0 last:pb-0">
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <p className="text-[13px] text-muted">
-              Sample data, last verified {longDate(card.lastVerified)}. Check the
-              details with {card.issuer} before you rely on them.
+              Last checked {longDate(card.lastVerified)}. Benefits change often,
+              so confirm anything that matters with {card.issuer} before you
+              rely on it.
             </p>
           </div>
         </div>

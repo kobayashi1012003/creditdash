@@ -109,9 +109,10 @@ export function AnswerLine({
           <span className="font-medium">{top.card.name}</span>
           <span className="text-muted">
             {" "}
+            {/* Ranked by value, but the line states only the rate: cents
+                per dollar is held back for now (owner, 28 October 2026). */}
             earns {top.rate.multiplier}x on{" "}
-            {CATEGORY_LABELS[category].toLowerCase()}, worth{" "}
-            {top.centsPerDollar.toFixed(1)} cents per dollar.
+            {CATEGORY_LABELS[category].toLowerCase()}.
           </span>
         </>
       ) : (

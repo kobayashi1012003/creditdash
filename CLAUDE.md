@@ -365,6 +365,30 @@ cycle start (`a2025-11`, `a2025-11:Q2`), because "the second quarter" is a
 different three months depending on when the card was opened. Changing a key
 format means a schema version and a migration, never an edit in place.
 
+## Card data
+
+`data/cards.seed.ts` was checked card by card on 28 October 2026 against
+each issuer's own page, cross-checked with The Points Guy and recent
+coverage, and `lastVerified` set to that date. Facts are in our own words;
+nothing from TPG is copied, and the default valuations are ours, not
+TPG's. Three modelling rules:
+
+- **A credit whose period or amount changes meaningfully gets a new id**
+  (`csr-edit`, `gold-resy-50`, `united-tb-10k`), so usage stored under
+  the old rules is never read under the new ones. The old rows are
+  orphaned, not misread.
+- **Benefits without a regular period** (per stay, every four years,
+  unlocked by spend) are not credits; they go in the card's `finePrint`,
+  which the card drawer shows as "Worth knowing". A credit's `notes` holds
+  the one condition most likely to cost someone it.
+- **The id `bilt` means Bilt Blue** since the 7 February 2026 relaunch, so
+  wallets with the old $0 card keep a card. Obsidian and Palladium are new
+  ids. Obsidian assumes dining for its pick-one 3x category.
+
+The answer line states the multiplier only ("earns 8x on flights"); cents
+per dollar is held back by the owner's choice, though ranking still uses
+value.
+
 ## Calculator and ranking maths
 
 `lib/calculators/engine.ts` holds every number the app states about what a
@@ -399,9 +423,11 @@ paints a blank card for a frame and puts a failed request on the wire for
 every card. Cards without art are still common. `onError` still falls
 back, for a file removed between a build and a request.
 
-**8 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
-Venture X, Blue Business Plus, Hilton Surpass, Bilt), converted to 1536x969
-WebP with transparent corners flattened onto the art's own dominant colour.
+**10 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
+Venture X, Blue Business Plus, Hilton Surpass, and Bilt Blue, Obsidian and
+Palladium), converted to WebP with transparent corners flattened onto the
+art's own dominant colour. The first seven are 1536x969; the Bilt sources
+were only 500px (Obsidian 276px) and are kept at that size, never enlarged.
 The owner confirmed permission to use it. 22 more images exist in the
 owner's Downloads for cards not in the catalog yet; adding a card means
 its earn rates, credits and fee too.
