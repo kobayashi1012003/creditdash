@@ -426,6 +426,28 @@ The answer line states the multiplier only ("earns 8x on flights"); cents
 per dollar is held back by the owner's choice, though ranking still uses
 value.
 
+## Wallet, Tracker and Compare controls (29 October 2026)
+
+- **Adding cards is one sheet everywhere** (`components/wallet/add-card-sheet.tsx`):
+  tick several, confirm once. The Wallet opens it from "Add cards" in its
+  page header (so `WalletView` renders the header), Compare from its own
+  button. `max` caps the picks: the free plan's room in the Wallet, three
+  cards in Compare.
+- **Edit replaces Rearrange.** Drag to reorder and mark cards to remove;
+  Done asks once, in a dialog, because removing deletes credit history.
+- **Sort and Filter change the view only** (`lib/wallet-options.ts`), never
+  the saved order. Sorting by a category ranks on value, like the answer
+  line; the answer is chosen from the cards on screen.
+- **Store search** under the categories uses a built-in list,
+  `data/merchants.ts` (about 250 US merchants and kinds of place), searched
+  by `lib/merchants.ts`, which is dependency-free and unit tested. Picking a
+  store selects its category. Notes must hold for every card in the
+  catalog or say "most cards". Issuers go by merchant code, so the list
+  says "usually".
+- **The Tracker shows one card at a time.** First visit picks a card;
+  the choice is remembered in this browser (`lib/use-stored-value.ts`) and
+  a switcher row changes it.
+
 ## Calculator and ranking maths
 
 `lib/calculators/engine.ts` holds every number the app states about what a

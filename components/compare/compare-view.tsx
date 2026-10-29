@@ -19,6 +19,7 @@ import { canAddCard, FREE_CARD_LIMIT } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
 import { Button } from "@/components/ui/button";
+import { AddCardSheet } from "@/components/wallet/add-card-sheet";
 
 const MAX = 3;
 
@@ -45,18 +46,38 @@ export function CompareView({ all }: { all: Card[] }) {
     setIds((prev) => prev.filter((x) => x !== id));
   }
 
-  function add(id: string) {
-    setIds((prev) => (prev.length >= MAX ? prev : [...prev, id]));
-    setPicking(false);
+  function add(newIds: string[]) {
+    setIds((prev) => [...prev, ...newIds].slice(0, MAX));
   }
+
+  // The same catalog sheet as the Wallet's, so adding a card feels the same
+  // everywhere. It offers every catalog card, owned or not.
+  const sheet = (
+    <AddCardSheet
+      open={picking}
+      onOpenChange={setPicking}
+      exclude={new Set(ids)}
+      max={MAX - chosen.length}
+      limitNote={`Compare holds ${MAX} cards at a time. Remove one from the table to swap it.`}
+      title="Compare cards"
+      verb="Compare"
+      onConfirm={add}
+    />
+  );
 
   if (chosen.length === 0) {
     return (
-      <EmptyCompare
-        all={all}
-        onAdd={add}
-        chosen={[]}
-      />
+      <div>
+        <p className="mb-5 max-w-[52ch] text-[15px] leading-relaxed text-muted">
+          Pick two or three cards and every row shows which one wins. You do not
+          have to own them.
+        </p>
+        <Button variant="accent" onClick={() => setPicking(true)}>
+          <PlusIcon size={16} weight="bold" />
+          Choose cards
+        </Button>
+        {sheet}
+      </div>
     );
   }
 
@@ -70,13 +91,8 @@ export function CompareView({ all }: { all: Card[] }) {
           {chosen.length} of {MAX} cards
         </p>
         {chosen.length < MAX && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPicking((p) => !p)}
-            aria-expanded={picking}
-          >
-            <PlusIcon size={15} />
+          <Button variant="accent" size="sm" onClick={() => setPicking(true)}>
+            <PlusIcon size={15} weight="bold" />
             Add card
           </Button>
         )}
@@ -88,7 +104,9 @@ export function CompareView({ all }: { all: Card[] }) {
         {/* relative so the sr-only caption below is contained by the table
             rather than by <body>, which would place it at the table's
             unclipped coordinates outside the scroller. */}
-        <table className="relative w-full min-w-[520px] border-collapse text-sm">
+        {/* Fixed layout: every card column gets the same width, whatever
+            the length of its name, so the card faces match in size. */}
+        <table className="relative w-full min-w-[520px] table-fixed border-collapse text-sm">
           <caption className="sr-only">
             Comparison of {chosen.map((c) => c.name).join(", ")}
           </caption>
@@ -208,14 +226,7 @@ export function CompareView({ all }: { all: Card[] }) {
         </p>
       )}
 
-      {picking && (
-        <CardChooser
-          all={all}
-          chosen={ids}
-          onAdd={add}
-          onCancel={() => setPicking(false)}
-        />
-      )}
+      {sheet}
     </div>
   );
 }
@@ -277,72 +288,6 @@ function Row({
         );
       })}
     </tr>
-  );
-}
-
-function CardChooser({
-  all,
-  chosen,
-  onAdd,
-  onCancel,
-}: {
-  all: Card[];
-  chosen: string[];
-  onAdd: (id: string) => void;
-  onCancel?: () => void;
-}) {
-  const available = all.filter((c) => !chosen.includes(c.id));
-
-  return (
-    <section className="rounded-widget border border-line bg-surface p-5">
-      <div className="mb-4 flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-lg">Add a card</h2>
-        {onCancel && (
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-      </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {available.map((card) => (
-          <li key={card.id}>
-            <button
-              type="button"
-              onClick={() => onAdd(card.id)}
-              className="flex w-full items-center justify-between gap-3 rounded-inner border border-line px-3.5 py-3 text-left transition-[border-color,transform] duration-[var(--cd-dur-press)] ease-out hover:border-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-sm">{card.name}</span>
-                <span className="block text-[13px] text-muted">
-                  {card.issuer}
-                </span>
-              </span>
-              <PlusIcon size={16} className="shrink-0 text-muted" />
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function EmptyCompare({
-  all,
-  chosen,
-  onAdd,
-}: {
-  all: Card[];
-  chosen: string[];
-  onAdd: (id: string) => void;
-}) {
-  return (
-    <div>
-      <p className="mb-6 max-w-[52ch] text-[15px] leading-relaxed text-muted">
-        Pick two or three cards and every row shows which one wins. You do not
-        have to own them.
-      </p>
-      <CardChooser all={all} chosen={chosen} onAdd={onAdd} />
-    </div>
   );
 }
 

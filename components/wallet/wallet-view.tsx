@@ -3,11 +3,14 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  ArrowsOutCardinalIcon,
+  ArrowCounterClockwiseIcon,
   CheckIcon,
   DotsSixVerticalIcon,
+  FunnelSimpleIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
+  SortAscendingIcon,
   SparkleIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -29,22 +32,28 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Card } from "@/data/types";
 import { getCard } from "@/data/cards.seed";
-import type { Category } from "@/lib/categories";
+import type { Merchant } from "@/data/merchants";
+import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { rankCards } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
+import { cardLimit, FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
 import {
-  canAddCard,
-  cardLimit,
-  FREE_CARD_LIMIT,
-  PREMIUM_PRICE_MONTHLY,
-} from "@/lib/plan";
+  activeFilterCount,
+  matchesFilter,
+  NO_FILTER,
+  sortCards,
+  type WalletFilter,
+  type WalletSort,
+} from "@/lib/wallet-options";
 import {
   addCard,
-  removeCard,
+  addCards,
+  removeCards,
   reorderCards,
   useHiddenCardCount,
   useIsLoading,
+  useOwnedCardIds,
   usePlan,
   useValuations,
   useWallet,
@@ -53,24 +62,44 @@ import {
 import { CardFace } from "@/components/ui/card-face";
 import { EarnChip } from "@/components/ui/earn-chip";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog, ConfirmDialogClose } from "@/components/ui/confirm-dialog";
+import {
+  Menu,
+  MenuCheckboxItem,
+  MenuGroup,
+  MenuItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuSeparator,
+} from "@/components/ui/menu";
+import { PageHeader } from "@/components/shell/page-header";
 import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
 import { CardDrawer } from "@/components/wallet/card-drawer";
 import { AddCardSheet } from "@/components/wallet/add-card-sheet";
 import { ImportOffer } from "@/components/wallet/import-offer";
+import { MerchantSearch } from "@/components/wallet/merchant-search";
 import { CARD_ART } from "@/data/card-art.generated";
 import { firstCardCss } from "@/lib/data/first-card";
 
 export function WalletView() {
   const entries = useWallet();
+  const owned = useOwnedCardIds();
   const hidden = useHiddenCardCount();
   const plan = usePlan();
   const valuations = useValuations();
   const isLoading = useIsLoading();
 
   const [category, setCategory] = useState<Category | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  // Bumped when a category is tapped, which empties the store search.
+  const [searchKey, setSearchKey] = useState(0);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [arranging, setArranging] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState<string[]>([]);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [sort, setSort] = useState<WalletSort>({ by: "yours" });
+  const [filter, setFilter] = useState<WalletFilter>(NO_FILTER);
 
   const sensors = useSensors(
     // A small distance threshold keeps a tap on a card from registering as a
@@ -79,40 +108,97 @@ export function WalletView() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const limit = cardLimit(plan);
+  const room = Math.max(0, limit - entries.length - hidden);
+
+  function pickCategory(next: Category | null) {
+    setCategory(next);
+    if (merchant) setMerchant(null);
+    setSearchKey((k) => k + 1);
+  }
+  function pickMerchant(m: Merchant | null) {
+    setMerchant(m);
+    setCategory(m?.category ?? null);
+  }
+
+  // "Add cards" sits in the page header, so it is in reach however long the
+  // wallet gets, rather than below the last card.
+  const header = (
+    <PageHeader
+      title="Wallet"
+      description="The cards you carry, and which one to reach for."
+      action={
+        <Button variant="accent" onClick={() => setAdding(true)} disabled={isLoading || editing}>
+          <PlusIcon size={16} weight="bold" />
+          Add cards
+        </Button>
+      }
+    />
+  );
+  const sheet = (
+    <AddCardSheet
+      open={adding}
+      onOpenChange={setAdding}
+      exclude={owned}
+      max={room}
+      limitNote={
+        room === 0
+          ? `The free plan holds ${FREE_CARD_LIMIT} cards and yours is full. Remove one, or move to Premium for as many as you own.`
+          : "That is all the free plan has room for. Premium saves as many cards as you own."
+      }
+      onConfirm={addCards}
+    />
+  );
+
   if (isLoading) {
     // The picker needs no stored data, so it renders for real while the
     // wallet loads. It is the largest text on the page, and painting it with
     // the server HTML rather than after hydration is most of the difference
     // in Largest Contentful Paint. A category tapped early is kept.
     return (
-      <WalletSkeleton
-        picker={
-          <Picker
-            category={category}
-            onChange={setCategory}
-            ranked={null}
-            arranging={false}
-          />
-        }
-      />
+      <>
+        {header}
+        <WalletSkeleton
+          picker={
+            <Picker
+              category={category}
+              onChange={pickCategory}
+              merchant={merchant}
+              onMerchant={pickMerchant}
+              cards={null}
+              valuations={valuations}
+              ranked={null}
+              editing={false}
+              searchKey={searchKey}
+            />
+          }
+        />
+      </>
     );
   }
   if (entries.length === 0) {
     return (
       <>
+        {header}
         <ImportOffer />
         <EmptyWallet onAdd={() => setAdding(true)} />
-        <AddCardSheet open={adding} onOpenChange={setAdding} />
+        {sheet}
       </>
     );
   }
 
-  const cards = entries.map((e) => e.card);
-  const ranked = category ? rankCards(cards, category, valuations) : null;
-  // Arranging and highlighting are different questions; do not do both.
-  const winnerId = arranging ? null : (ranked?.[0]?.card.id ?? null);
+  // Editing shows every card in the saved order, since that order is what
+  // dragging changes. Otherwise the grid is the sorted, filtered view, and
+  // the "which card" answer is chosen from what is on screen.
+  const view = editing
+    ? entries
+    : sortCards(entries.filter((e) => matchesFilter(e.card, filter)), sort, valuations);
+  const cards = view.map((e) => e.card);
+  const ranked = category && !editing ? rankCards(cards, category, valuations) : null;
+  const winnerId = ranked?.[0]?.card.id ?? null;
   const openEntry = entries.find((e) => e.card.id === openCardId) ?? null;
-  const limit = cardLimit(plan);
+  const filters = activeFilterCount(filter);
+  const issuers = [...new Set(entries.map((e) => e.card.issuer))].sort();
 
   async function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -122,73 +208,153 @@ export function WalletView() {
     await reorderCards(from, to);
   }
 
+  function startEditing() {
+    setEditing(true);
+    pickCategory(null);
+  }
+  function finishEditing() {
+    if (removing.length > 0) setConfirmRemove(true);
+    else setEditing(false);
+  }
+  function cancelEditing() {
+    setRemoving([]);
+    setEditing(false);
+  }
+  async function applyRemovals() {
+    await removeCards(removing);
+    setRemoving([]);
+    setConfirmRemove(false);
+    setEditing(false);
+  }
+
+  const removingNames = removing
+    .map((id) => entries.find((e) => e.card.id === id))
+    .filter((e): e is WalletEntry => Boolean(e))
+    .map((e) => e.userCard.nickname ?? e.card.name);
+
   return (
     <>
+      {header}
       <Picker
         category={category}
-        onChange={setCategory}
+        onChange={pickCategory}
+        merchant={merchant}
+        onMerchant={pickMerchant}
+        cards={cards}
+        valuations={valuations}
         ranked={ranked}
-        arranging={arranging}
+        editing={editing}
+        searchKey={searchKey}
       />
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-muted">
-          {entries.length} {entries.length === 1 ? "card" : "cards"}
-          {limit !== Infinity && ` of ${limit}`}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <p className="text-[13px] text-muted" aria-live="polite">
+          {editing
+            ? removing.length > 0
+              ? `${removing.length} marked for removal`
+              : "Drag to reorder, or mark cards to remove"
+            : view.length === entries.length
+              ? `${entries.length} ${entries.length === 1 ? "card" : "cards"}${limit !== Infinity ? ` of ${limit}` : ""}`
+              : `${view.length} of ${entries.length} cards shown`}
         </p>
-        {entries.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {editing ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={finishEditing}>
+                <CheckIcon size={15} />
+                Done
+              </Button>
+            </>
+          ) : (
+            <>
+              {entries.length > 1 && <SortMenu sort={sort} onChange={setSort} />}
+              {entries.length > 1 && (
+                <FilterMenu filter={filter} onChange={setFilter} issuers={issuers} count={filters} />
+              )}
+              <Button variant="ghost" size="sm" onClick={startEditing}>
+                <PencilSimpleIcon size={15} />
+                Edit
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {view.length === 0 ? (
+        <div className="mt-3 rounded-widget border border-dashed border-line px-5 py-8">
+          <p className="text-[15px]">No cards match these filters.</p>
           <Button
-            variant={arranging ? "default" : "ghost"}
+            variant="outline"
             size="sm"
-            onClick={() => {
-              setArranging((a) => !a);
-              setCategory(null);
-            }}
-            aria-pressed={arranging}
+            className="mt-3"
+            onClick={() => setFilter(NO_FILTER)}
           >
-            {arranging ? <CheckIcon size={15} /> : <ArrowsOutCardinalIcon size={15} />}
-            {arranging ? "Done" : "Rearrange"}
+            Clear filters
           </Button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={view.map((e) => e.card.id)} strategy={rectSortingStrategy}>
+            <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+              {view.map((entry, i) => (
+                <WalletCard
+                  key={entry.card.id}
+                  entry={entry}
+                  // The first row is the page's largest paint on every
+                  // width; everything below it can wait to be scrolled to.
+                  priority={i < 2}
+                  editing={editing}
+                  marked={removing.includes(entry.card.id)}
+                  onToggleRemove={() =>
+                    setRemoving((r) =>
+                      r.includes(entry.card.id)
+                        ? r.filter((x) => x !== entry.card.id)
+                        : [...r, entry.card.id],
+                    )
+                  }
+                  isWinner={entry.card.id === winnerId}
+                  dimmed={winnerId !== null && entry.card.id !== winnerId}
+                  onOpen={() => setOpenCardId(entry.card.id)}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={onDragEnd}
-      >
-        <SortableContext
-          items={entries.map((e) => e.card.id)}
-          strategy={rectSortingStrategy}
-        >
-          <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-            {entries.map((entry, i) => (
-              <WalletCard
-                key={entry.card.id}
-                entry={entry}
-                // The first row is the page's largest paint on every
-                // width; everything below it can wait to be scrolled to.
-                priority={i < 2}
-                arranging={arranging}
-                isWinner={entry.card.id === winnerId}
-                dimmed={winnerId !== null && entry.card.id !== winnerId}
-                onOpen={() => setOpenCardId(entry.card.id)}
-              />
-            ))}
-          </ul>
-        </SortableContext>
-      </DndContext>
-
-      <div className="mt-8">
-        {canAddCard(plan, entries.length) ? (
-          <Button variant="outline" size="lg" onClick={() => setAdding(true)}>
-            <PlusIcon size={18} />
-            Add card
-          </Button>
-        ) : (
+      {room === 0 && !editing && (
+        <div className="mt-8">
           <UpgradePanel count={entries.length} hidden={hidden} />
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Removing a card deletes its credit history, so a batch of removals
+          is confirmed once, naming what goes. */}
+      <ConfirmDialog
+        open={confirmRemove}
+        onOpenChange={setConfirmRemove}
+        title={removing.length === 1 ? `Remove ${removingNames[0]}?` : `Remove ${removing.length} cards?`}
+        actions={
+          <>
+            <ConfirmDialogClose render={<Button variant="ghost" />}>
+              {removing.length === 1 ? "Keep it" : "Keep them"}
+            </ConfirmDialogClose>
+            <Button variant="destructive" onClick={applyRemovals}>
+              <TrashIcon size={16} />
+              {removing.length === 1 ? "Remove card" : `Remove ${removing.length} cards`}
+            </Button>
+          </>
+        }
+      >
+        {removing.length > 1 && <p>{removingNames.join(", ")}.</p>}
+        <p>
+          Credits you have ticked off on {removing.length === 1 ? "this card" : "these cards"} are
+          deleted too. Adding a card back later starts its tracker fresh.
+        </p>
+      </ConfirmDialog>
 
       <CardDrawer
         card={openEntry?.card ?? null}
@@ -196,21 +362,159 @@ export function WalletView() {
         open={openCardId !== null}
         onOpenChange={(next) => !next && setOpenCardId(null)}
       />
-      <AddCardSheet open={adding} onOpenChange={setAdding} />
+      {sheet}
     </>
+  );
+}
+
+function sortLabel(s: WalletSort): string {
+  if (s.by === "category") return `Best for ${CATEGORY_LABELS[s.category].toLowerCase()}`;
+  if (s.by === "fee-low") return "Lowest fee";
+  if (s.by === "credits") return "Most credits";
+  return "Sort";
+}
+
+/**
+ * Sorting by a category ranks on value, the same way the answer line
+ * does. It changes the view only; the saved order changes in Edit.
+ */
+function SortMenu({ sort, onChange }: { sort: WalletSort; onChange: (s: WalletSort) => void }) {
+  const value = sort.by === "category" ? `category:${sort.category}` : sort.by;
+  return (
+    <Menu
+      trigger={
+        <Button variant={sort.by === "yours" ? "ghost" : "outline"} size="sm">
+          <SortAscendingIcon size={15} />
+          {sortLabel(sort)}
+        </Button>
+      }
+    >
+      <MenuRadioGroup
+        value={value}
+        onValueChange={(v) => {
+          if (v.startsWith("category:")) {
+            onChange({ by: "category", category: v.slice("category:".length) as Category });
+          } else {
+            onChange({ by: v as "yours" | "fee-low" | "credits" });
+          }
+        }}
+      >
+        <MenuGroup>
+          <MenuRadioItem value="yours">Your order</MenuRadioItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup label="Highest earning on">
+          {CATEGORIES.map((c) => (
+            <MenuRadioItem key={c} value={`category:${c}`}>
+              {CATEGORY_LABELS[c]}
+            </MenuRadioItem>
+          ))}
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup label="Cost">
+          <MenuRadioItem value="fee-low">Lowest annual fee</MenuRadioItem>
+          <MenuRadioItem value="credits">Most credits a year</MenuRadioItem>
+        </MenuGroup>
+      </MenuRadioGroup>
+    </Menu>
+  );
+}
+
+function toggled<T>(set: ReadonlySet<T>, item: T, on: boolean): Set<T> {
+  const next = new Set(set);
+  if (on) next.add(item);
+  else next.delete(item);
+  return next;
+}
+
+/** Choices widen within a group (Amex or Chase) and narrow across groups. */
+function FilterMenu({
+  filter,
+  onChange,
+  issuers,
+  count,
+}: {
+  filter: WalletFilter;
+  onChange: (f: WalletFilter) => void;
+  issuers: string[];
+  count: number;
+}) {
+  return (
+    <Menu
+      trigger={
+        <Button variant={count > 0 ? "outline" : "ghost"} size="sm">
+          <FunnelSimpleIcon size={15} />
+          {count > 0 ? `Filter (${count})` : "Filter"}
+        </Button>
+      }
+    >
+      <MenuGroup label="Issuer">
+        {issuers.map((issuer) => (
+          <MenuCheckboxItem
+            key={issuer}
+            checked={filter.issuers.has(issuer)}
+            onCheckedChange={(on) =>
+              onChange({ ...filter, issuers: toggled(filter.issuers, issuer, on) })
+            }
+          >
+            {issuer}
+          </MenuCheckboxItem>
+        ))}
+      </MenuGroup>
+      <MenuSeparator />
+      <MenuGroup label="Earns extra on">
+        {CATEGORIES.filter((c) => c !== "other").map((c) => (
+          <MenuCheckboxItem
+            key={c}
+            checked={filter.bonus.has(c)}
+            onCheckedChange={(on) => onChange({ ...filter, bonus: toggled(filter.bonus, c, on) })}
+          >
+            {CATEGORY_LABELS[c]}
+          </MenuCheckboxItem>
+        ))}
+      </MenuGroup>
+      <MenuSeparator />
+      <MenuGroup label="Annual fee">
+        <MenuCheckboxItem
+          checked={filter.fee === "none"}
+          onCheckedChange={(on) => onChange({ ...filter, fee: on ? "none" : "any" })}
+        >
+          No annual fee
+        </MenuCheckboxItem>
+        <MenuCheckboxItem
+          checked={filter.fee === "paid"}
+          onCheckedChange={(on) => onChange({ ...filter, fee: on ? "paid" : "any" })}
+        >
+          Has an annual fee
+        </MenuCheckboxItem>
+      </MenuGroup>
+      {count > 0 && (
+        <>
+          <MenuSeparator />
+          <MenuItem onClick={() => onChange(NO_FILTER)}>
+            <ArrowCounterClockwiseIcon size={14} />
+            Clear filters
+          </MenuItem>
+        </>
+      )}
+    </Menu>
   );
 }
 
 function WalletCard({
   entry,
-  arranging,
+  editing,
+  marked,
+  onToggleRemove,
   isWinner,
   dimmed,
   priority,
   onOpen,
 }: {
   entry: WalletEntry;
-  arranging: boolean;
+  editing: boolean;
+  marked: boolean;
+  onToggleRemove: () => void;
   isWinner: boolean;
   dimmed: boolean;
   priority: boolean;
@@ -225,7 +529,7 @@ function WalletCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: card.id, disabled: !arranging });
+  } = useSortable({ id: card.id, disabled: !editing });
 
   const name = userCard.nickname ?? card.name;
   // A nickname replaces the name under the card, but the face still prints
@@ -245,9 +549,9 @@ function WalletCard({
       )}
     >
       <div className="relative">
-        {arranging ? (
-          // In rearrange mode the whole card is the drag target, so there is
-          // no small handle to aim at on a phone.
+        {editing ? (
+          // In edit mode the whole card is the drag target, so there is no
+          // small handle to aim at on a phone.
           <div
             ref={setActivatorNodeRef}
             {...attributes}
@@ -255,7 +559,7 @@ function WalletCard({
             aria-label={`Move ${label}`}
             className="cursor-grab touch-none rounded-card active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           >
-            <CardFace card={card} priority={priority} />
+            <CardFace card={card} priority={priority} dimmed={marked} />
             <span className="pointer-events-none absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-pill bg-bg/85 text-ink backdrop-blur-sm">
               <DotsSixVerticalIcon size={16} weight="bold" />
             </span>
@@ -273,17 +577,18 @@ function WalletCard({
       </div>
 
       <div className={cn("mt-3", dimmed && "opacity-40")}>
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate font-medium">{name}</p>
-          {arranging ? (
+        <div className="flex items-center justify-between gap-2">
+          <p className={cn("truncate font-medium", marked && "text-muted line-through")}>{name}</p>
+          {editing ? (
             <Button
-              variant="ghost"
+              variant={marked ? "outline" : "destructive"}
               size="sm"
-              onClick={() => removeCard(card.id)}
-              aria-label={`Remove ${name} from your wallet`}
+              onClick={onToggleRemove}
+              aria-pressed={marked}
+              aria-label={marked ? `Keep ${name}` : `Mark ${name} for removal`}
             >
-              <TrashIcon size={15} />
-              Remove
+              {marked ? <ArrowCounterClockwiseIcon size={15} /> : <TrashIcon size={15} />}
+              {marked ? "Keep" : "Remove"}
             </Button>
           ) : (
             <p className="shrink-0 text-[13px] text-muted">
@@ -291,14 +596,10 @@ function WalletCard({
             </p>
           )}
         </div>
-        {!arranging && (
+        {!editing && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {top.map((rate) => (
-              <EarnChip
-                key={rate.category}
-                category={rate.category}
-                multiplier={rate.multiplier}
-              />
+              <EarnChip key={rate.category} category={rate.category} multiplier={rate.multiplier} />
             ))}
           </div>
         )}
@@ -316,13 +617,10 @@ function topRates(card: Card) {
 }
 
 /**
- * Replaces "Add card" once a free wallet is full. Inline and calm, never a
- * pop-up: the plan is explicit that nothing interrupts.
- */
-/**
- * At the free limit. When Premium has ended with more cards saved than Free
- * shows, the extras are hidden, not gone, and this says so: the owner's
- * rule is that nothing is deleted by a plan change.
+ * At the free limit. Inline and calm, never a pop-up. When Premium has
+ * ended with more cards saved than Free shows, the extras are hidden, not
+ * gone, and this says so: the owner's rule is that nothing is deleted by a
+ * plan change.
  */
 function UpgradePanel({ count, hidden }: { count: number; hidden: number }) {
   return (
@@ -358,17 +656,12 @@ const POPULAR_CARD_IDS = ["csp", "amex-gold", "bilt"];
 
 /** First run, or after deleting everything. */
 function EmptyWallet({ onAdd }: { onAdd: () => void }) {
-  const popular = POPULAR_CARD_IDS.map(getCard).filter(
-    (c): c is Card => Boolean(c),
-  );
+  const popular = POPULAR_CARD_IDS.map(getCard).filter((c): c is Card => Boolean(c));
 
   return (
     <section aria-labelledby="empty-wallet-heading">
       <div className="max-w-[52ch]">
-        <h2
-          id="empty-wallet-heading"
-          className="font-display text-2xl leading-tight"
-        >
+        <h2 id="empty-wallet-heading" className="font-display text-2xl leading-tight">
           Add the first card you carry.
         </h2>
         <p className="mt-2.5 text-[15px] leading-relaxed text-muted">
@@ -417,13 +710,23 @@ function EmptyWallet({ onAdd }: { onAdd: () => void }) {
 function Picker({
   category,
   onChange,
+  merchant,
+  onMerchant,
+  cards,
+  valuations,
   ranked,
-  arranging,
+  editing,
+  searchKey,
 }: {
   category: Category | null;
   onChange: (next: Category | null) => void;
+  merchant: Merchant | null;
+  onMerchant: (m: Merchant | null) => void;
+  cards: Card[] | null;
+  valuations: Record<string, number>;
   ranked: ReturnType<typeof rankCards> | null;
-  arranging: boolean;
+  editing: boolean;
+  searchKey: number;
 }) {
   return (
     <section
@@ -433,14 +736,23 @@ function Picker({
       <h2 id="picker-heading" className="mb-4 text-sm font-medium">
         Use which card?
       </h2>
-      <CategoryBar value={category} onChange={onChange} disabled={arranging} />
+      <CategoryBar value={category} onChange={onChange} disabled={editing} />
+      <MerchantSearch
+        // A new key empties the box when a category is tapped instead.
+        key={searchKey}
+        cards={cards}
+        valuations={valuations}
+        disabled={editing}
+        chosen={merchant}
+        onPick={onMerchant}
+      />
       <AnswerLine
-        category={arranging ? null : category}
-        ranked={arranging ? null : ranked}
+        category={editing ? null : category}
+        ranked={editing ? null : ranked}
         empty={
-          arranging
+          editing
             ? "Drag a card to move it, or tab to one and press space."
-            : "Pick what you are buying and the best card lifts out of the wallet."
+            : "Pick what you are buying, or search a store, and the best card lifts out of the wallet."
         }
         className="mt-5"
       />
@@ -449,15 +761,15 @@ function Picker({
 }
 
 /**
- * Shown while browser storage is read. The picker above it is real; the
- * cards are shaped like the grid so the page does not jump when they arrive.
- */
-/**
  * One rule per card with art, keyed off the attribute the pre-start script
  * sets on <html>. Built once, at module load, from the build-time manifest.
  */
 const FIRST_CARD_CSS = firstCardCss(CARD_ART);
 
+/**
+ * Shown while browser storage is read. The picker above it is real; the
+ * cards are shaped like the grid so the page does not jump when they arrive.
+ */
 function WalletSkeleton({ picker }: { picker: ReactNode }) {
   return (
     <>

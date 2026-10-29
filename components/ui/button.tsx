@@ -27,6 +27,9 @@ const buttonVariants = cva(
         /** One primary action per screen. */
         default: "bg-ink text-bg hover:bg-ink/90",
         outline: "border-line bg-surface text-ink hover:border-muted",
+        /** A pastel action that should stand out without being the primary. */
+        accent:
+          "border-[color-mix(in_oklab,var(--cd-sky-ink)_22%,transparent)] bg-sky text-sky-ink hover:border-[color-mix(in_oklab,var(--cd-sky-ink)_45%,transparent)]",
         ghost: "text-muted hover:bg-surface hover:text-ink",
         link: "text-ink underline underline-offset-4 decoration-line hover:decoration-current rounded-none",
         destructive:

@@ -1,0 +1,307 @@
+import type { Category } from "@/lib/categories";
+
+/**
+ * Common US merchants and the spend category they usually fall into, for
+ * the search under "Use which card?". Data, no logic; the search lives in
+ * lib/merchants.ts.
+ *
+ * "Usually" is the honest word. Issuers decide by the code a merchant's
+ * payment terminal reports (its MCC), not by what the shop sells, so a
+ * pharmacy inside a supermarket can code as a supermarket, and the other
+ * way round. Where a well-known merchant commonly surprises people, it
+ * carries a note. Keep notes true of every card in the catalog, or say
+ * "most cards".
+ *
+ * Generic kinds ("Coffee shops", "Pharmacies") sit alongside brands so a
+ * search for the thing works as well as a search for the name.
+ */
+
+export type Merchant = {
+  name: string;
+  category: Category;
+  /** Other names people type: abbreviations, old names, parent brands. */
+  aliases?: string[];
+  note?: string;
+};
+
+const SUPERSTORE =
+  "Superstores and warehouse clubs usually earn the base rate, not the grocery rate.";
+const DRUGSTORE = "Drugstores earn the base rate on every card in the catalog.";
+const DELIVERY = "Most cards count food delivery as dining.";
+const ONLINE = "Online shopping earns the base rate on these cards.";
+const RENTAL = "Counts as travel on some cards, but not as a hotel.";
+const WAREHOUSE_GAS =
+  "Gas at warehouse clubs often codes as the club, not as gas, on some cards.";
+const COFFEE = "Coffee shops usually code as restaurants.";
+
+const m = (
+  name: string,
+  category: Category,
+  aliases?: string[],
+  note?: string,
+): Merchant => ({ name, category, aliases, note });
+
+export const MERCHANTS: Merchant[] = [
+  // --- Dining ---------------------------------------------------------------
+  m("Restaurants", "dining", ["restaurant", "dinner", "lunch", "brunch", "takeout", "take out"]),
+  m("Coffee shops", "dining", ["coffee", "cafe", "espresso"], COFFEE),
+  m("Bars", "dining", ["bar", "pub", "brewery", "drinks"]),
+  m("Fast food", "dining", ["fast food", "drive thru", "drive-thru"]),
+  m("Starbucks", "dining", ["sbux"], COFFEE),
+  m("Dunkin'", "dining", ["dunkin", "dunkin donuts"], COFFEE),
+  m("Peet's Coffee", "dining", ["peets"], COFFEE),
+  m("Dutch Bros", "dining", ["dutch bros coffee"], COFFEE),
+  m("Tim Hortons", "dining", ["tims"], COFFEE),
+  m("Blue Bottle Coffee", "dining", ["blue bottle"], COFFEE),
+  m("Philz Coffee", "dining", ["philz"], COFFEE),
+  m("McDonald's", "dining", ["mcdonalds", "mcd"]),
+  m("Chick-fil-A", "dining", ["chick fil a", "chickfila"]),
+  m("Chipotle", "dining"),
+  m("Taco Bell", "dining"),
+  m("Wendy's", "dining", ["wendys"]),
+  m("Burger King", "dining", ["bk"]),
+  m("Subway", "dining", [], "The sandwich shop, not the train. For transit fares, search the transit agency."),
+  m("Panera Bread", "dining", ["panera"]),
+  m("Shake Shack", "dining"),
+  m("In-N-Out Burger", "dining", ["in n out", "innout"]),
+  m("Five Guys", "dining"),
+  m("Sweetgreen", "dining"),
+  m("Cava", "dining"),
+  m("Panda Express", "dining"),
+  m("Raising Cane's", "dining", ["canes", "raising canes"]),
+  m("Popeyes", "dining"),
+  m("KFC", "dining", ["kentucky fried chicken"]),
+  m("Domino's", "dining", ["dominos"]),
+  m("Pizza Hut", "dining"),
+  m("Papa John's", "dining", ["papa johns"]),
+  m("Jersey Mike's", "dining", ["jersey mikes"]),
+  m("Jimmy John's", "dining", ["jimmy johns"]),
+  m("Wingstop", "dining"),
+  m("Sonic Drive-In", "dining", ["sonic"]),
+  m("Dairy Queen", "dining", ["dq"]),
+  m("Arby's", "dining", ["arbys"]),
+  m("Jack in the Box", "dining"),
+  m("Culver's", "dining", ["culvers"]),
+  m("Whataburger", "dining"),
+  m("Krispy Kreme", "dining"),
+  m("Olive Garden", "dining"),
+  m("Applebee's", "dining", ["applebees"]),
+  m("Chili's", "dining", ["chilis"]),
+  m("The Cheesecake Factory", "dining", ["cheesecake factory"]),
+  m("Texas Roadhouse", "dining"),
+  m("Outback Steakhouse", "dining", ["outback"]),
+  m("Red Lobster", "dining"),
+  m("IHOP", "dining"),
+  m("Denny's", "dining", ["dennys"]),
+  m("Cracker Barrel", "dining"),
+  m("Buffalo Wild Wings", "dining", ["bdubs", "bww"]),
+  m("P.F. Chang's", "dining", ["pf changs"]),
+  m("Nando's", "dining", ["nandos"]),
+  m("Uber Eats", "dining", ["ubereats"], DELIVERY),
+  m("DoorDash", "dining", ["door dash"], DELIVERY),
+  m("Grubhub", "dining", ["grub hub", "seamless"], DELIVERY),
+  m("Postmates", "dining", [], DELIVERY),
+  m("Caviar", "dining", [], DELIVERY),
+  m("Resy", "dining", [], "Restaurants booked through Resy code as the restaurant itself."),
+  m("OpenTable", "dining", ["open table"], "Restaurants booked through OpenTable code as the restaurant itself."),
+
+  // --- Groceries ------------------------------------------------------------
+  m("Supermarkets", "groceries", ["grocery", "groceries", "supermarket", "grocery store"]),
+  m("Whole Foods Market", "groceries", ["whole foods", "wfm"]),
+  m("Trader Joe's", "groceries", ["trader joes", "tj", "tjs"]),
+  m("Kroger", "groceries"),
+  m("Safeway", "groceries"),
+  m("Albertsons", "groceries"),
+  m("Publix", "groceries"),
+  m("H-E-B", "groceries", ["heb"]),
+  m("Wegmans", "groceries"),
+  m("Aldi", "groceries"),
+  m("Lidl", "groceries"),
+  m("Sprouts Farmers Market", "groceries", ["sprouts"]),
+  m("Ralphs", "groceries"),
+  m("Vons", "groceries"),
+  m("Fred Meyer", "groceries"),
+  m("Harris Teeter", "groceries"),
+  m("Food Lion", "groceries"),
+  m("Giant", "groceries", ["giant food", "giant eagle"]),
+  m("Stop & Shop", "groceries", ["stop and shop"]),
+  m("ShopRite", "groceries", ["shop rite"]),
+  m("Hy-Vee", "groceries", ["hyvee"]),
+  m("Meijer", "groceries", [], SUPERSTORE),
+  m("WinCo Foods", "groceries", ["winco"]),
+  m("Market Basket", "groceries"),
+  m("Piggly Wiggly", "groceries"),
+  m("Winn-Dixie", "groceries", ["winn dixie"]),
+  m("Jewel-Osco", "groceries", ["jewel osco"]),
+  m("Smith's", "groceries", ["smiths"]),
+  m("King Soopers", "groceries"),
+  m("Fry's Food", "groceries", ["frys"]),
+  m("Food 4 Less", "groceries", ["food4less"]),
+  m("The Fresh Market", "groceries", ["fresh market"]),
+  m("Erewhon", "groceries"),
+  m("99 Ranch Market", "groceries", ["99 ranch"]),
+  m("H Mart", "groceries", ["hmart"]),
+  m("Instacart", "groceries", [], "Often codes as the store you order from; on some cards it is its own merchant."),
+  m("Amazon Fresh", "groceries", [], "Can code as Amazon rather than as a supermarket."),
+
+  // --- Superstores and warehouse clubs (base rate on most cards) ------------
+  m("Costco", "other", ["costco wholesale"], SUPERSTORE),
+  m("Sam's Club", "other", ["sams club", "sams"], SUPERSTORE),
+  m("BJ's Wholesale Club", "other", ["bjs"], SUPERSTORE),
+  m("Walmart", "other", ["wal mart", "walmart supercenter"], SUPERSTORE),
+  m("Target", "other", ["super target"], SUPERSTORE),
+
+  // --- Drugstores -----------------------------------------------------------
+  m("Pharmacies", "other", ["pharmacy", "drugstore", "drug store", "chemist"], DRUGSTORE),
+  m("CVS", "other", ["cvs pharmacy", "cvs health"], DRUGSTORE),
+  m("Walgreens", "other", [], DRUGSTORE),
+  m("Rite Aid", "other", ["riteaid"], DRUGSTORE),
+  m("Duane Reade", "other", [], DRUGSTORE),
+
+  // --- Flights --------------------------------------------------------------
+  m("Airlines", "flights", ["airline", "flight", "flights", "plane", "airfare"]),
+  m("United Airlines", "flights", ["united"]),
+  m("Delta Air Lines", "flights", ["delta"]),
+  m("American Airlines", "flights", ["american", "aa"]),
+  m("Southwest Airlines", "flights", ["southwest"]),
+  m("JetBlue", "flights", ["jet blue"]),
+  m("Alaska Airlines", "flights", ["alaska"]),
+  m("Hawaiian Airlines", "flights", ["hawaiian"]),
+  m("Spirit Airlines", "flights", ["spirit"]),
+  m("Frontier Airlines", "flights", ["frontier"]),
+  m("Allegiant Air", "flights", ["allegiant"]),
+  m("Sun Country Airlines", "flights", ["sun country"]),
+  m("Air Canada", "flights"),
+  m("British Airways", "flights", ["ba"]),
+  m("Air France", "flights"),
+  m("Lufthansa", "flights"),
+  m("Emirates", "flights"),
+  m("Qatar Airways", "flights", ["qatar"]),
+  m("Singapore Airlines", "flights"),
+  m("Japan Airlines", "flights", ["jal"]),
+  m("ANA", "flights", ["all nippon airways"]),
+  m("Virgin Atlantic", "flights"),
+  m("JSX", "flights"),
+  m("Expedia", "flights", [], "Travel booked through an online agency often earns only the base rate. Check your card's travel portal instead."),
+  m("Google Flights", "flights", [], "Google Flights sends you to the airline, so the charge codes as the airline."),
+
+  // --- Hotels ---------------------------------------------------------------
+  m("Hotels", "hotels", ["hotel", "motel", "resort", "inn", "lodging"]),
+  m("Marriott", "hotels", ["marriott bonvoy", "westin", "sheraton", "w hotels", "ritz carlton", "courtyard", "residence inn", "st regis"]),
+  m("Hilton", "hotels", ["hilton honors", "doubletree", "hampton inn", "conrad", "waldorf astoria", "embassy suites", "homewood suites"]),
+  m("Hyatt", "hotels", ["world of hyatt", "park hyatt", "andaz", "grand hyatt", "hyatt regency"]),
+  m("IHG Hotels", "hotels", ["ihg", "holiday inn", "intercontinental", "kimpton", "crowne plaza"]),
+  m("Wyndham", "hotels", ["la quinta", "days inn", "super 8", "ramada"]),
+  m("Choice Hotels", "hotels", ["comfort inn", "quality inn", "sleep inn"]),
+  m("Best Western", "hotels"),
+  m("Four Seasons", "hotels"),
+  m("Accor", "hotels", ["sofitel", "fairmont", "novotel", "raffles"]),
+  m("Motel 6", "hotels"),
+  m("Hotels.com", "hotels", ["hotels com"], "Hotels booked through an online agency often earn only the base rate."),
+  m("Booking.com", "hotels", ["booking com", "booking"], "Hotels booked through an online agency often earn only the base rate."),
+  m("Airbnb", "other", ["air bnb"], RENTAL),
+  m("Vrbo", "other", ["vrbo", "homeaway"], RENTAL),
+
+  // --- Gas ------------------------------------------------------------------
+  m("Gas stations", "gas", ["gas", "gas station", "fuel", "petrol"]),
+  m("Shell", "gas"),
+  m("Chevron", "gas"),
+  m("ExxonMobil", "gas", ["exxon", "mobil"]),
+  m("BP", "gas", ["amoco"]),
+  m("Texaco", "gas"),
+  m("Arco", "gas", ["am pm", "ampm"]),
+  m("Speedway", "gas"),
+  m("Circle K", "gas"),
+  m("Sunoco", "gas"),
+  m("Marathon", "gas"),
+  m("Valero", "gas"),
+  m("Phillips 66", "gas", ["phillips"]),
+  m("Conoco", "gas"),
+  m("Citgo", "gas"),
+  m("Wawa", "gas", [], "Wawa usually codes as gas, but some locations code as a convenience store."),
+  m("Sheetz", "gas", [], "Sheetz usually codes as gas, but some locations code as a convenience store."),
+  m("QuikTrip", "gas", ["qt"]),
+  m("Casey's", "gas", ["caseys"]),
+  m("RaceTrac", "gas", ["race trac"]),
+  m("Buc-ee's", "gas", ["bucees", "buc ees"]),
+  m("Costco Gas", "gas", ["costco gasoline"], WAREHOUSE_GAS),
+  m("Sam's Club Fuel", "gas", ["sams gas"], WAREHOUSE_GAS),
+  m("EV charging", "gas", ["ev", "electric vehicle", "charging", "chargepoint", "electrify america", "tesla supercharger", "supercharger"], "Electric charging counts as gas on some cards and the base rate on others."),
+
+  // --- Transit --------------------------------------------------------------
+  m("Public transit", "transit", ["transit", "bus", "train", "metro", "subway fare", "commute"]),
+  m("Uber", "transit", ["uber rides"], "Rides only. Uber Eats is dining."),
+  m("Lyft", "transit"),
+  m("Taxis", "transit", ["taxi", "cab", "yellow cab"]),
+  m("MTA", "transit", ["nyc subway", "omny", "metrocard", "lirr", "metro north"]),
+  m("BART", "transit", ["bay area rapid transit", "clipper"]),
+  m("WMATA", "transit", ["dc metro", "smartrip"]),
+  m("CTA", "transit", ["chicago transit", "ventra"]),
+  m("MBTA", "transit", ["the t", "charliecard"]),
+  m("SEPTA", "transit"),
+  m("LA Metro", "transit", ["tap card"]),
+  m("Caltrain", "transit"),
+  m("NJ Transit", "transit"),
+  m("Amtrak", "transit"),
+  m("Greyhound", "transit"),
+  m("FlixBus", "transit", ["flix bus"]),
+  m("Parking", "transit", ["parking garage", "parking meter", "spothero", "parkmobile"]),
+  m("Tolls", "transit", ["toll", "ezpass", "e-zpass", "fastrak", "sunpass"]),
+  m("Citi Bike", "transit", ["citibike", "bike share"]),
+  m("Lime", "transit", ["lime scooter", "bird", "scooter"]),
+
+  // --- Streaming ------------------------------------------------------------
+  m("Netflix", "streaming"),
+  m("Spotify", "streaming"),
+  m("Disney+", "streaming", ["disney plus", "disney"]),
+  m("Hulu", "streaming"),
+  m("Max", "streaming", ["hbo max", "hbo"]),
+  m("YouTube Premium", "streaming", ["youtube", "youtube tv", "youtube music"]),
+  m("Apple Music", "streaming", ["apple tv", "apple tv+"]),
+  m("Amazon Prime Video", "streaming", ["prime video"], "A Prime membership itself may code as Amazon, not streaming."),
+  m("Paramount+", "streaming", ["paramount plus", "paramount"]),
+  m("Peacock", "streaming"),
+  m("Sling TV", "streaming", ["sling"]),
+  m("SiriusXM", "streaming", ["sirius", "sirius xm"]),
+  m("Audible", "streaming"),
+  m("Pandora", "streaming"),
+  m("Tidal", "streaming"),
+  m("ESPN+", "streaming", ["espn plus", "espn"]),
+  m("Crunchyroll", "streaming"),
+
+  // --- Everything else ------------------------------------------------------
+  m("Amazon", "other", ["amazon com", "amzn"], ONLINE),
+  m("eBay", "other", [], ONLINE),
+  m("Etsy", "other", [], ONLINE),
+  m("Shein", "other", [], ONLINE),
+  m("Temu", "other", [], ONLINE),
+  m("Wayfair", "other", [], ONLINE),
+  m("Best Buy", "other"),
+  m("Apple Store", "other", ["apple"]),
+  m("Home Depot", "other", ["the home depot"]),
+  m("Lowe's", "other", ["lowes"]),
+  m("IKEA", "other"),
+  m("Macy's", "other", ["macys"]),
+  m("Nordstrom", "other"),
+  m("Kohl's", "other", ["kohls"]),
+  m("TJ Maxx", "other", ["tjmaxx", "marshalls", "homegoods"]),
+  m("Ross", "other", ["ross dress for less"]),
+  m("Nike", "other"),
+  m("Lululemon", "other"),
+  m("Sephora", "other"),
+  m("Ulta Beauty", "other", ["ulta"]),
+  m("Dollar Tree", "other"),
+  m("Dollar General", "other"),
+  m("7-Eleven", "other", ["7 eleven", "seven eleven"], "Convenience stores earn the base rate, unless the location also sells gas and codes as a gas station."),
+  m("Convenience stores", "other", ["convenience store", "bodega", "corner store"]),
+  m("Petco", "other"),
+  m("PetSmart", "other"),
+  m("Chewy", "other", [], ONLINE),
+  m("Gym", "other", ["gym", "fitness", "planet fitness", "equinox", "la fitness", "24 hour fitness"]),
+  m("Rent", "other", ["rent", "landlord", "apartment"], "Rent earns the base rate on most cards. Bilt cards earn on rent through Bilt's own app, not as a normal purchase."),
+  m("Utilities", "other", ["utility", "electric bill", "water bill", "pg&e", "con edison", "comcast", "xfinity", "verizon", "at&t", "t-mobile", "phone bill", "internet"]),
+  m("Insurance", "other", ["geico", "progressive", "state farm", "allstate"]),
+  m("Car rental", "other", ["rental car", "hertz", "avis", "enterprise", "budget", "national", "sixt"], "Car rental counts as travel on some cards, but none of the categories here."),
+  m("Movie theaters", "other", ["movies", "cinema", "amc", "regal"]),
+  m("Ticketmaster", "other", ["concert", "tickets", "stubhub", "live nation"]),
+];

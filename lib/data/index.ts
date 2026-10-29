@@ -137,15 +137,26 @@ export function useValuations(): Record<string, number> {
 /** Catalog cards not already in the wallet, optionally filtered by a query. */
 export function useAddableCards(query = ""): Card[] {
   const owned = new Set(useData().userCards.map((c) => c.cardId));
+  return searchCatalog(query, owned);
+}
+
+/** Catalog cards matching a name or issuer, leaving out the given ids. */
+export function searchCatalog(query: string, exclude: ReadonlySet<string>): Card[] {
   const q = query.trim().toLowerCase();
   return CARDS.filter((c) => {
-    if (owned.has(c.id)) return false;
+    if (exclude.has(c.id)) return false;
     if (!q) return true;
     return (
       c.name.toLowerCase().includes(q) ||
       c.issuer.toLowerCase().includes(q)
     );
   });
+}
+
+/** Ids of every saved card, hidden or not, so nothing offers one twice. */
+export function useOwnedCardIds(): ReadonlySet<string> {
+  const data = useData();
+  return useMemo(() => new Set(data.userCards.map((c) => c.cardId)), [data]);
 }
 
 /* --- writes --------------------------------------------------------------- */
@@ -166,6 +177,24 @@ export async function addCard(cardId: string): Promise<void> {
     },
     (r) => (added ? remote.addCard(r, added) : Promise.resolve()),
   );
+}
+
+/**
+ * Adds several cards in the order given. One write per card, so a refusal
+ * (the free limit, a lost connection) stops at that card and keeps the
+ * ones before it, with the store's usual notice explaining why.
+ */
+export async function addCards(cardIds: string[]): Promise<void> {
+  for (const id of cardIds) {
+    const before = getSnapshot().userCards.length;
+    await addCard(id);
+    if (getSnapshot().userCards.length === before) break;
+  }
+}
+
+/** Removes several cards. Each one's credit history goes with it. */
+export async function removeCards(cardIds: string[]): Promise<void> {
+  for (const id of cardIds) await removeCard(id);
 }
 
 export async function removeCard(cardId: string): Promise<void> {
