@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Terms" };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms" updated="28 October 2026">
+    <LegalPage title="Terms" updated="29 October 2026">
       <p>
         These terms cover your use of CreditDash. Using it means you accept
         them. They are short on purpose; if something here is unclear, it is
@@ -66,12 +66,40 @@ export default function TermsPage() {
       <h2>Plans and payment</h2>
       <p>
         The free plan saves up to {FREE_CARD_LIMIT} cards. Premium, at $
-        {PREMIUM_PRICE_MONTHLY} a month, saves as many as you own. Premium
-        cannot be bought yet, and no one is charged for anything today.
-        Billing terms, including how to cancel, will be added here before
-        payment is switched on. The intent is that you can cancel at any time
-        and keep Premium until the end of the month you paid for.
+        {PREMIUM_PRICE_MONTHLY} a month in US dollars, saves as many as you
+        own. It needs an account, and payment is taken by Stripe.
       </p>
+      <ul>
+        <li>
+          <strong>Renewal.</strong> Premium renews every month on the day you
+          started it, and charges the same card, until you cancel.
+        </li>
+        <li>
+          <strong>Cancelling.</strong> Cancel any time from Manage billing in
+          Settings. Premium then stays on until the end of the month you have
+          paid for, and you are not charged again. There are no refunds for a
+          part of a month, unless the law where you live says otherwise.
+        </li>
+        <li>
+          <strong>Back to Free.</strong> When Premium ends, your first{" "}
+          {FREE_CARD_LIMIT} cards show and the rest are hidden, not deleted.
+          They come back if you return to Premium.
+        </li>
+        <li>
+          <strong>Failed payments.</strong> If a renewal does not go through,
+          Stripe tries again over the following days. If it still cannot
+          collect, Premium ends.
+        </li>
+        <li>
+          <strong>Price changes.</strong> A change to the price will be shown
+          in the app at least 30 days before it applies to you, and you can
+          cancel before it does.
+        </li>
+        <li>
+          <strong>Deleting your account</strong> cancels Premium immediately,
+          without a refund for the rest of that month.
+        </li>
+      </ul>
 
       <h2>Fair use</h2>
       <p>

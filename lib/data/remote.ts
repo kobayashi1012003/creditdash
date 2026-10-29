@@ -37,7 +37,7 @@ function check(error: { message: string; hint?: string | null } | null) {
 }
 
 export async function loadAccount(db: SupabaseClient, userId: string) {
-  const [profile, cards, usage, balances, valuations] = await Promise.all([
+  const [profile, cards, usage, balances, valuations, subs] = await Promise.all([
     db.from("profiles").select("plan").eq("user_id", userId).maybeSingle(),
     db
       .from("user_cards")
@@ -53,6 +53,12 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
       .select("program, balance, updated_at")
       .eq("user_id", userId),
     db.from("valuations").select("program, cents_per_point").eq("user_id", userId),
+    db
+      .from("subscriptions")
+      .select("status, current_period_end, cancel_at_period_end")
+      .eq("user_id", userId)
+      .order("current_period_end", { ascending: false, nullsFirst: false })
+      .limit(1),
   ]);
   for (const r of [profile, cards, usage, balances, valuations]) check(r.error);
 
@@ -97,8 +103,26 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
       centsPerPoint: overrides.get(v.program) ?? v.centsPerPoint,
     })),
   };
-  return { state, rowIds };
+  // Billing is shown, never relied on: a failed read leaves Settings
+  // without a renewal date, not the account unloadable.
+  const sub = subs.error ? null : subs.data?.[0];
+  const billing: Billing | null = sub
+    ? {
+        status: sub.status,
+        periodEnd: sub.current_period_end ? String(sub.current_period_end).slice(0, 10) : null,
+        cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+      }
+    : null;
+  return { state, rowIds, billing };
 }
+
+/** The latest Stripe subscription, as Settings shows it. Written by the webhook only. */
+export type Billing = {
+  status: string;
+  /** ISO date Premium renews or, when cancelling, ends. */
+  periodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+};
 
 /* --- writes --------------------------------------------------------------- */
 

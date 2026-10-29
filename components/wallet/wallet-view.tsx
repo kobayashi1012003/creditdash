@@ -43,6 +43,7 @@ import {
   addCard,
   removeCard,
   reorderCards,
+  useHiddenCardCount,
   useIsLoading,
   usePlan,
   useValuations,
@@ -61,6 +62,7 @@ import { firstCardCss } from "@/lib/data/first-card";
 
 export function WalletView() {
   const entries = useWallet();
+  const hidden = useHiddenCardCount();
   const plan = usePlan();
   const valuations = useValuations();
   const isLoading = useIsLoading();
@@ -184,7 +186,7 @@ export function WalletView() {
             Add card
           </Button>
         ) : (
-          <UpgradePanel count={entries.length} />
+          <UpgradePanel count={entries.length} hidden={hidden} />
         )}
       </div>
 
@@ -317,18 +319,25 @@ function topRates(card: Card) {
  * Replaces "Add card" once a free wallet is full. Inline and calm, never a
  * pop-up: the plan is explicit that nothing interrupts.
  */
-function UpgradePanel({ count }: { count: number }) {
+/**
+ * At the free limit. When Premium has ended with more cards saved than Free
+ * shows, the extras are hidden, not gone, and this says so: the owner's
+ * rule is that nothing is deleted by a plan change.
+ */
+function UpgradePanel({ count, hidden }: { count: number; hidden: number }) {
   return (
     <section className="rounded-widget border border-line bg-surface p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
         <div className="max-w-[46ch]">
           <h2 className="font-display text-xl leading-tight">
-            That is {count} of {FREE_CARD_LIMIT} cards on the free plan.
+            {hidden > 0
+              ? `${hidden} more ${hidden === 1 ? "card is" : "cards are"} saved but hidden on Free.`
+              : `That is ${count} of ${FREE_CARD_LIMIT} cards on the free plan.`}
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-muted">
-            Premium saves as many cards as you own, for $
-            {PREMIUM_PRICE_MONTHLY} a month. Your existing cards stay where
-            they are either way.
+            {hidden > 0
+              ? `Free shows your first ${FREE_CARD_LIMIT}. ${hidden === 1 ? "The other one keeps its credits and history, and comes" : "The others keep their credits and history, and come"} back with Premium, for $${PREMIUM_PRICE_MONTHLY} a month.`
+              : `Premium saves as many cards as you own, for $${PREMIUM_PRICE_MONTHLY} a month. Your existing cards stay where they are either way.`}
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/settings#plan" />}>

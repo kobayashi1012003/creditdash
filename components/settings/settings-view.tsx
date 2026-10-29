@@ -5,15 +5,13 @@ import Link from "next/link";
 import {
   DownloadSimpleIcon,
   SignOutIcon,
-  SparkleIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import type { Program } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { DEFAULT_VALUATIONS } from "@/data/cards.seed";
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, type Plan } from "@/lib/plan";
+import { FREE_CARD_LIMIT, type Plan } from "@/lib/plan";
 import { pointsValue, pts, usd } from "@/lib/format";
-import { cn } from "@/lib/cn";
 import {
   ACCOUNTS_ENABLED,
   deleteAccount,
@@ -28,9 +26,10 @@ import {
   usePlan,
   usePointBalances,
   useValuations,
-  useWallet,
+  useWalletIncludingHidden,
   walletToCsv,
 } from "@/lib/data";
+import { PlanSection } from "@/components/settings/plan-section";
 import { Widget } from "@/components/ui/widget";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +40,7 @@ export function SettingsView() {
   const plan = usePlan();
   const valuations = useValuations();
   const balances = usePointBalances();
-  const entries = useWallet();
+  const entries = useWalletIncludingHidden();
   const isLoading = useIsLoading();
   const account = useAccount();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -175,38 +174,7 @@ export function SettingsView() {
         </ul>
       </Widget>
 
-      <Widget title="Plan" id="plan" className="scroll-mt-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PlanCard
-            name="Free"
-            price="No cost"
-            current={plan === "free"}
-            points={[
-              `Up to ${FREE_CARD_LIMIT} saved cards`,
-              "Tracker, calculators and compare",
-              "No ads, ever",
-            ]}
-          />
-          <PlanCard
-            name="Premium"
-            price={`$${PREMIUM_PRICE_MONTHLY} a month`}
-            current={plan === "premium"}
-            points={[
-              "As many cards as you own",
-              "Everything in Free",
-              "Cancel whenever you like",
-            ]}
-            action={
-              plan === "free" ? (
-                <Button className="mt-4 w-full" disabled>
-                  <SparkleIcon size={16} weight="fill" />
-                  Payments coming soon
-                </Button>
-              ) : null
-            }
-          />
-        </div>
-      </Widget>
+      <PlanSection plan={plan} account={account} />
 
       <Widget title="Your data">
         <div className="flex flex-wrap gap-3">
@@ -268,7 +236,7 @@ export function SettingsView() {
               <p className="text-sm">Pretend this account is</p>
               <p className="max-w-[44ch] text-[13px] leading-relaxed text-muted">
                 Switches the demo user between plans so the {FREE_CARD_LIMIT}
-                -card limit can be tested. Cards over the limit are kept, not
+                -card limit can be tested. Cards over the limit are hidden, not
                 deleted.
               </p>
             </div>
@@ -371,42 +339,5 @@ function AccountSection({ account }: { account: Account | null }) {
         )}
       </div>
     </Widget>
-  );
-}
-
-function PlanCard({
-  name,
-  price,
-  points,
-  current,
-  action,
-}: {
-  name: string;
-  price: string;
-  points: string[];
-  current?: boolean;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-inner border p-5",
-        current ? "border-ink" : "border-line",
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-xl leading-none">{name}</h3>
-        {current && <span className="text-[13px] text-muted">Current</span>}
-      </div>
-      <p className="mt-2 text-sm text-muted">{price}</p>
-      <ul className="mt-4 space-y-1.5 text-sm">
-        {points.map((p) => (
-          <li key={p} className="text-muted">
-            {p}
-          </li>
-        ))}
-      </ul>
-      {action}
-    </div>
   );
 }

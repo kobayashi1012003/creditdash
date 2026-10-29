@@ -11,7 +11,7 @@ import {
 } from "@/lib/data/schema";
 import { hasSessionCookie, supabase } from "@/lib/data/supabase";
 import { FIRST_CARD_KEY } from "@/lib/data/first-card";
-import { loadAccount, SyncError, type Remote } from "@/lib/data/remote";
+import { loadAccount, SyncError, type Billing, type Remote } from "@/lib/data/remote";
 
 /**
  * The backing for lib/data, in one of two modes:
@@ -45,7 +45,7 @@ let loaded = false;
 let started = false;
 let mode: "local" | "account" = "local";
 
-export type Account = { userId: string; email: string | null };
+export type Account = { userId: string; email: string | null; billing: Billing | null };
 let account: Account | null = null;
 let remote: Remote | null = null;
 
@@ -201,9 +201,9 @@ async function enterAccount(db: SupabaseClient) {
   }
 
   try {
-    const { state, rowIds } = await loadAccount(db, user.id);
+    const { state, rowIds, billing } = await loadAccount(db, user.id);
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null };
+    account = { userId: user.id, email: user.email ?? null, billing };
     remote = { db, userId: user.id, rowIds };
     cache = state;
     offer = computeOffer(user.id, state);
@@ -212,7 +212,7 @@ async function enterAccount(db: SupabaseClient) {
     // look like the account had been replaced, so show an empty one and say
     // why. Nothing is written in this state.
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null };
+    account = { userId: user.id, email: user.email ?? null, billing: null };
     remote = null;
     cache = emptyState();
     notice = {

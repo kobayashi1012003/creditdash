@@ -1,10 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { Card, PointBalance, Program, UserCard } from "@/data/types";
 import { CARDS, getCard } from "@/data/cards.seed";
 import { cardLimit, type Plan } from "@/lib/plan";
-import { emptyState, type CreditUsage } from "@/lib/data/schema";
+import { emptyState, type CreditUsage, type Persisted } from "@/lib/data/schema";
 import * as remote from "@/lib/data/remote";
 import { supabase, SUPABASE_CONFIGURED } from "@/lib/data/supabase";
 import {
@@ -77,12 +77,41 @@ export function useImportOffer(): ImportOffer | null {
 
 /* --- reads ---------------------------------------------------------------- */
 
-export function useWallet(): WalletEntry[] {
-  const data = useData();
+function allEntries(data: Persisted): WalletEntry[] {
   return [...data.userCards]
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((userCard) => ({ userCard, card: getCard(userCard.cardId) }))
     .filter((e): e is WalletEntry => Boolean(e.card));
+}
+
+/**
+ * The cards the plan shows, in the user's order. Cards beyond the plan's
+ * limit (Premium ended with more than the free limit saved) are kept but
+ * left out here, so every screen agrees on which cards count. They come
+ * back the moment Premium does. Memoised per snapshot so the array keeps
+ * its identity between renders.
+ */
+const visibleMemo = new WeakMap<Persisted, WalletEntry[]>();
+export function useWallet(): WalletEntry[] {
+  const data = useData();
+  let visible = visibleMemo.get(data);
+  if (!visible) {
+    visible = allEntries(data).slice(0, cardLimit(data.profile.plan));
+    visibleMemo.set(data, visible);
+  }
+  return visible;
+}
+
+/** Every saved card, hidden or not. For the export, which must be complete. */
+export function useWalletIncludingHidden(): WalletEntry[] {
+  const data = useData();
+  return useMemo(() => allEntries(data), [data]);
+}
+
+/** How many saved cards the plan is hiding. */
+export function useHiddenCardCount(): number {
+  const data = useData();
+  return Math.max(0, data.userCards.length - cardLimit(data.profile.plan));
 }
 
 export function usePlan(): Plan {
@@ -367,20 +396,93 @@ export function declineImport() {
  * asks the server route to do it on the signed-in user's behalf.
  */
 export async function deleteAccount(): Promise<string | null> {
-  const db = await supabase();
-  const { data } = (await db?.auth.getSession()) ?? { data: { session: null } };
-  const token = data.session?.access_token;
-  if (!db || !token) return "You are not signed in.";
+  const token = await accessToken();
+  if (!token) return "You are not signed in.";
 
   const res = await fetch("/api/account", {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
+  if (res.status === 502) {
+    return "Your Premium subscription could not be cancelled just now, so the account was kept. Nothing was removed. Try again in a moment.";
+  }
   if (!res.ok) {
     return "Your account could not be deleted just now. Nothing was removed. Try again in a moment.";
   }
   await signOut();
   return null;
+}
+
+/* --- billing -------------------------------------------------------------- */
+
+/** The signed-in user's access token, for the server routes. */
+async function accessToken(): Promise<string | null> {
+  const db = await supabase();
+  const { data } = (await db?.auth.getSession()) ?? { data: { session: null } };
+  return data.session?.access_token ?? null;
+}
+
+const BILLING_ERRORS: Record<string, string> = {
+  already_premium: "This account already has Premium. Reload the page to see it.",
+  not_configured: "Payments are not switched on yet.",
+  no_price: "Payments are not switched on yet.",
+  no_customer: "There is no billing on this account yet.",
+};
+
+/**
+ * Asks the server for a Stripe page (Checkout or the Customer Portal) and
+ * sends the browser there. Resolves only if it could not, with the reason.
+ */
+async function goToStripe(path: "checkout" | "portal"): Promise<string> {
+  const token = await accessToken();
+  if (!token) return "Sign in first, so Premium has an account to belong to.";
+  try {
+    const res = await fetch(`/api/billing/${path}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+    if (res.ok && body.url) {
+      window.location.assign(body.url);
+      // Never resolves on success: the page is leaving.
+      return new Promise<string>(() => {});
+    }
+    return (
+      (body.error && BILLING_ERRORS[body.error]) ??
+      "Stripe could not be reached just now. Nothing was charged. Try again in a moment."
+    );
+  } catch {
+    return "Stripe could not be reached just now. Check your connection and try again.";
+  }
+}
+
+/** Sends the signed-in user to Stripe Checkout for Premium. */
+export function startCheckout(): Promise<string> {
+  return goToStripe("checkout");
+}
+
+/** Sends the signed-in user to Stripe's portal to cancel or change their card. */
+export function openBillingPortal(): Promise<string> {
+  return goToStripe("portal");
+}
+
+/**
+ * After Checkout, Stripe tells the server by webhook, which usually lands
+ * within a few seconds of the browser coming back. Re-reads the account
+ * until the plan shows Premium, or gives up after about 20 seconds.
+ */
+export async function waitForPremium(): Promise<boolean> {
+  for (let i = 0; i < 10; i++) {
+    await reloadAccount();
+    if (getSnapshot().profile.plan === "premium") return true;
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  return false;
+}
+
+/** Re-reads the account, after coming back from the billing portal. */
+export async function refreshAccount(): Promise<void> {
+  await reloadAccount();
 }
 
 /** CSV of the wallet, for the Settings export. */

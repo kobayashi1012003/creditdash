@@ -121,6 +121,31 @@ try {
   const rename = await b.db.from("profiles").update({ display_name: "B" }).eq("user_id", b.id).select();
   expect(!rename.error && rename.data.length === 1, "B can still change their own display name", rename.error?.message);
 
+  const customer = await b.db.from("profiles").update({ stripe_customer_id: "cus_forged" }).eq("user_id", b.id);
+  expect(Boolean(customer.error), "B cannot set their own Stripe customer id");
+
+  // --- subscriptions: read own, write none (Phase 7) ----------------------
+  // The webhook writes with the secret key; this row stands in for it.
+  const subId = `sub_rls_${randomBytes(4).toString("hex")}`;
+  const seeded = await admin.from("subscriptions").insert({
+    stripe_subscription_id: subId,
+    user_id: a.id,
+    status: "active",
+  });
+  expect(!seeded.error, "The server can record A's subscription", seeded.error?.message);
+  const ownSub = await a.db.from("subscriptions").select("status").eq("stripe_subscription_id", subId);
+  expect(!ownSub.error && ownSub.data.length === 1, "A can read their own subscription", ownSub.error?.message);
+  const peekSub = await b.db.from("subscriptions").select("*").eq("user_id", a.id);
+  expect(!peekSub.error && peekSub.data.length === 0, "B cannot read A's subscription", peekSub.error?.message);
+  const fakeSub = await b.db.from("subscriptions").insert({
+    stripe_subscription_id: `sub_forged_${randomBytes(4).toString("hex")}`,
+    user_id: b.id,
+    status: "active",
+  });
+  expect(Boolean(fakeSub.error), "B cannot record a subscription for themselves");
+  const editSub = await a.db.from("subscriptions").update({ status: "canceled" }).eq("stripe_subscription_id", subId).select();
+  expect(Boolean(editSub.error) || editSub.data.length === 0, "A cannot change their own subscription row");
+
   // --- signed out sees nothing --------------------------------------------
   const anon = createClient(url, publishable, noSession);
   const anonRead = await anon.from("user_cards").select("*");

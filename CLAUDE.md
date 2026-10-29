@@ -20,7 +20,8 @@ that plan, the plan wins, and the deviation gets recorded here.
 ## Where the build has got to
 
 Phases 0 to 6 of `creditdash-plan.md` are done. **Phase 7 (Stripe) is
-next.** On 28 October 2026 the site was redesigned to the owner's Zaro
+built and waiting on test mode**: the code is in, the owner's Stripe test
+setup and an end-to-end test are not (see "Billing" under the data layer). On 28 October 2026 the site was redesigned to the owner's Zaro
 reference (landing rebuilt, off-white ground, new wordmark, Geist
 headlines); see the landing's brief in `.impeccable/surfaces/`. Every commit is labelled with its phase, so `git log --oneline` is
 the detailed record; this is the summary.
@@ -61,10 +62,11 @@ off and returns 404.
 | 4 | Calculator engine, unit tested, Compare correctness |
 | 5 | States, keyboard, legal text, PWA, Lighthouse 100, first deploy |
 | 6 | Supabase Auth (Google, email link), account-backed `lib/data/`, RLS proven, demo import, account deletion |
+| 7 | Built, not yet tested in Stripe test mode: Checkout, Customer Portal, signed webhook, hidden cards on Free, billing terms |
 
 Phase 6 was verified on the live site: the owner signed in with Google on a
 phone, changed the Tracker there, and saw it on another device after a
-reload. `npm run test:rls` passes 23 checks. See "Accounts" under the data
+reload. `npm run test:rls` passes 29 checks (Phase 7 added six). See "Accounts" under the data
 layer for how it works.
 
 Phase 5 in more detail, since later phases build on these:
@@ -341,6 +343,41 @@ rather than a guess that then gets replaced.
   visitors never download it; the store loads it only when a session
   cookie exists, and the sign-in page warms it with `prepareSignIn()`. Do
   not import `@supabase/*` at the top of any browser module.
+
+### Billing (Phase 7)
+
+- **Only the webhook grants Premium.** `app/api/billing/webhook` checks
+  Stripe's signature on the raw body, then reads the customer's
+  subscriptions fresh from Stripe and writes `subscriptions` and
+  `profiles.plan` with the secret key (`syncCustomer` in
+  `lib/billing/server.ts`). It never trusts an event's own copy, so late,
+  repeated or out-of-order events still land on the right plan. Checkout's
+  success URL changes nothing by itself.
+- **No Stripe SDK.** `fetch` with a form body, in `lib/billing/server.ts`.
+  The decisions (signature check, which statuses are Premium, row shape)
+  are in `lib/billing/stripe.ts`, dependency-free and unit tested like the
+  reset logic. `past_due` keeps Premium while Stripe retries.
+- **No price id anywhere.** The server looks the price up by its lookup
+  key `creditdash_premium_monthly`, so test and live mode each carry their
+  own price. Changing the price means a new Stripe price with that key
+  (move the key across), not a code change, plus `PREMIUM_PRICE_MONTHLY`
+  in `lib/plan.ts` for the displayed figure.
+- **Secrets.** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are runtime
+  Secrets on the Worker, like `SUPABASE_SECRET_KEY`. Test and live mode
+  have different keys and different webhook secrets.
+- **Cancelling happens in Stripe's Customer Portal**, set to cancel at
+  the end of the period. Before sending a Premium user there, Settings
+  warns in a dialog if cancelling would hide cards (owner's rule).
+- **Back on Free, extra cards are hidden, never deleted** (owner, 29
+  October 2026). `useWallet()` returns only the first `cardLimit(plan)`
+  by sort order, so every screen agrees; `useHiddenCardCount()` drives the
+  Wallet's notice; the export uses `useWalletIncludingHidden()`. The
+  database trigger still refuses a new card while over the limit.
+- **Deleting an account deletes its Stripe customer first**, which cancels
+  any subscription at once. If Stripe refuses, the account is kept, so a
+  charge is never left running with no account to cancel it from.
+- **Migration** `20261029000000_subscriptions.sql`. Users read their own
+  rows only; nobody but the server writes them.
 
 ## Credit resets
 

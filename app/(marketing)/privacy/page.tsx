@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Privacy" };
  */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy" updated="28 October 2026">
+    <LegalPage title="Privacy" updated="29 October 2026">
       <p>
         CreditDash is built to need as little about you as possible. This page
         says what it holds, where, who else is involved, and what you can do
@@ -70,7 +70,9 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Delete account</strong> in Settings removes your account and
-          everything saved to it, immediately and for good.
+          everything saved to it, immediately and for good. If you have
+          Premium, it is cancelled at the same moment and you are not charged
+          again.
         </li>
       </ul>
 
@@ -97,6 +99,10 @@ export default function PrivacyPage() {
           <strong>Resend</strong>, only if you ask for an emailed sign-in link.
           It receives your email address in order to deliver that one email.
         </li>
+        <li>
+          <strong>Stripe</strong>, only if you buy Premium. See Payments
+          below.
+        </li>
       </ul>
       <p>
         None of them is given your wallet for any purpose of their own.
@@ -120,9 +126,14 @@ export default function PrivacyPage() {
 
       <h2>Payments</h2>
       <p>
-        Premium cannot be bought yet. When it can, payment will be handled by
-        Stripe: your card details go to Stripe directly and never reach
-        CreditDash, and this page will be updated before then.
+        Premium is paid through Stripe. When you upgrade, you enter your
+        payment details on Stripe&apos;s own checkout page; they go to Stripe
+        directly and never reach CreditDash. CreditDash gives Stripe your
+        email address and an account reference so the payment belongs to the
+        right account, and keeps only what Stripe reports back: whether your
+        subscription is active, and when it renews or ends. Stripe handles
+        your payment details under its own privacy policy, and keeps payment
+        records that the law requires it to keep.
       </p>
 
       <h2>Children</h2>
