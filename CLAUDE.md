@@ -79,8 +79,8 @@ Phase 5 in more detail, since later phases build on these:
   through `lib/use-roving-focus.ts`; use it for any new radio or tab set.
   Drawer opens with focus inside, Escape returns focus to the trigger.
 - **Legal.** Privacy and Terms rewritten to describe what the app actually
-  does. Still marked "Draft for legal review"; the governing law is unset
-  and needs the owner. Contact is `hello@creditdash.co`. **Re-read Privacy
+  does. Still marked "Draft for legal review" until a lawyer reads them.
+  Governing law is California (owner's choice, 28 October). Contact is `hello@creditdash.co`. **Re-read Privacy
   after any change to sign-in, storage or providers**: Phase 6 shipped with
   it still saying data never left the browser, fixed on 28 October.
 - **PWA.** `app/manifest.ts` (opens on `/wallet`), icons from

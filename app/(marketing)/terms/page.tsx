@@ -94,6 +94,13 @@ export default function TermsPage() {
         limits rights you have that the law does not allow to be limited.
       </p>
 
+      <h2>Governing law</h2>
+      <p>
+        These terms are governed by the laws of the State of California,
+        United States. If you live somewhere that gives you the right to rely
+        on your own local consumer laws, nothing here takes that away.
+      </p>
+
       <h2>Contact</h2>
       <p>
         <a

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 /**
  * Shared frame for the two legal pages. The wording is a plain-language
  * draft that describes what the app actually does today; it stays marked as
- * unreviewed until a lawyer has read it and the open items below are set.
+ * unreviewed until a lawyer has read it.
  */
 export function LegalPage({
   title,
@@ -25,8 +25,7 @@ export function LegalPage({
         <p className="text-sm leading-relaxed">
           <strong className="font-medium">Draft for legal review.</strong> This
           describes how CreditDash works today in plain language, but it has
-          not been checked by a lawyer, and the governing law is still to be
-          set.
+          not yet been checked by a lawyer.
         </p>
       </div>
 
