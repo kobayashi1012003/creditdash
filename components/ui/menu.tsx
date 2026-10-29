@@ -101,18 +101,21 @@ export function MenuRadioItem({ value, children }: { value: string; children: Re
 export function MenuCheckboxItem({
   checked,
   onCheckedChange,
+  disabled,
   children,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
   children: ReactNode;
 }) {
   return (
     <MenuPrimitive.CheckboxItem
       checked={checked}
       onCheckedChange={onCheckedChange}
+      disabled={disabled}
       closeOnClick={false}
-      className={itemClass}
+      className={cn(itemClass, "data-disabled:opacity-40")}
     >
       <span
         aria-hidden

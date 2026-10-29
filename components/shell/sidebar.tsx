@@ -20,8 +20,10 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-line bg-bg px-4 py-6 lg:flex">
+      {/* The logo goes to the home page, as on every site. */}
       <Link
-        href="/wallet"
+        href="/"
+        aria-label="CreditDash home"
         className="mb-8 inline-flex w-fit rounded-inner px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <Wordmark className="h-[26px]" />

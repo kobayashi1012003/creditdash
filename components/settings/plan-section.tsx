@@ -121,8 +121,8 @@ export function PlanSection({
   } else if (giftOnly) {
     premiumAction = (
       <p className="mt-4 text-[13px] leading-relaxed text-muted">
-        Premium was given to this account, so there is nothing to pay and
-        nothing to cancel.
+        Your lifetime Premium subscription is on us, courtesy of Steven.
+        There is nothing to pay and nothing to cancel.
       </p>
     );
   } else if (account) {

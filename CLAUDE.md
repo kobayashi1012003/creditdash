@@ -434,6 +434,25 @@ The answer line states the multiplier only ("earns 8x on flights"); cents
 per dollar is held back by the owner's choice, though ranking still uses
 value.
 
+## Public pages (30 October 2026)
+
+- **Tabs:** Dashboard (`/wallet`), Features, Pricing, About, in
+  `app/(marketing)/layout.tsx`. Inline from `lg`; below that a slim second
+  row under the header bar (`components/landing/marketing-nav.tsx`).
+- **Signed in or not** (`components/landing/session-buttons.tsx`): the
+  pages are server-rendered, so the buttons render the visitor version
+  ("Open the demo", "Sign in") and switch to "Dashboard" and "Sign out"
+  after hydration when a session cookie exists. Sign out loads the data
+  layer on click only, keeping it out of the marketing pages' bundle.
+- **Plan panels** are one component (`components/landing/plan-panels.tsx`)
+  for the home page and `/pricing`, on a subgrid so the lists align.
+- **The hero's card stack** places two grid items (stage, controls) with
+  `display: contents`, so the category row spans the hero's full width:
+  one row from `md`, wrapping on phones. "Change cards" picks two to four
+  catalog cards for the stack; not remembered.
+- **About** is a first draft (college student, membership helps with
+  tuition), for the owner to expand.
+
 ## Wallet, Tracker and Compare controls (29 October 2026)
 
 - **Adding cards is one sheet everywhere** (`components/wallet/add-card-sheet.tsx`):

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import { CardStack } from "@/components/landing/card-stack";
 import { CreditDemo, ForgottenCredits } from "@/components/landing/credit-demo";
 import { Button } from "@/components/ui/button";
+import { AccountButton, DashboardButton } from "@/components/landing/session-buttons";
+import { PlanPanels } from "@/components/landing/plan-panels";
 import { CARDS } from "@/data/cards.seed";
 import { getCardsById } from "@/lib/catalog";
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
 import { usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -30,7 +31,9 @@ export default function LandingPage() {
     <>
       {/* Hero. The working picker, not a picture of one. */}
       <section className={cn(SECTION, "pt-10 pb-14 lg:pt-16 lg:pb-20")}>
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,13fr)] lg:gap-6">
+        {/* CardStack places two grid items: its stage beside the headline,
+            and its controls across the full width beneath both. */}
+        <div className="grid items-center gap-x-6 gap-y-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,13fr)]">
           <div>
             <h1 className="font-display text-[46px] leading-[0.98] tracking-[-0.04em] sm:text-[64px] lg:text-[58px] xl:text-[68px]">
               Which card?
@@ -46,18 +49,14 @@ export default function LandingPage() {
               one earns the most. One tap, no bank login.
             </p>
             <div className="mt-8 flex flex-wrap gap-2.5">
-              <Button nativeButton={false} render={<Link href="/wallet" />}>
-                Open the demo
-              </Button>
+              <DashboardButton />
               <Button variant="outline" nativeButton={false} render={<Link href="#credits" />}>
                 See how it works
               </Button>
             </div>
           </div>
 
-          <div id="which-card" className="scroll-mt-24">
-            <CardStack cards={demoCards} />
-          </div>
+          <CardStack cards={demoCards} controlsClassName="-mt-8 sm:-mt-6 lg:col-span-2 lg:-mt-2" />
         </div>
       </section>
 
@@ -75,7 +74,7 @@ export default function LandingPage() {
       </section>
 
       {/* Credits. A pair of panels: the same year, forgotten and tracked. */}
-      <section id="credits" className={cn(SECTION, "scroll-mt-24 pb-20 lg:pb-28")}>
+      <section id="credits" className={cn(SECTION, "scroll-mt-32 lg:scroll-mt-24 pb-20 lg:pb-28")}>
         <h2 className={cn(H2, "max-w-[22ch]")}>
           Credits you paid for and forgot to use.{" "}
           <span className="text-muted">The Tracker remembers every one.</span>
@@ -110,7 +109,7 @@ export default function LandingPage() {
       </section>
 
       {/* Annual fee. A chart drawn from the numbers, not a stat tile. */}
-      <section id="fees" className={cn(SECTION, "scroll-mt-24 pb-20 lg:pb-28")}>
+      <section id="fees" className={cn(SECTION, "scroll-mt-32 lg:scroll-mt-24 pb-20 lg:pb-28")}>
         <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-16">
           <div>
             <h2 className={H2}>
@@ -160,33 +159,21 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing. Two plans, side by side. */}
-      <section id="pricing" className={cn(SECTION, "scroll-mt-24 py-20 lg:py-28")}>
+      <section id="pricing" className={cn(SECTION, "scroll-mt-32 lg:scroll-mt-24 py-20 lg:py-28")}>
         <h2 className={H2}>
           Two plans. <span className="text-muted">Both without ads.</span>
         </h2>
-        <div className="mt-10 grid gap-4 md:grid-cols-2 lg:max-w-[880px]">
-          <PlanPanel
-            name="Free"
-            price="$0"
-            note="Enough to answer the question for the cards you use most."
-            points={[
-              `Up to ${FREE_CARD_LIMIT} saved cards`,
-              "The full Tracker and every calculator",
-              "Compare any cards in the catalog",
-            ]}
-          />
-          <PlanPanel
-            name="Premium"
-            price={`$${PREMIUM_PRICE_MONTHLY}`}
-            per="a month"
-            note="For wallets that outgrew a spreadsheet."
-            featured
-            points={["As many cards as you own", "Everything in Free", "Cancel whenever you like"]}
-          />
-        </div>
+        <PlanPanels className="mt-10 lg:max-w-[880px]" />
         <p className="mt-5 text-[13px] text-muted">
           Payments are not switched on yet. The demo is the whole app, with
-          a sample wallet.
+          a sample wallet.{" "}
+          <Link
+            href="/pricing"
+            className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            Compare the plans in full
+          </Link>
+          .
         </p>
       </section>
 
@@ -198,22 +185,11 @@ export default function LandingPage() {
             <span className="text-band-muted">It takes one tap.</span>
           </h2>
           <div className="mt-9 flex flex-wrap gap-2.5">
-            <Button
-              nativeButton={false}
-              render={<Link href="/wallet" />}
-              className="bg-band-ink text-band hover:bg-band-ink/90"
-            >
-              Open the demo
-              <ArrowRightIcon size={15} weight="bold" />
-            </Button>
-            <Button
+            <DashboardButton arrow className="bg-band-ink text-band hover:bg-band-ink/90" />
+            <AccountButton
               variant="outline"
-              nativeButton={false}
-              render={<Link href="/signin" />}
               className="border-band-line bg-transparent text-band-ink hover:border-band-muted"
-            >
-              Sign in
-            </Button>
+            />
           </div>
         </div>
       </section>
@@ -301,42 +277,5 @@ function FeeChart({ fee, name }: { fee: number; name: string }) {
         Sample card: about {usd(perMonth)} a month in credits used and points earned.
       </p>
     </figure>
-  );
-}
-
-function PlanPanel({
-  name,
-  price,
-  per,
-  note,
-  points,
-  featured,
-}: {
-  name: string;
-  price: string;
-  per?: string;
-  note: string;
-  points: string[];
-  featured?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col rounded-widget border p-6 sm:p-7",
-        featured ? "border-ink bg-surface" : "border-line bg-surface/60",
-      )}
-    >
-      <h3 className="text-[15px] font-medium">{name}</h3>
-      <p className="mt-5 font-display text-[44px] leading-none tracking-[-0.04em]">
-        {price}
-        {per && <span className="ml-2 text-[15px] font-normal tracking-normal text-muted">{per}</span>}
-      </p>
-      <p className="mt-3 max-w-[38ch] text-sm leading-relaxed text-muted">{note}</p>
-      <ul className="mt-6 space-y-2.5 border-t border-line pt-5 text-[15px]">
-        {points.map((p) => (
-          <li key={p}>{p}</li>
-        ))}
-      </ul>
-    </div>
   );
 }

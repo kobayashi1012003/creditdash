@@ -2,12 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { SlidersHorizontalIcon } from "@phosphor-icons/react";
 import type { Card } from "@/data/types";
+import { CARDS } from "@/data/cards.seed";
 import type { Category } from "@/lib/categories";
 import { rankCards } from "@/lib/calculators/engine";
 import { DEFAULT_VALUATION_MAP } from "@/lib/valuations";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
+import { Button } from "@/components/ui/button";
+import { Menu, MenuCheckboxItem, MenuGroup, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
 
 /**
@@ -17,8 +21,15 @@ import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
  * so what the page demonstrates is what the app does.
  *
  * Until someone touches it, it steps through a few categories by itself,
- * chosen so each one has a different winner. It stops for good on the
- * first interaction, pauses off screen, and never runs under reduced motion.
+ * chosen so the default cards each win one. It stops for good on the first
+ * interaction, pauses off screen, and never runs under reduced motion.
+ *
+ * "Change cards" swaps which cards are in the stack, from the catalog, so a
+ * visitor can try it on the cards they actually carry.
+ *
+ * Renders two siblings, the stage and the controls, inside `contents`, so
+ * the page's grid places them: the stage beside the headline, the category
+ * row across the full width underneath, where all eight fit on one line.
  */
 
 const TOUR: Category[] = ["dining", "flights", "hotels", "gas"];
@@ -27,8 +38,20 @@ const TOUR_MS = 2800;
 /** Vertical spacing between layers, in the stage's own width units. */
 const LAYER = 7;
 
-export function CardStack({ cards }: { cards: Card[] }) {
+const MAX_CARDS = 4;
+const MIN_CARDS = 2;
+
+export function CardStack({
+  cards: initial,
+  stageClassName,
+  controlsClassName,
+}: {
+  cards: Card[];
+  stageClassName?: string;
+  controlsClassName?: string;
+}) {
   const reduceMotion = useReducedMotion();
+  const [cards, setCards] = useState<Card[]>(initial);
   const [category, setCategory] = useState<Category | null>(TOUR[0]);
   const [touring, setTouring] = useState(true);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -61,12 +84,28 @@ export function CardStack({ cards }: { cards: Card[] }) {
 
   const stop = () => setTouring(false);
 
+  function toggleCard(card: Card, on: boolean) {
+    stop();
+    setCards((cs) =>
+      on
+        ? cs.length >= MAX_CARDS
+          ? cs
+          : [...cs, card]
+        : cs.length <= MIN_CARDS
+          ? cs
+          : cs.filter((c) => c.id !== card.id),
+    );
+  }
+
   return (
-    <div>
+    <div className="contents">
       <div
         ref={stageRef}
         aria-hidden
-        className="relative aspect-[10/7] w-full [container-type:inline-size] [perspective:2400px]"
+        className={cn(
+          "relative aspect-[10/7] w-full [container-type:inline-size] [perspective:2400px]",
+          stageClassName,
+        )}
       >
         {/* The plane every layer sits on, tipped into an isometric view. */}
         <div
@@ -93,8 +132,15 @@ export function CardStack({ cards }: { cards: Card[] }) {
                 <motion.div
                   key={card.id}
                   className="absolute inset-0 [transform-style:preserve-3d]"
-                  initial={false}
+                  // A card swapped in drops onto the stack from just above
+                  // it, rather than appearing in place.
+                  initial={
+                    reduceMotion
+                      ? { opacity: 0 }
+                      : { opacity: 0, transform: `translate3d(0%, 0%, ${(level + 3) * LAYER}cqw)` }
+                  }
                   animate={{
+                    opacity: 1,
                     // The winner slides out of the stack sideways before
                     // rising, rather than passing through the cards above it.
                     transform: isWinner && !reduceMotion
@@ -107,6 +153,7 @@ export function CardStack({ cards }: { cards: Card[] }) {
                       : `translate3d(0%, 0%, ${lifted})`,
                   }}
                   transition={{
+                    opacity: { duration: 0.2 },
                     transform: reduceMotion
                       ? { duration: 0 }
                       : isWinner
@@ -130,11 +177,9 @@ export function CardStack({ cards }: { cards: Card[] }) {
         </div>
       </div>
 
-      <div onPointerDown={stop} onKeyDown={stop} className="relative -mt-4 lg:-mt-10">
-        {/* Narrowed so the eight chips break into two even rows rather
-            than leaving one alone on a second line. */}
+      <div onPointerDown={stop} onKeyDown={stop} className={cn("relative", controlsClassName)}>
         <CategoryBar
-          className="max-w-[360px]"
+          className="md:flex-nowrap"
           value={category}
           onChange={(c) => {
             stop();
@@ -142,14 +187,64 @@ export function CardStack({ cards }: { cards: Card[] }) {
           }}
           compact
         />
-        <AnswerLine
-          category={category}
-          ranked={ranked}
-          empty="Pick what you are buying."
-          live={!touring}
-          className="mt-4 min-h-[3.3em] text-sm"
-        />
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+          <AnswerLine
+            category={category}
+            ranked={ranked}
+            empty="Pick what you are buying."
+            live={!touring}
+            className="min-h-[1.65em] text-sm"
+          />
+          <CardChooser cards={cards} onToggle={toggleCard} onReset={() => setCards(initial)} />
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Which cards are in the stack: two to four, from the catalog. */
+function CardChooser({
+  cards,
+  onToggle,
+  onReset,
+}: {
+  cards: Card[];
+  onToggle: (card: Card, on: boolean) => void;
+  onReset: () => void;
+}) {
+  const chosen = new Set(cards.map((c) => c.id));
+  return (
+    <Menu
+      trigger={
+        <Button variant="ghost" size="sm" className="-mr-3.5">
+          <SlidersHorizontalIcon size={15} />
+          Change cards
+        </Button>
+      }
+    >
+      <MenuGroup
+        label={
+          cards.length >= MAX_CARDS
+            ? `${MAX_CARDS} of ${MAX_CARDS} cards. Untick one to swap it.`
+            : `Cards in the stack, ${cards.length} of ${MAX_CARDS}`
+        }
+      >
+        {CARDS.map((card) => {
+          const on = chosen.has(card.id);
+          return (
+            <MenuCheckboxItem
+              key={card.id}
+              checked={on}
+              onCheckedChange={(next) => onToggle(card, next)}
+              disabled={on ? cards.length <= MIN_CARDS : cards.length >= MAX_CARDS}
+            >
+              {card.name}
+            </MenuCheckboxItem>
+          );
+        })}
+      </MenuGroup>
+      <MenuSeparator />
+      <MenuItem onClick={onReset}>Back to the sample cards</MenuItem>
+    </Menu>
   );
 }

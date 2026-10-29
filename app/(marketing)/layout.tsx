@@ -1,22 +1,26 @@
 import Link from "next/link";
 import { GeistMono } from "geist/font/mono";
 import { Wordmark } from "@/components/shell/wordmark";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SkipLink } from "@/components/shell/skip-link";
 import { cn } from "@/lib/cn";
+import { AccountButton, DashboardButton } from "@/components/landing/session-buttons";
+import { MarketingNav } from "@/components/landing/marketing-nav";
 
 const NAV = [
-  { href: "/#which-card", label: "Which card" },
-  { href: "/#credits", label: "Credits" },
-  { href: "/#fees", label: "Annual fees" },
-  { href: "/#pricing", label: "Pricing" },
+  { href: "/wallet", label: "Dashboard" },
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
 ];
 
 const FOOTER = [
   {
     title: "Product",
     links: [
+      { href: "/features", label: "Features" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/about", label: "About" },
       { href: "/wallet", label: "Wallet" },
       { href: "/tracker", label: "Tracker" },
       { href: "/calculators", label: "Calculators" },
@@ -59,35 +63,16 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
           >
             <Wordmark className="h-[26px] sm:h-8" />
           </Link>
-          <nav aria-label="Sections" className="hidden lg:block">
-            <ul className="flex gap-8 text-[14px]">
-              {NAV.map(({ href, label }) => (
-                <li key={href}>
-                  <Link href={href} className={cn(LINK, "text-muted hover:text-ink focus-visible:outline-focus")}>
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <MarketingNav items={NAV} linkClassName={LINK} />
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden sm:block">
               <ThemeToggle />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/signin" />}
-              className="hidden sm:inline-flex"
-            >
-              Sign in
-            </Button>
-            <Button size="sm" nativeButton={false} render={<Link href="/wallet" />}>
-              Open the demo
-            </Button>
+            <AccountButton size="sm" className="hidden sm:inline-flex" />
+            <DashboardButton size="sm" />
           </div>
         </div>
+        <MarketingNav items={NAV} linkClassName={LINK} row />
       </header>
 
       <main id="main" tabIndex={-1} className="flex-1 outline-none">
