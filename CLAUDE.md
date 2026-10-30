@@ -19,12 +19,19 @@ that plan, the plan wins, and the deviation gets recorded here.
 
 ## Where the build has got to
 
-Phases 0 to 6 of `creditdash-plan.md` are done. **Phase 7 (Stripe) is
-built and waiting on test mode**: the code is in, the owner's Stripe test
-setup and an end-to-end test are not (see "Billing" under the data layer). On 28 October 2026 the site was redesigned to the owner's Zaro
+Phases 0 to 7 of `creditdash-plan.md` are built. **Phase 7 (Stripe)
+passed end to end in the Stripe sandbox on 29 October 2026, but the live
+site has no Stripe keys yet**, so Upgrade there says payments are not
+switched on. Going live is dashboard work only; the steps are under
+"Billing" in the data layer section. **Phase 8 (real card data) is next.**
+
+Since Phase 7: on 28 October the site was redesigned to the owner's Zaro
 reference (landing rebuilt, off-white ground, new wordmark, Geist
-headlines); see the landing's brief in `.impeccable/surfaces/`. Every commit is labelled with its phase, so `git log --oneline` is
-the detailed record; this is the summary.
+headlines; the landing's brief is in `.impeccable/surfaces/`), and card
+data was checked against every issuer. On 29 and 30 October came the
+Wallet, Tracker and Compare controls and the public pages, each with its
+own section below. Every commit is labelled with its phase or change, so
+`git log --oneline` is the detailed record; this is the summary.
 
 **Live at https://creditdash.co/**. Registered at Porkbun, DNS on
 Cloudflare. The old `creditdash.stevenlen03.workers.dev` address is switched
@@ -62,11 +69,11 @@ off and returns 404.
 | 4 | Calculator engine, unit tested, Compare correctness |
 | 5 | States, keyboard, legal text, PWA, Lighthouse 100, first deploy |
 | 6 | Supabase Auth (Google, email link), account-backed `lib/data/`, RLS proven, demo import, account deletion |
-| 7 | Built, not yet tested in Stripe test mode: Checkout, Customer Portal, signed webhook, hidden cards on Free, billing terms |
+| 7 | Stripe Checkout, Customer Portal, signed webhook, hidden cards on Free, gifted Premium, billing terms. Sandbox-tested end to end; live keys not set |
 
 Phase 6 was verified on the live site: the owner signed in with Google on a
 phone, changed the Tracker there, and saw it on another device after a
-reload. `npm run test:rls` passes 29 checks (Phase 7 added six). See "Accounts" under the data
+reload. `npm run test:rls` passes 34 checks (Phase 7 added eleven). See "Accounts" under the data
 layer for how it works.
 
 Phase 5 in more detail, since later phases build on these:
@@ -154,8 +161,10 @@ for accessibility on mobile; the small drop is real network latency.
 
 - **The owner has UI tweaks saved for the end of the build.** Ask for them
   before calling the project finished; do not guess at them.
-- **A pricing page, maybe.** The owner suggested one; "See Premium" now
-  goes to the plan section of Settings. Not yet decided or planned.
+- **Next, in the owner's order:** Phase 8 (real card data), then the
+  Google Identity Services sign-in below, then the owner's saved UI tweaks.
+- **"Payments are not switched on yet"** is written on the home page and
+  on `/pricing`. Remove both lines when the live Stripe keys go in.
 - **Email is set up.** Sign-in links go through Resend (custom SMTP in
   Supabase, sender `signin@creditdash.co`; free plan, 100 a day, Supabase
   caps auth email near 30 an hour). DKIM, SPF on `send`, and DMARC
@@ -163,10 +172,9 @@ for accessibility on mobile; the small drop is real network latency.
   `hello@creditdash.co` is Cloudflare Email Routing forwarding to the
   owner's Gmail, which replies as it through a second Resend key. The
   email templates are still Supabase's defaults.
-- **Google sign-in is in Testing mode.** Only listed test users can sign
-  in. The Branding page now has the `creditdash.co` links and authorized
-  domain, so publishing is unblocked; Google may still ask to verify the
-  domain. Do this before real users.
+- **Google sign-in is published** (In production since 28 October 2026),
+  so any Google account can sign in. Google may still ask to verify the
+  domain.
 - **Google's consent screen names the Supabase project**
   ("continue to wueonwuupzupptfngxou.supabase.co"), because Google names
   the host it redirects back to. Agreed fix, scheduled after Resend: sign
@@ -271,7 +279,8 @@ npm test && npm run build                     # confirm the toolchain works
 ## Structure
 
 ```
-app/(marketing)/   Landing, sign in, privacy, terms. Public, no sidebar.
+app/(marketing)/   Landing, features, pricing, about, sign in, privacy,
+                   terms. Public, no sidebar.
 app/(app)/         Wallet, Tracker, Calculators, Compare, Settings.
 components/ui/     Primitives: CardFace, Widget, EarnChip, ProgressRing,
                    CheckmarkRow, plus restyled shadcn pieces.
@@ -318,8 +327,9 @@ rather than a guess that then gets replaced.
 ### Accounts
 
 - **The database is the guarantee, not the UI.** Every user table has Row
-  Level Security; `profiles.plan`, `stripe_customer_id` and `is_admin`
-  cannot be written by users at all (column grants); the free card limit is
+  Level Security; `profiles.plan`, `stripe_customer_id`, `premium_gift` and
+  `is_admin` cannot be written by users at all (column grants), and nor can
+  `subscriptions`; the free card limit is
   a trigger. `npm run test:rls` proves all of it against the real project
   with two throwaway users. Run it after any migration.
 - **Migrations live in `supabase/migrations/`** and are run once, by hand,
@@ -327,9 +337,12 @@ rather than a guess that then gets replaced.
   `FREE_CARD_LIMIT` is duplicated in the limit trigger; change both.
 - **No `proxy.ts`.** Next 16 runs it on Node and OpenNext cannot yet. Nothing
   server-side reads the session except `app/auth/callback/route.ts` (the
-  PKCE code exchange for Google and the email link) and
-  `app/api/account/route.ts` (account deletion, the only holder of the
-  secret key, acting only on the user its bearer token proves). The browser
+  PKCE code exchange for Google and the email link),
+  `app/api/account/route.ts` (account deletion) and the billing routes
+  under `app/api/billing/` (checkout and portal; the webhook has no user
+  and proves itself by Stripe's signature instead). Those are the only
+  holders of the secret key, and each acts only on the user its bearer
+  token proves. The browser
   client refreshes its own session. A server component that needs the user
   would need a proxy first; avoid needing one.
 - **Removing a card deletes its credit history** in both modes, matching the
@@ -364,7 +377,9 @@ rather than a guess that then gets replaced.
   in `lib/plan.ts` for the displayed figure.
 - **Secrets.** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are runtime
   Secrets on the Worker, like `SUPABASE_SECRET_KEY`. Test and live mode
-  have different keys and different webhook secrets.
+  have different keys and different webhook secrets. **Never put sandbox
+  keys on the live site:** anyone could pay with Stripe's test card and
+  get Premium. With no keys, Upgrade says payments are not switched on.
 - **Cancelling happens in Stripe's Customer Portal**, set to cancel at
   the end of the period. Before sending a Premium user there, Settings
   warns in a dialog if cancelling would hide cards (owner's rule).
@@ -384,8 +399,54 @@ rather than a guess that then gets replaced.
   Settings shows "On the house" and no billing button unless they are
   also paying. Never gift by setting `plan` alone: the next Stripe event
   for someone who has paid before would undo it.
-- **Migration** `20261029000000_subscriptions.sql`. Users read their own
-  rows only; nobody but the server writes them.
+- **A gift does not touch Stripe.** Someone paying when gifted keeps
+  being charged until they cancel in the portal (Settings still shows
+  them Manage billing) or the owner cancels in the Stripe dashboard.
+- **Migrations** `20261029000000_subscriptions.sql` and
+  `20261030000000_premium_gift.sql` have both run. Users read their own
+  subscription rows only; nobody but the server writes them.
+
+#### The Stripe account
+
+A separate Stripe account for CreditDash under the owner's existing Stripe
+login, set up with "Pick what you need" (not Managed Payments), no Stripe
+Tax and no invoicing. Its sandbox holds the product "CreditDash Premium",
+$5 a month, lookup key `creditdash_premium_monthly`, and a Customer Portal
+that cancels at period end, updates the payment method, shows invoices
+and has plan switching off. The portal has no Privacy or Terms links yet.
+
+#### Testing locally
+
+- The sandbox `sk_test_` key is in `.env.local` as `STRIPE_SECRET_KEY`,
+  and `npm run preview` reads `.env.local`.
+- The Stripe CLI is the winget package `Stripe.StripeCli`; on this machine
+  it is not on the PATH, so call `stripe.exe` from
+  `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Stripe.StripeCli_*`. No
+  `stripe login`: set `STRIPE_API_KEY` to the sandbox key for the command.
+- `stripe listen --print-secret` gives the local `STRIPE_WEBHOOK_SECRET`
+  (already in `.env.local`). Forward events with `stripe listen
+  --forward-to http://localhost:8787/api/billing/webhook`.
+- Pay with Stripe's published test card, 4242 4242 4242 4242. To skip to
+  the end of a period, `stripe subscriptions cancel <sub id> --confirm`.
+- **A test on a real account leaves a sandbox `stripe_customer_id` on its
+  profile.** Clear it, and its `subscriptions` rows, afterwards, or that
+  account's live checkout fails with "no such customer".
+
+#### Going live with Stripe
+
+All dashboard work, no code:
+
+1. Activate the CreditDash Stripe account for live payments.
+2. In live mode, recreate the $5 monthly price with the same lookup key,
+   and set up the Customer Portal the same way.
+3. Add a webhook endpoint `https://creditdash.co/api/billing/webhook` for
+   `checkout.session.completed`, `customer.subscription.created`,
+   `customer.subscription.updated` and `customer.subscription.deleted`.
+4. In the Worker's Variables and Secrets (Production), add the live
+   secret key as `STRIPE_SECRET_KEY` and that endpoint's signing secret
+   as `STRIPE_WEBHOOK_SECRET`.
+5. Remove the "Payments are not switched on yet" lines, then subscribe
+   once on the live site and cancel, to prove it.
 
 ## Credit resets
 
@@ -430,9 +491,9 @@ TPG's. Three modelling rules:
   wallets with the old $0 card keep a card. Obsidian and Palladium are new
   ids. Obsidian assumes dining for its pick-one 3x category.
 
-The answer line states the multiplier only ("earns 8x on flights"); cents
-per dollar is held back by the owner's choice, though ranking still uses
-value.
+The answer line and the Compare table state the multiplier only ("earns
+8x on flights"); cents per dollar is held back by the owner's choice,
+though ranking and Compare's winners still use value.
 
 ## Public pages (30 October 2026)
 
