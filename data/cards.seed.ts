@@ -410,12 +410,18 @@ export const DEMO_BALANCES: PointBalance[] = [
 ];
 
 /** Defaults, editable per user in Settings. */
+/**
+ * CreditDash's own default valuations, cents per point. Rounded estimates
+ * in line with the published consensus (revised 30 October 2026), not any
+ * one publisher's table, and never labelled as anyone else's. Users can
+ * set their own.
+ */
 export const DEFAULT_VALUATIONS: Valuation[] = [
-  { program: "amex-mr", centsPerPoint: 1.9 },
-  { program: "chase-ur", centsPerPoint: 1.9 },
-  { program: "citi-ty", centsPerPoint: 1.6 },
-  { program: "capital-one", centsPerPoint: 1.7 },
-  { program: "bilt", centsPerPoint: 1.8 },
+  { program: "amex-mr", centsPerPoint: 2.0 },
+  { program: "chase-ur", centsPerPoint: 2.0 },
+  { program: "citi-ty", centsPerPoint: 1.8 },
+  { program: "capital-one", centsPerPoint: 1.8 },
+  { program: "bilt", centsPerPoint: 2.1 },
   { program: "hilton", centsPerPoint: 0.5 },
   { program: "united", centsPerPoint: 1.3 },
 ];

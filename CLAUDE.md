@@ -161,8 +161,11 @@ for accessibility on mobile; the small drop is real network latency.
 
 - **The owner has UI tweaks saved for the end of the build.** Ask for them
   before calling the project finished; do not guess at them.
-- **Next, in the owner's order:** Phase 8 (real card data), then the
-  Google Identity Services sign-in below, then the owner's saved UI tweaks.
+- **Next, in the owner's order:** the calculators rebuild and the new
+  Points page, briefed in `docs/calculators-upgrade.md` (read it, plan,
+  wait for the owner's OK); then Phase 8 (real card data, from a terms
+  file the owner will send); then the Google Identity Services sign-in
+  below; then the owner's saved UI tweaks.
 - **"Payments are not switched on yet"** is written on the home page and
   on `/pricing`. Remove both lines when the live Stripe keys go in.
 - **Email is set up.** Sign-in links go through Resend (custom SMTP in
@@ -477,7 +480,8 @@ format means a schema version and a migration, never an edit in place.
 each issuer's own page, cross-checked with The Points Guy and recent
 coverage, and `lastVerified` set to that date. Facts are in our own words;
 nothing from TPG is copied, and the default valuations are ours, not
-TPG's. Three modelling rules:
+TPG's (revised 30 October 2026 to sit closer to the consensus; never
+labelled with any publisher's name). Three modelling rules:
 
 - **A credit whose period or amount changes meaningfully gets a new id**
   (`csr-edit`, `gold-resy-50`, `united-tb-10k`), so usage stored under
