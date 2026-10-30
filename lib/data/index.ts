@@ -4,6 +4,12 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { Card, PointBalance, Program, UserCard } from "@/data/types";
 import { CARDS, getCard } from "@/data/cards.seed";
 import { cardLimit, type Plan } from "@/lib/plan";
+import {
+  mergeValuations,
+  valuationOf,
+  type ResolvedValuation,
+} from "@/lib/valuations";
+import type { Valuations } from "@/lib/calculators/engine";
 import { emptyState, type CreditUsage, type Persisted } from "@/lib/data/schema";
 import * as remote from "@/lib/data/remote";
 import { supabase, SUPABASE_CONFIGURED } from "@/lib/data/supabase";
@@ -126,12 +132,24 @@ export function usePointBalances(): PointBalance[] {
   return useData().pointBalances;
 }
 
-/** Cents per point, user override falling back to the seed default. */
-export function useValuations(): Record<string, number> {
-  const data = useData();
-  return Object.fromEntries(
-    data.valuations.map((v) => [v.program, v.centsPerPoint]),
-  );
+/**
+ * Cents per point for every program: the user's own value where they set
+ * one, CreditDash's default everywhere else.
+ */
+export function useValuations(): Valuations {
+  const own = useData().valuations;
+  return useMemo(() => mergeValuations(own), [own]);
+}
+
+/** One program's value and where it came from, for the "Your valuation" label. */
+export function useValuation(program: Program): ResolvedValuation {
+  return valuationOf(program, useData().valuations);
+}
+
+/** Programs being tracked on the Points page, in the order they were added. */
+export function useTrackedPrograms(): Program[] {
+  const balances = useData().pointBalances;
+  return useMemo(() => balances.map((b) => b.program), [balances]);
 }
 
 /** Catalog cards not already in the wallet, optionally filtered by a query. */
@@ -325,6 +343,43 @@ export async function setValuation(
       return { ...s, valuations };
     },
     (r) => remote.setValuation(r, program, centsPerPoint),
+  );
+}
+
+/** Back to CreditDash's default for this program. */
+export async function clearValuation(program: Program): Promise<void> {
+  await mutate(
+    (s) => ({
+      ...s,
+      valuations: s.valuations.filter((v) => v.program !== program),
+    }),
+    (r) => remote.deleteValuation(r, program),
+  );
+}
+
+/**
+ * Starts tracking programs on the Points page. A tracked program is one with
+ * a balance row, so adding one writes a balance of zero; programs already
+ * tracked keep their balance.
+ */
+export async function addPrograms(programs: Program[]): Promise<void> {
+  for (const program of programs) {
+    if (getSnapshot().pointBalances.some((b) => b.program === program)) continue;
+    await setPointBalance(program, 0);
+  }
+}
+
+/**
+ * Stops tracking a program and forgets its balance. Its valuation stays,
+ * because the calculators still use it.
+ */
+export async function removeProgram(program: Program): Promise<void> {
+  await mutate(
+    (s) => ({
+      ...s,
+      pointBalances: s.pointBalances.filter((b) => b.program !== program),
+    }),
+    (r) => remote.deletePointBalance(r, program),
   );
 }
 

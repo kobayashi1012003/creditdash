@@ -78,114 +78,259 @@ export function pointsToDollars(balance: number, cpp: number): number {
   return (balance * cpp) / 100;
 }
 
-/* --- what is my spend worth? --------------------------------------------- */
+/* --- award vs cash ------------------------------------------------------- */
 
-export type SpendResult = {
-  card: Card;
-  points: number;
-  value: number;
+export type AwardVerdict = "use-points" | "pay-cash" | "close-call";
+
+export type AwardInput = {
+  cashPrice: number | null;
+  points: number | null;
+  /** Taxes and fees on the award, in dollars. */
+  fees: number | null;
+  /** Rewards the cash booking would have earned, in dollars. */
+  rewardsForgone: number | null;
+  /** What a point in this program is worth, in cents. */
+  valuation: number;
 };
 
-/**
- * A year of category spend, valued on each card. `monthlySpend` is per month;
- * caps are annual, so it is multiplied up before any cap is applied.
- */
-export function valueSpend(
-  cards: Card[],
-  monthlySpend: Partial<Record<Category, number>>,
-  valuations: Valuations,
-): SpendResult[] {
-  return cards
-    .map((card) => {
-      let points = 0;
-      for (const [category, monthly] of Object.entries(monthlySpend)) {
-        if (!monthly) continue;
-        points += pointsForSpend(card, category as Category, monthly * 12);
-      }
-      return {
-        card,
-        points,
-        value: pointsToDollars(points, centsPerPoint(card.program, valuations)),
-      };
-    })
-    .sort((a, b) => b.value - a.value);
-}
+export type AwardResult =
+  /** Not enough typed yet to say anything. */
+  | { kind: "empty" }
+  /** The award's own fees are at or above the cash price. */
+  | { kind: "fees-exceed"; verdict: "pay-cash" }
+  | {
+      kind: "result";
+      verdict: AwardVerdict;
+      /** What this booking gets for each point, in cents. */
+      centsPerPoint: number;
+      /** Dollars kept by using points: cash price less fees and forgone rewards. */
+      cashSaved: number;
+      /** The points at the user's valuation, in dollars. */
+      pointsValue: number;
+      /** cashSaved minus pointsValue. Positive means the points do better. */
+      difference: number;
+    };
 
-/* --- annual fee break-even ----------------------------------------------- */
-
-export type BreakEven = {
-  annualFee: number;
-  /** Credit value available across a year, if every one is used. */
-  creditValue: number;
-  /** Fee left after credits. Zero when credits already cover it. */
-  shortfall: number;
-  /** Credit value beyond the fee. Zero unless the credits exceed it. */
-  surplus: number;
-  /** Annual spend needed to cover the shortfall, or null when impossible. */
-  spendNeeded: number | null;
-  /** The everything-else rate the spend figure assumes. */
-  baseRate: number;
-};
+/** Points win at 10% over the valuation; cash wins at 10% under it. */
+export const AWARD_MARGIN = 0.1;
 
 /**
- * How much has to go on a card before its fee pays for itself.
+ * Should this booking be paid with points or cash?
  *
- * Measured at the card's "everything else" rate on purpose. The bonus
- * categories are usually already spoken for by a better card, so the honest
- * question is what the card earns on spend you have not assigned elsewhere.
+ * cents per point = (cash price - award fees - rewards forgone) / points x 100,
+ * then judged against what a point is worth to the user. Within 10% either
+ * way is a close call, because valuations are estimates and a 2% edge is
+ * inside their error.
  */
-export function breakEven(
-  card: Card,
-  creditValue: number,
-  valuations: Valuations,
-): BreakEven {
-  const annualFee = card.annualFee;
-  const shortfall = Math.max(0, annualFee - creditValue);
-  const surplus = Math.max(0, creditValue - annualFee);
+export function awardVsCash(input: AwardInput): AwardResult {
+  const cash = input.cashPrice ?? 0;
+  const points = input.points ?? 0;
+  if (!(cash > 0) || !(points > 0)) return { kind: "empty" };
 
-  const base = rateFor(card, "other");
-  const baseRate = base.multiplier;
-  const cpp = centsPerPoint(card.program, valuations);
+  const fees = Math.max(0, input.fees ?? 0);
+  if (fees >= cash) return { kind: "fees-exceed", verdict: "pay-cash" };
+
+  const forgone = Math.max(0, input.rewardsForgone ?? 0);
+  const valuation = Math.max(0, input.valuation);
+  const cashSaved = cash - fees - forgone;
+  const cpp = (cashSaved / points) * 100;
+  const pointsValue = (points * valuation) / 100;
+
+  // The tolerance keeps a booking at exactly 1.1 times the valuation on the
+  // side the rule puts it, whatever the floating point does with 2.0 x 1.1.
+  const EPSILON = 1e-9;
+  let verdict: AwardVerdict;
+  if (cashSaved <= 0) verdict = "pay-cash";
+  else if (cpp >= valuation * (1 + AWARD_MARGIN) - EPSILON) verdict = "use-points";
+  else if (cpp < valuation * (1 - AWARD_MARGIN) - EPSILON) verdict = "pay-cash";
+  else verdict = "close-call";
 
   return {
-    annualFee,
-    creditValue,
-    shortfall,
-    surplus,
-    baseRate,
-    spendNeeded: spendToEarn(shortfall, base, cpp),
+    kind: "result",
+    verdict,
+    centsPerPoint: cpp,
+    cashSaved,
+    pointsValue,
+    difference: cashSaved - pointsValue,
   };
 }
 
 /**
- * Spend needed to earn a given dollar value at a rate, crossing the cap if
- * it has to. Returns null when the points are worthless, because no amount
- * of spend would ever get there and a huge number would be a lie.
+ * Dollars a card would earn on a cash booking: the price at the card's rate
+ * for that category, at the user's valuation. One booking never reaches an
+ * annual cap, so this is a straight multiplication.
  */
-function spendToEarn(
-  target: number,
-  rate: EarnRate,
+export function rewardsOnPurchase(
+  card: Card,
+  category: Category,
+  price: number,
   cpp: number,
-): number | null {
-  if (target <= 0) return 0;
-  if (cpp <= 0 || rate.multiplier <= 0) return null;
+): number {
+  if (!(price > 0)) return 0;
+  return pointsToDollars(price * rateFor(card, category).multiplier, cpp);
+}
 
-  const valuePerDollar = (rate.multiplier * cpp) / 100;
-  const cap = rate.cap;
+/* --- is this card worth it? ---------------------------------------------- */
 
-  if (cap === null || cap === undefined) {
-    return target / valuePerDollar;
+export type BenefitUse = {
+  id: string;
+  name: string;
+  /**
+   * The most the benefit can be worth in a year, or null for benefits with
+   * no cash value (lounge access, status), which are worth whatever the
+   * user says.
+   */
+  max: number | null;
+  /** Dollars the user expects to get from it in a year. */
+  used: number;
+};
+
+export type CardWorth = {
+  annualFee: number;
+  /** Benefits used, each held to its own maximum. */
+  benefitValue: number;
+  /** Rewards from spending, kept apart from the benefits. Zero when off. */
+  rewardsValue: number;
+  total: number;
+  /** total - fee. Positive pays for itself. */
+  net: number;
+  /** total / fee, or null for a card with no fee. */
+  covered: number | null;
+  verdict: "no-fee" | "pays" | "short";
+  /** Benefits with money left in them, most left first. */
+  gaps: { id: string; name: string; left: number }[];
+};
+
+/**
+ * Whether the benefits someone would actually use cover the annual fee.
+ * Each benefit counts up to its own yearly maximum, so typing $500 against a
+ * $120 credit cannot make a card look better than it is.
+ */
+export function cardWorth(
+  annualFee: number,
+  benefits: BenefitUse[],
+  rewardsValue = 0,
+): CardWorth {
+  let benefitValue = 0;
+  const gaps: CardWorth["gaps"] = [];
+
+  for (const b of benefits) {
+    const used = Math.max(0, b.used || 0);
+    const counted = b.max === null ? used : Math.min(used, b.max);
+    benefitValue += counted;
+    if (b.max !== null && b.max - counted > 0) {
+      gaps.push({ id: b.id, name: b.name, left: b.max - counted });
+    }
   }
+  gaps.sort((a, b) => b.left - a.left);
 
-  const valueAtCap = cap * valuePerDollar;
-  if (target <= valueAtCap) {
-    return target / valuePerDollar;
-  }
+  const rewards = Math.max(0, rewardsValue || 0);
+  const total = benefitValue + rewards;
+  const fee = Math.max(0, annualFee);
 
-  // Past the cap the rate drops, so the rest takes proportionally more spend.
-  const overflowPerDollar = (BASE_OVERFLOW_RATE * cpp) / 100;
-  if (overflowPerDollar <= 0) return null;
-  return cap + (target - valueAtCap) / overflowPerDollar;
+  return {
+    annualFee: fee,
+    benefitValue,
+    rewardsValue: rewards,
+    total,
+    net: total - fee,
+    covered: fee > 0 ? total / fee : null,
+    verdict: fee === 0 ? "no-fee" : total >= fee ? "pays" : "short",
+    gaps,
+  };
+}
+
+/* --- what is my spend worth? --------------------------------------------- */
+
+export type Timeframe = "day" | "week" | "month" | "half" | "year";
+
+export const TIMEFRAMES: Timeframe[] = ["day", "week", "month", "half", "year"];
+
+/** How many of each timeframe fit in a year. Caps are yearly. */
+export const PER_YEAR: Record<Timeframe, number> = {
+  day: 365,
+  week: 52,
+  month: 12,
+  half: 2,
+  year: 1,
+};
+
+/**
+ * The categories a card has its own rate for, then "everything else" last,
+ * so the spend calculator shows one field per real rate and nothing more.
+ */
+export function earnCategories(card: Card): Category[] {
+  const own = card.earnRates
+    .map((r) => r.category)
+    .filter((c) => c !== "other");
+  return [...new Set(own), "other"];
+}
+
+export type SpendRow = {
+  category: Category;
+  spend: number;
+  rate: EarnRate;
+  points: number;
+  /** True when a year at this pace passes the category's cap. */
+  capReached: boolean;
+  /** What spend past the cap earns. */
+  overflowRate: number;
+};
+
+export type SpendWorth = {
+  rows: SpendRow[];
+  totalSpend: number;
+  points: number;
+  value: number;
+  /** value / totalSpend, or null when nothing was entered. */
+  effectiveReturn: number | null;
+  /** The same pace for a whole year. */
+  pointsPerYear: number;
+};
+
+/**
+ * Points and dollars for spend over one timeframe on one card.
+ *
+ * Amounts mean "what I will spend in this timeframe". Caps are yearly, so
+ * each amount is annualised, run through `pointsForSpend` (which applies the
+ * cap and the overflow rate), and scaled back.
+ */
+export function spendWorth(
+  card: Card,
+  spend: Partial<Record<Category, number>>,
+  timeframe: Timeframe,
+  cpp: number,
+): SpendWorth {
+  const n = PER_YEAR[timeframe];
+  const base = rateFor(card, "other");
+
+  const rows = earnCategories(card).map((category) => {
+    const amount = Math.max(0, spend[category] ?? 0);
+    const rate = rateFor(card, category);
+    const yearly = pointsForSpend(card, category, amount * n);
+    return {
+      category,
+      spend: amount,
+      rate,
+      points: yearly / n,
+      capReached: rate.cap !== null && amount * n > rate.cap,
+      overflowRate:
+        rate.category === "other" ? BASE_OVERFLOW_RATE : base.multiplier,
+    };
+  });
+
+  const totalSpend = rows.reduce((sum, r) => sum + r.spend, 0);
+  const points = rows.reduce((sum, r) => sum + r.points, 0);
+  const value = pointsToDollars(points, cpp);
+
+  return {
+    rows,
+    totalSpend,
+    points,
+    value,
+    effectiveReturn: totalSpend > 0 ? value / totalSpend : null,
+    pointsPerYear: points * n,
+  };
 }
 
 /* --- which card for this purchase? --------------------------------------- */

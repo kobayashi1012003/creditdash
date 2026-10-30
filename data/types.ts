@@ -1,4 +1,5 @@
 import type { Category } from "@/lib/categories";
+import type { Program } from "@/data/programs";
 import type { CreditPeriod, ResetBasis } from "@/lib/credits/reset";
 
 /**
@@ -7,14 +8,9 @@ import type { CreditPeriod, ResetBasis } from "@/lib/credits/reset";
  * here and snake_case in the database; the data layer maps between them.
  */
 
-export type Program =
-  | "amex-mr"
-  | "chase-ur"
-  | "citi-ty"
-  | "capital-one"
-  | "bilt"
-  | "hilton"
-  | "united";
+/** The program list, labels and defaults live in data/programs.ts. */
+export type { Program } from "@/data/programs";
+export { PROGRAM_LABELS } from "@/data/programs";
 
 export type Network = "amex" | "visa" | "mastercard";
 
@@ -62,6 +58,18 @@ export type CardCredit = {
   notes?: string;
 };
 
+/**
+ * A benefit with no regular cash value: lounge access, status, insurance,
+ * free bags. Worth whatever the user says it is to them. Empty across the
+ * catalog until the owner's terms file arrives; the calculator shows a
+ * placeholder row for lounge access meanwhile.
+ */
+export type CardPerk = {
+  id: string;
+  name: string;
+  notes?: string;
+};
+
 export type Card = {
   id: string;
   name: string;
@@ -80,6 +88,8 @@ export type Card = {
   /** Percent, 0 when the card charges none. */
   foreignTransactionFee: number;
   loungeAccess: string | null;
+  /** Benefits with no cash value. See CardPerk. */
+  perks?: CardPerk[];
   /**
    * Details that are easy to miss and change what the card is worth:
    * enrollment, spend thresholds, recent and announced changes. One
@@ -107,14 +117,4 @@ export type PointBalance = {
 export type Valuation = {
   program: Program;
   centsPerPoint: number;
-};
-
-export const PROGRAM_LABELS: Record<Program, string> = {
-  "amex-mr": "Amex Membership Rewards",
-  "chase-ur": "Chase Ultimate Rewards",
-  "citi-ty": "Citi ThankYou",
-  "capital-one": "Capital One miles",
-  bilt: "Bilt Rewards",
-  hilton: "Hilton Honors",
-  united: "United MileagePlus",
 };

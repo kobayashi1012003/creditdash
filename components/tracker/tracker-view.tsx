@@ -166,12 +166,12 @@ export function TrackerView() {
           <Widget title="Points">
             {!balance || balance.balance === 0 ? (
               <p className="text-sm leading-relaxed text-muted">
-                No {PROGRAM_LABELS[card.program]} balance entered yet. Add it in{" "}
+                No {PROGRAM_LABELS[card.program]} balance entered yet. Add it on the{" "}
                 <Link
-                  href="/settings"
+                  href="/points"
                   className="rounded-inner text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
-                  Settings
+                  Points page
                 </Link>
                 .
               </p>

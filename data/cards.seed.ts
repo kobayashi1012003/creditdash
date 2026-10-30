@@ -1,4 +1,4 @@
-import type { Card, PointBalance, UserCard, Valuation } from "./types";
+import type { Card, PointBalance, UserCard } from "./types";
 
 /**
  * CARD DATA, checked 28 October 2026.
@@ -408,27 +408,6 @@ export const DEMO_BALANCES: PointBalance[] = [
   { program: "capital-one", balance: 31250, updatedAt: "2026-09-27" },
   { program: "bilt", balance: 12800, updatedAt: "2026-10-18" },
 ];
-
-/** Defaults, editable per user in Settings. */
-/**
- * CreditDash's own default valuations, cents per point. Rounded estimates
- * in line with the published consensus (revised 30 October 2026), not any
- * one publisher's table, and never labelled as anyone else's. Users can
- * set their own.
- */
-export const DEFAULT_VALUATIONS: Valuation[] = [
-  { program: "amex-mr", centsPerPoint: 2.0 },
-  { program: "chase-ur", centsPerPoint: 2.0 },
-  { program: "citi-ty", centsPerPoint: 1.8 },
-  { program: "capital-one", centsPerPoint: 1.8 },
-  { program: "bilt", centsPerPoint: 2.1 },
-  { program: "hilton", centsPerPoint: 0.5 },
-  { program: "united", centsPerPoint: 1.3 },
-];
-
-export function valuationFor(program: string): number {
-  return DEFAULT_VALUATIONS.find((v) => v.program === program)?.centsPerPoint ?? 1;
-}
 
 /**
  * Sample credit usage for the demo wallet, keyed by credit id. Each array has

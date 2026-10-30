@@ -15,7 +15,7 @@ export default function CalculatorsPage() {
     <>
       <PageHeader
         title="Calculators"
-        description="Worked against the cards in your wallet, not a generic example."
+        description="Each one works from your cards and what your points are worth to you."
       />
       <CalculatorsList />
     </>

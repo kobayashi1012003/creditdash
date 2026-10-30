@@ -7,6 +7,7 @@ import {
   daysUntilReset,
   expiresWithin,
   periodWindows,
+  recentWindows,
   PERIOD_COUNT,
 } from "./reset.ts";
 
@@ -411,5 +412,52 @@ describe("daysUntilReset", () => {
       }),
       5,
     );
+  });
+});
+
+describe("recentWindows", () => {
+  test("a calendar monthly credit in March reaches back into last year", () => {
+    const windows = recentWindows({
+      period: "monthly",
+      resetBasis: "calendar",
+      on: at(2026, 3, 15),
+    });
+    assert.equal(windows.length, 12);
+    assert.equal(windows[0].key, "2025-04");
+    assert.equal(windows[11].key, "2026-03");
+  });
+
+  test("an anniversary quarterly credit crosses into the previous cycle", () => {
+    // Opened in November: quarters start November, February, May, August.
+    // On 10 December the open quarter is the first of the new cycle.
+    const windows = recentWindows({
+      period: "quarterly",
+      resetBasis: "anniversary",
+      anniversaryMonth: 11,
+      on: at(2026, 12, 10),
+    });
+    assert.deepEqual(
+      windows.map((w) => w.key),
+      ["a2025-11:Q2", "a2025-11:Q3", "a2025-11:Q4", "a2026-11:Q1"],
+    );
+  });
+
+  test("an annual credit is only the open window", () => {
+    const windows = recentWindows({
+      period: "annual",
+      resetBasis: "calendar",
+      on: at(2026, 6, 1),
+    });
+    assert.deepEqual(windows.map((w) => w.key), ["2026"]);
+  });
+
+  test("on the last month of a cycle it is exactly that cycle", () => {
+    const windows = recentWindows({
+      period: "monthly",
+      resetBasis: "calendar",
+      on: at(2026, 12, 31),
+    });
+    assert.equal(windows[0].key, "2026-01");
+    assert.equal(windows[11].key, "2026-12");
   });
 });

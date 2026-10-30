@@ -2,7 +2,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PointBalance, Program, UserCard } from "@/data/types";
-import { DEFAULT_VALUATIONS, getCard } from "@/data/cards.seed";
+import { getCard } from "@/data/cards.seed";
+import { DEFAULT_CPP, isProgram } from "@/data/programs";
 import { SCHEMA_VERSION, type CreditUsage, type Persisted } from "@/lib/data/schema";
 
 /**
@@ -83,27 +84,31 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
     (creditUsage[u.credit_id] ??= {})[u.period_key] = Number(u.amount_used);
   }
 
-  const pointBalances: PointBalance[] = (balances.data ?? []).map((b) => ({
-    program: b.program as Program,
-    balance: Number(b.balance),
-    updatedAt: String(b.updated_at).slice(0, 10),
-  }));
+  // A row for a program this build does not know is skipped, not shown
+  // with no name.
+  const pointBalances: PointBalance[] = (balances.data ?? [])
+    .filter((b) => isProgram(b.program))
+    .map((b) => ({
+      program: b.program as Program,
+      balance: Number(b.balance),
+      updatedAt: String(b.updated_at).slice(0, 10),
+    }));
 
-  // Browser storage keeps every program's valuation; the table keeps only
-  // overrides. Defaults fill the rest so both shapes read the same.
-  const overrides = new Map(
-    (valuations.data ?? []).map((v) => [v.program, Number(v.cents_per_point)]),
-  );
+  // The table holds the user's own values only, as browser storage now does;
+  // defaults are filled in at read time by lib/valuations.ts.
+  const ownValuations = (valuations.data ?? [])
+    .filter((v) => isProgram(v.program))
+    .map((v) => ({
+      program: v.program as Program,
+      centsPerPoint: Number(v.cents_per_point),
+    }));
   const state: Persisted = {
     version: SCHEMA_VERSION,
     profile: { plan: profile.data?.plan === "premium" ? "premium" : "free" },
     userCards,
     creditUsage,
     pointBalances,
-    valuations: DEFAULT_VALUATIONS.map((v) => ({
-      program: v.program,
-      centsPerPoint: overrides.get(v.program) ?? v.centsPerPoint,
-    })),
+    valuations: ownValuations,
   };
   // Billing is shown, never relied on: a failed read leaves Settings
   // without a renewal date, not the account unloadable.
@@ -231,6 +236,26 @@ export async function setValuation(r: Remote, program: Program, centsPerPoint: n
   check(error);
 }
 
+/** Stops tracking a program: its balance row goes, its valuation stays. */
+export async function deletePointBalance(r: Remote, program: Program) {
+  const { error } = await r.db
+    .from("point_balances")
+    .delete()
+    .eq("user_id", r.userId)
+    .eq("program", program);
+  check(error);
+}
+
+/** Back to CreditDash's default. */
+export async function deleteValuation(r: Remote, program: Program) {
+  const { error } = await r.db
+    .from("valuations")
+    .delete()
+    .eq("user_id", r.userId)
+    .eq("program", program);
+  check(error);
+}
+
 /** Empties the account's data. The account itself stays; see deleteAccount. */
 export async function clearAccount(r: Remote) {
   const results = await Promise.all([
@@ -285,9 +310,8 @@ export async function importState(r: Remote, local: Persisted, limit: number) {
       }));
   });
 
-  const defaults = new Map(DEFAULT_VALUATIONS.map((v) => [v.program, v.centsPerPoint]));
   const valuationRows = local.valuations
-    .filter((v) => defaults.get(v.program) !== v.centsPerPoint)
+    .filter((v) => DEFAULT_CPP[v.program] !== v.centsPerPoint)
     .map((v) => ({ user_id: r.userId, program: v.program, cents_per_point: v.centsPerPoint }));
 
   const balanceRows = local.pointBalances.map((b) => ({

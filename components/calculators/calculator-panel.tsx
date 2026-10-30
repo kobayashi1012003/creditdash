@@ -155,7 +155,7 @@ function CalculatorBody({
                   : "border-line text-muted hover:border-muted hover:text-ink",
               )}
             >
-              {c.title}
+              {c.short}
             </button>
           );
         })}
@@ -165,7 +165,7 @@ function CalculatorBody({
         id={`${baseId}-panel`}
         aria-labelledby={`${baseId}-tab-${current.id}`}
       >
-        <Body cards={cards} dense />
+        <Body cards={cards} />
       </div>
     </>
   );

@@ -170,7 +170,7 @@ export function AddCardSheet({
 }
 
 /** The selection mark: an empty ring, or a green circle with a check. */
-function Tick({ on }: { on: boolean }) {
+export function Tick({ on }: { on: boolean }) {
   return (
     <span
       aria-hidden

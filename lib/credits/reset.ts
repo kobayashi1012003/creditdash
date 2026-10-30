@@ -202,6 +202,31 @@ export function currentWindow(options: CycleOptions): PeriodWindow | null {
   return i === -1 ? null : periodWindows(options)[i];
 }
 
+/**
+ * A year's worth of windows ending with the one open now: the open window
+ * and the ones before it, reaching back into the previous cycle where this
+ * cycle has not got that far yet. Twelve for a monthly credit, one for an
+ * annual one.
+ *
+ * "Fill in from my Tracker" reads usage through this, so a card opened in
+ * November and checked in February still counts the months before its
+ * anniversary.
+ */
+export function recentWindows(options: CycleOptions): PeriodWindow[] {
+  const on = options.on ?? new Date();
+  const current = periodWindows({ ...options, on });
+  const index = current.findIndex((w) => on >= w.start && on < w.end);
+  if (index === -1) return current;
+
+  const start = cycleStart({ ...options, on });
+  const dayBefore = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 1);
+  const previous = periodWindows({ ...options, on: dayBefore });
+
+  const all = [...previous, ...current];
+  const end = previous.length + index + 1;
+  return all.slice(end - PERIOD_COUNT[options.period], end);
+}
+
 /** The storage key for the window that is open right now. */
 export function currentPeriodKey(options: CycleOptions): string | null {
   return currentWindow(options)?.key ?? null;

@@ -69,3 +69,24 @@ export function longDate(iso: string) {
     year: "numeric",
   });
 }
+
+/**
+ * "2.0¢", "1.98¢". Cents per point, with the second decimal only when it
+ * says something, so a default of 2 reads as a valuation and not a price.
+ */
+export function cents(cpp: number) {
+  return `${centsNumber(cpp)}¢`;
+}
+
+/** "2.0", "1.98": the number alone, for an input beside its own ¢. */
+export function centsNumber(cpp: number) {
+  const two = Math.round(cpp * 100) / 100;
+  const oneDecimal = Math.abs(Math.round(two * 10) - two * 10) < 1e-9;
+  return oneDecimal ? two.toFixed(1) : two.toFixed(2);
+}
+
+/** "8.5%", "12%". One decimal below ten, none above. */
+export function percent(fraction: number) {
+  const p = fraction * 100;
+  return `${p < 10 ? Number(p.toFixed(1)) : Math.round(p)}%`;
+}

@@ -7,11 +7,7 @@ import {
   SignOutIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-import type { Program } from "@/data/types";
-import { PROGRAM_LABELS } from "@/data/types";
-import { DEFAULT_VALUATIONS } from "@/data/cards.seed";
 import { FREE_CARD_LIMIT, type Plan } from "@/lib/plan";
-import { pointsValue, pts, usd } from "@/lib/format";
 import {
   ACCOUNTS_ENABLED,
   deleteAccount,
@@ -20,26 +16,18 @@ import {
   signOut,
   useAccount,
   type Account,
-  setPointBalance,
-  setValuation,
   useIsLoading,
   usePlan,
-  usePointBalances,
-  useValuations,
   useWalletIncludingHidden,
   walletToCsv,
 } from "@/lib/data";
 import { PlanSection } from "@/components/settings/plan-section";
 import { Widget } from "@/components/ui/widget";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SettingsView() {
   const plan = usePlan();
-  const valuations = useValuations();
-  const balances = usePointBalances();
   const entries = useWalletIncludingHidden();
   const isLoading = useIsLoading();
   const account = useAccount();
@@ -83,95 +71,6 @@ export function SettingsView() {
           </p>
           <ThemeToggle />
         </div>
-      </Widget>
-
-      <Widget title="Points you hold" id="balances" className="scroll-mt-6">
-        <p className="mb-5 max-w-[58ch] text-sm leading-relaxed text-muted">
-          Entered by hand, because nothing here is linked to an account.
-        </p>
-        <ul className="divide-y divide-line">
-          {DEFAULT_VALUATIONS.map(({ program }) => {
-            const balance =
-              balances.find((b) => b.program === program)?.balance ?? 0;
-            return (
-              <li
-                key={program}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0"
-              >
-                <Label htmlFor={`bal-${program}`} className="text-sm">
-                  {PROGRAM_LABELS[program]}
-                </Label>
-                <Input
-                  id={`bal-${program}`}
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  step="1000"
-                  value={balance}
-                  onChange={(e) =>
-                    setPointBalance(
-                      program as Program,
-                      Math.max(0, Number(e.target.value) || 0),
-                    )
-                  }
-                  className="h-9 w-32 shrink-0 rounded-inner text-right tabular-nums"
-                />
-              </li>
-            );
-          })}
-        </ul>
-      </Widget>
-
-      <Widget
-        title="What a point is worth"
-        action={<p className="text-[13px] text-muted">Cents per point</p>}
-        id="valuations"
-        className="scroll-mt-6"
-      >
-        <p className="mb-5 max-w-[58ch] text-sm leading-relaxed text-muted">
-          These drive every dollar figure in the Tracker and the calculators.
-          The defaults are a reasonable middle; set them to what you actually
-          get.
-        </p>
-        <ul className="divide-y divide-line">
-          {DEFAULT_VALUATIONS.map(({ program }) => {
-            const cpp = valuations[program] ?? 1;
-            const balance = balances.find((b) => b.program === program);
-            return (
-              <li
-                key={program}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0"
-              >
-                <div className="min-w-0">
-                  <Label htmlFor={`cpp-${program}`} className="text-sm">
-                    {PROGRAM_LABELS[program]}
-                  </Label>
-                  {balance && balance.balance > 0 && (
-                    <p className="text-[13px] tabular-nums text-muted">
-                      {pts(balance.balance)} points,{" "}
-                      {usd(pointsValue(balance.balance, cpp))}
-                    </p>
-                  )}
-                </div>
-                <Input
-                  id={`cpp-${program}`}
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  min="0"
-                  value={cpp}
-                  onChange={(e) =>
-                    setValuation(
-                      program as Program,
-                      Math.max(0, Number(e.target.value) || 0),
-                    )
-                  }
-                  className="h-9 w-20 shrink-0 rounded-inner text-right tabular-nums"
-                />
-              </li>
-            );
-          })}
-        </ul>
       </Widget>
 
       <PlanSection plan={plan} account={account} />

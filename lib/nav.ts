@@ -1,6 +1,7 @@
 import {
   CalculatorIcon,
   CardsThreeIcon,
+  CoinsIcon,
   ColumnsPlusRightIcon,
   GearSixIcon,
   ListChecksIcon,
@@ -13,9 +14,10 @@ export type NavItem = {
   Icon: Icon;
 };
 
-/** The app's five destinations, in the order the sidebar and tab bar show them. */
+/** The app's six destinations, in the order the sidebar and tab bar show them. */
 export const NAV: NavItem[] = [
   { href: "/wallet", label: "Wallet", Icon: CardsThreeIcon },
+  { href: "/points", label: "Points", Icon: CoinsIcon },
   { href: "/tracker", label: "Tracker", Icon: ListChecksIcon },
   { href: "/calculators", label: "Calculators", Icon: CalculatorIcon },
   { href: "/compare", label: "Compare", Icon: ColumnsPlusRightIcon },

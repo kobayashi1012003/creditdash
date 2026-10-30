@@ -29,8 +29,9 @@ Since Phase 7: on 28 October the site was redesigned to the owner's Zaro
 reference (landing rebuilt, off-white ground, new wordmark, Geist
 headlines; the landing's brief is in `.impeccable/surfaces/`), and card
 data was checked against every issuer. On 29 and 30 October came the
-Wallet, Tracker and Compare controls and the public pages, each with its
-own section below. Every commit is labelled with its phase or change, so
+Wallet, Tracker and Compare controls and the public pages, and on 30
+October the calculators rebuild and the Points page, each with its own
+section below. Every commit is labelled with its phase or change, so
 `git log --oneline` is the detailed record; this is the summary.
 
 **Live at https://creditdash.co/**. Registered at Porkbun, DNS on
@@ -161,9 +162,7 @@ for accessibility on mobile; the small drop is real network latency.
 
 - **The owner has UI tweaks saved for the end of the build.** Ask for them
   before calling the project finished; do not guess at them.
-- **Next, in the owner's order:** the calculators rebuild and the new
-  Points page, briefed in `docs/calculators-upgrade.md` (read it, plan,
-  wait for the owner's OK); then Phase 8 (real card data, from a terms
+- **Next, in the owner's order:** Phase 8 (real card data, from a terms
   file the owner will send); then the Google Identity Services sign-in
   below; then the owner's saved UI tweaks.
 - **"Payments are not switched on yet"** is written on the home page and
@@ -284,7 +283,7 @@ npm test && npm run build                     # confirm the toolchain works
 ```
 app/(marketing)/   Landing, features, pricing, about, sign in, privacy,
                    terms. Public, no sidebar.
-app/(app)/         Wallet, Tracker, Calculators, Compare, Settings.
+app/(app)/         Wallet, Points, Tracker, Calculators, Compare, Settings.
 components/ui/     Primitives: CardFace, Widget, EarnChip, ProgressRing,
                    CheckmarkRow, plus restyled shadcn pieces.
 components/shell/  Sidebar, tab bar, page header, wordmark.
@@ -518,6 +517,54 @@ though ranking and Compare's winners still use value.
 - **About** is a first draft (college student, membership helps with
   tuition), for the owner to expand.
 
+## Calculators and Points (30 October 2026)
+
+Built from `docs/calculators-upgrade.md`. The three calculators are Award
+vs cash, Is this card worth it? and What is my spend worth?, on the
+Calculators page and in the Tracker's panel (same components; container
+queries, not a `dense` prop, adapt them to the 360px panel).
+
+- **Programs live in `data/programs.ts`**: 34 ids, labels, groups and
+  CreditDash defaults. `Program`, `PROGRAM_LABELS` and the defaults come
+  from there (`data/types.ts` re-exports). Ids are stored, so never rename
+  one; the database allows any id of 1 to 32 characters, so a new program
+  needs no migration.
+- **Valuations store the user's own values only** (schema v3). v2 copied
+  every default into the browser on first visit, so old defaults stuck and
+  "yours" could not be told from "default". The v3 migration drops values
+  equal to the current or the pre-30-October defaults. `lib/valuations.ts`
+  (`valuationOf`, `mergeValuations`) is the one place a value is decided;
+  `useValuation(program)` gives the number and its source for the
+  "Your valuation" / "CreditDash default" label. `clearValuation` is "Use
+  default".
+- **A tracked program is one with a `point_balances` row**, so adding a
+  program writes a zero balance and `removeProgram` deletes the row. The
+  valuation stays when a program is removed. The Points page saves a
+  balance 600ms after the last keystroke, so an account does not get a
+  write per digit landing out of order.
+- **`ValuationTag`** (`components/points/`) edits a valuation inside any
+  calculator and writes the same stored value as the Points page.
+- **Maths** is in `lib/calculators/engine.ts` (`awardVsCash`, `cardWorth`,
+  `spendWorth`), input parsing in `lib/calculators/parse.ts` ("$1,200",
+  "30k"), both dependency-free and tested with the brief's two worked
+  examples. Award verdict: points at 1.1x the valuation or more, cash
+  under 0.9x, a close call between. Spend caps are annualised, capped and
+  scaled back.
+- **"Fill in from my Tracker"** reads `recentWindows` in
+  `lib/credits/reset.ts`: the open period and the ones before it, a year's
+  worth, reaching into the previous cycle.
+- **What is typed into the spend calculator is shared in memory**
+  (`lib/calculators/spend-store.ts`), so Is this card worth it? can add the
+  same card's rewards from spending. Not saved.
+- **Card data gaps, waiting on the owner's terms file.** Lounge access is
+  a sentence, so it shows as a $0 "What it's worth to you" row; status,
+  insurance, bags and free nights exist only in `finePrint`. `Card.perks`
+  exists for them and is empty. Travel earn rates are portal rates (the
+  calculator shows the rate's note). The Platinum's December Uber bonus is
+  not modelled. Spend-gated and per-stay credits read as unconditional.
+  Bilt Obsidian assumes dining. Blue Business Plus and Bilt Blue have no
+  benefits at all.
+
 ## Wallet, Tracker and Compare controls (29 October 2026)
 
 - **Adding cards is one sheet everywhere** (`components/wallet/add-card-sheet.tsx`):
@@ -556,9 +603,9 @@ Three rules it exists to enforce:
   1x after. Multiplying straight through overstates a $36,000 spender by
   33,000 points. Spend past a cap falls to the card's everything-else rate,
   and a capped everything-else rate falls to 1x.
-- **Use the user's valuations, not the seed defaults.** Settings says these
+- **Use the user's valuations, not the defaults.** The Points page says these
   drive every dollar figure in the app, so they have to. Signed-in surfaces
-  read `useValuations()`; the public landing page has no user and uses
+  read `useValuations()` or `useValuation()`; the public landing page has no user and uses
   `DEFAULT_VALUATION_MAP`.
 
 ## Card art

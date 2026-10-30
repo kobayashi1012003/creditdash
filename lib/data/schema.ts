@@ -1,6 +1,6 @@
 import type { PointBalance, UserCard, Valuation } from "@/data/types";
+import { DEFAULT_CPP, isProgram } from "@/data/programs";
 import {
-  DEFAULT_VALUATIONS,
   DEMO_BALANCES,
   DEMO_USAGE,
   DEMO_WALLET,
@@ -19,7 +19,7 @@ import { currentPeriodKey, periodWindows } from "@/lib/credits/reset";
  */
 
 export const STORAGE_KEY = "creditdash:v1";
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Credit usage keyed the way `credit_usage.period_key` will be: credit id,
@@ -43,7 +43,12 @@ export type Persisted = {
   creditUsage: CreditUsage;
   /** `point_balances` */
   pointBalances: PointBalance[];
-  /** `valuations`, user overrides only */
+  /**
+   * `valuations`: the user's own values only, never a copy of a default.
+   * Before version 3 this held every program, defaults included, so a
+   * browser kept whatever the defaults were on its first visit and nothing
+   * could tell a chosen value from an inherited one.
+   */
   valuations: Valuation[];
 };
 
@@ -60,7 +65,7 @@ export function seededState(): Persisted {
     userCards,
     creditUsage: seedUsage(userCards),
     pointBalances: structuredClone(DEMO_BALANCES),
-    valuations: structuredClone(DEFAULT_VALUATIONS),
+    valuations: [],
   };
 }
 
@@ -71,7 +76,7 @@ export function emptyState(): Persisted {
     userCards: [],
     creditUsage: {},
     pointBalances: [],
-    valuations: structuredClone(DEFAULT_VALUATIONS),
+    valuations: [],
   };
 }
 
@@ -114,6 +119,14 @@ export function parseStored(raw: string | null): Persisted | null {
     creditUsage = migrateUsageV1toV2(creditUsage, userCards);
   }
 
+  let valuations = Array.isArray(v.valuations)
+    ? v.valuations.filter(isValuation)
+    : base.valuations;
+
+  if (v.version < 3) {
+    valuations = migrateValuationsV2toV3(valuations);
+  }
+
   return {
     version: SCHEMA_VERSION,
     profile: {
@@ -124,9 +137,7 @@ export function parseStored(raw: string | null): Persisted | null {
     pointBalances: Array.isArray(v.pointBalances)
       ? v.pointBalances.filter(isBalance)
       : base.pointBalances,
-    valuations: Array.isArray(v.valuations)
-      ? v.valuations.filter(isValuation)
-      : base.valuations,
+    valuations,
   };
 }
 
@@ -193,6 +204,35 @@ function migrateUsageV1toV2(
   return out;
 }
 
+/**
+ * The defaults before 30 October 2026. A version 2 browser holds these as if
+ * the user had chosen them, because every program's value was copied in on
+ * first visit.
+ */
+const PRE_V3_DEFAULTS: Record<string, number> = {
+  "amex-mr": 1.9,
+  "chase-ur": 1.9,
+  "citi-ty": 1.6,
+  "capital-one": 1.7,
+  bilt: 1.8,
+  hilton: 0.5,
+  united: 1.3,
+};
+
+/**
+ * Keeps only the values a person actually chose. Anything equal to the old
+ * or the current default is taken to be inherited and dropped, so it follows
+ * CreditDash's default from now on. Someone who deliberately typed exactly
+ * the old default loses that choice; there is no way to tell them apart.
+ */
+function migrateValuationsV2toV3(valuations: Valuation[]): Valuation[] {
+  return valuations.filter(
+    (v) =>
+      v.centsPerPoint !== PRE_V3_DEFAULTS[v.program] &&
+      v.centsPerPoint !== DEFAULT_CPP[v.program],
+  );
+}
+
 function isUserCard(x: unknown): x is UserCard {
   if (typeof x !== "object" || x === null) return false;
   const c = x as Partial<UserCard>;
@@ -202,13 +242,18 @@ function isUserCard(x: unknown): x is UserCard {
 function isBalance(x: unknown): x is PointBalance {
   if (typeof x !== "object" || x === null) return false;
   const b = x as Partial<PointBalance>;
-  return typeof b.program === "string" && typeof b.balance === "number";
+  return isProgram(b.program) && typeof b.balance === "number" && b.balance >= 0;
 }
 
 function isValuation(x: unknown): x is Valuation {
   if (typeof x !== "object" || x === null) return false;
   const val = x as Partial<Valuation>;
-  return typeof val.program === "string" && typeof val.centsPerPoint === "number";
+  return (
+    isProgram(val.program) &&
+    typeof val.centsPerPoint === "number" &&
+    val.centsPerPoint > 0 &&
+    val.centsPerPoint < 100
+  );
 }
 
 function isUsage(x: unknown): x is CreditUsage {

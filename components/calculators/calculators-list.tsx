@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { PlusIcon } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
 import { Widget } from "@/components/ui/widget";
 import { CALCULATORS } from "@/components/calculators/registry";
 import { useIsLoading, useWallet } from "@/lib/data";
@@ -11,27 +8,12 @@ export function CalculatorsList() {
   const cards = useWallet().map((e) => e.card);
   const isLoading = useIsLoading();
 
-  // Without this the page says "add a card" for a frame before the wallet
-  // arrives, which reads as the wallet having been lost.
+  // Without this the cards would default to the catalog for a frame and then
+  // jump to the wallet's own once it arrives.
   if (isLoading) return <CalculatorsSkeleton />;
 
-  // One invitation rather than three widgets each saying the same thing.
-  if (cards.length === 0) {
-    return (
-      <Widget title="Nothing to work out yet">
-        <p className="max-w-[56ch] text-[15px] leading-relaxed text-muted">
-          Every calculator here runs on the cards in your wallet: whether a
-          fee pays for itself, what a month of spending earns, and what your
-          points are worth.
-        </p>
-        <Button className="mt-5" nativeButton={false} render={<Link href="/wallet" />}>
-          <PlusIcon size={17} />
-          Add a card
-        </Button>
-      </Widget>
-    );
-  }
-
+  // No empty-wallet gate: two of the three work on any card or program, and
+  // the third falls back to the catalog.
   return (
     <div className="space-y-5">
       {CALCULATORS.map(({ id, title, blurb, Component }) => (

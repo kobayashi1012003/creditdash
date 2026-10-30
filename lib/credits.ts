@@ -1,5 +1,10 @@
 import type { Card, CardCredit } from "@/data/types";
-import { PERIOD_COUNT, periodWindows, expiresWithin } from "@/lib/credits/reset";
+import {
+  PERIOD_COUNT,
+  expiresWithin,
+  periodWindows,
+  recentWindows,
+} from "@/lib/credits/reset";
 import type { CreditUsage } from "@/lib/data/schema";
 
 /**
@@ -65,4 +70,24 @@ export function creditState(
     currentIndex: windows.findIndex((w) => on >= w.start && on < w.end),
     expiringSoon: expiresWithin(options),
   };
+}
+
+/**
+ * Dollars of a credit used across the most recent year of its periods, this
+ * one included. What "Fill in from my Tracker" puts in the card calculator.
+ */
+export function usedInRecentYear(
+  credit: CardCredit,
+  anniversaryMonth: number,
+  usage: CreditUsage,
+  on = new Date(),
+): number {
+  const row = usage[credit.id] ?? {};
+  const used = recentWindows({
+    period: credit.period,
+    resetBasis: credit.resetBasis,
+    anniversaryMonth,
+    on,
+  }).reduce((sum, w) => sum + (row[w.key] ?? 0), 0);
+  return Math.min(used, annualValue(credit));
 }
