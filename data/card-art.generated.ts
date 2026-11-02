@@ -25,5 +25,7 @@ export const CARD_ART: Record<string, CardArt> = {
   "delta-platinum": {"src":"/cards/delta-platinum.webp","width":1536,"variants":[480,720,960]},
   "hilton-honors": {"src":"/cards/hilton-honors.webp","width":1380,"variants":[480,720,960]},
   "hilton-surpass": {"src":"/cards/hilton-surpass.webp","width":1536,"variants":[480,720,960]},
+  "venture": {"src":"/cards/venture.webp","width":323,"variants":[]},
   "venture-x": {"src":"/cards/venture-x.webp","width":1536,"variants":[480,720,960]},
+  "ventureone": {"src":"/cards/ventureone.webp","width":1536,"variants":[480,720,960]},
 };

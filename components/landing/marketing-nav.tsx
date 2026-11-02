@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { useSignedIn } from "@/components/landing/session-buttons";
 
 /**
  * The public pages' tabs, with the current page marked. Inline in the
@@ -20,6 +21,8 @@ export function MarketingNav({
   row?: boolean;
 }) {
   const pathname = usePathname();
+  // Dashboard sends visitors to sign-in first, like the buttons do.
+  const signedIn = useSignedIn();
   return (
     <nav
       aria-label="Main"
@@ -28,7 +31,7 @@ export function MarketingNav({
       <ul
         className={cn(
           "flex text-[14px]",
-          row ? "mx-auto h-11 max-w-[1200px] items-center gap-6 px-4 sm:px-6" : "gap-8",
+          row ? "mx-auto h-11 max-w-[1200px] items-center gap-4 px-4 sm:gap-6 sm:px-6" : "gap-8",
         )}
       >
         {items.map(({ href, label }) => {
@@ -36,7 +39,7 @@ export function MarketingNav({
           return (
             <li key={href}>
               <Link
-                href={href}
+                href={href === "/wallet" && !signedIn ? "/signin" : href}
                 aria-current={current ? "page" : undefined}
                 className={cn(
                   linkClassName,

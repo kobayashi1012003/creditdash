@@ -16,11 +16,12 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col px-4 py-16 sm:px-6 lg:py-24">
       <h1 className="font-display text-[34px] leading-tight sm:text-[40px]">
-        Pick up where you left off.
+        Sign in, or start free.
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted">
-        Sign in and your wallet follows you to any device. Or carry on as the
-        demo user, saved in this browser only.
+        A free account saves your wallet and Tracker to every device. New
+        here? Either option below creates one. Or try the demo, which is not
+        saved to an account.
       </p>
 
       <SignInForm error={typeof error === "string" ? error : undefined} />

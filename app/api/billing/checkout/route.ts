@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { PREMIUM_LOOKUP_KEY } from "@/lib/billing/stripe";
+import { PREMIUM_LOOKUP_KEY, PREMIUM_YEARLY_LOOKUP_KEY } from "@/lib/billing/stripe";
 import {
   admin,
   BillingError,
@@ -10,7 +10,8 @@ import {
 } from "@/lib/billing/server";
 
 /**
- * Starts a Stripe Checkout for Premium and returns its URL. The browser
+ * Starts a Stripe Checkout for Premium, monthly or yearly (the body's
+ * `interval`, monthly unless it says "year"), and returns its URL. The browser
  * goes there; Stripe collects the card, so CreditDash never sees one.
  *
  * Nothing here grants Premium. Only the webhook does, once Stripe says the
@@ -41,8 +42,10 @@ export async function POST(request: NextRequest) {
       if (error) throw new BillingError("db_failed", 500);
     }
 
+    const body = (await request.json().catch(() => ({}))) as { interval?: unknown };
+    const key = body.interval === "year" ? PREMIUM_YEARLY_LOOKUP_KEY : PREMIUM_LOOKUP_KEY;
     const prices = await stripe<{ data: { id: string }[] }>(
-      `prices?active=true&lookup_keys[]=${encodeURIComponent(PREMIUM_LOOKUP_KEY)}`,
+      `prices?active=true&lookup_keys[]=${encodeURIComponent(key)}`,
     );
     const price = prices.data[0]?.id;
     if (!price) throw new BillingError("no_price", 503);

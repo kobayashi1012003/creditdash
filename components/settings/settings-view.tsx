@@ -134,8 +134,8 @@ export function SettingsView() {
             <div>
               <p className="text-sm">Pretend this account is</p>
               <p className="max-w-[44ch] text-[13px] leading-relaxed text-muted">
-                Switches the demo user between plans so the {FREE_CARD_LIMIT}
-                -card limit can be tested. Cards over the limit are hidden, not
+                Switches the demo user between plans so the{" "}
+                {FREE_CARD_LIMIT}-card limit can be tested. Cards over the limit are hidden, not
                 deleted.
               </p>
             </div>

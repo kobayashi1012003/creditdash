@@ -15,7 +15,7 @@ import {
   useValuations,
   useWallet,
 } from "@/lib/data";
-import { canAddCard, FREE_CARD_LIMIT } from "@/lib/plan";
+import { canAddCard, cardCount, FREE_CARD_LIMIT } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import { CardFace } from "@/components/ui/card-face";
 import { Button } from "@/components/ui/button";
@@ -226,8 +226,8 @@ export function CompareView({ all }: { all: Card[] }) {
 
       {!isLoading && !roomForMore && chosen.some((c) => !owned.has(c.id)) && (
         <p className="text-[13px] leading-relaxed text-muted">
-          Your free plan holds {FREE_CARD_LIMIT} cards and both are taken.
-          Remove one in the Wallet, or move to Premium, to add another.
+          Your free plan holds {cardCount(FREE_CARD_LIMIT)} and your wallet is
+          full. Remove one in the Wallet, or move to Premium, to add another.
         </p>
       )}
 

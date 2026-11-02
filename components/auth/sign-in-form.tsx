@@ -168,7 +168,7 @@ export function SignInForm({ error: initialError }: { error?: string }) {
         nativeButton={false}
         render={<Link href="/wallet" />}
       >
-        Continue as demo user
+        Try the demo without saving
       </Button>
     </>
   );

@@ -8,6 +8,7 @@ import { AccountButton, DashboardButton } from "@/components/landing/session-but
 import { MarketingNav } from "@/components/landing/marketing-nav";
 
 const NAV = [
+  { href: "/", label: "Home" },
   { href: "/wallet", label: "Dashboard" },
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },

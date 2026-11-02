@@ -3,7 +3,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import type { Card, PointBalance, Program, UserCard } from "@/data/types";
 import { CARDS, getCard } from "@/data/cards.seed";
-import { cardLimit, type Plan } from "@/lib/plan";
+import { cardLimit, type BillingInterval, type Plan } from "@/lib/plan";
 import { forgetSessionFlags } from "@/lib/use-stored-flag";
 import {
   mergeValuations,
@@ -519,13 +519,14 @@ const BILLING_ERRORS: Record<string, string> = {
  * Asks the server for a Stripe page (Checkout or the Customer Portal) and
  * sends the browser there. Resolves only if it could not, with the reason.
  */
-async function goToStripe(path: "checkout" | "portal"): Promise<string> {
+async function goToStripe(path: "checkout" | "portal", interval?: BillingInterval): Promise<string> {
   const token = await accessToken();
   if (!token) return "Sign in first, so Premium has an account to belong to.";
   try {
     const res = await fetch(`/api/billing/${path}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(interval ? { interval } : {}),
     });
     const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
     if (res.ok && body.url) {
@@ -542,9 +543,9 @@ async function goToStripe(path: "checkout" | "portal"): Promise<string> {
   }
 }
 
-/** Sends the signed-in user to Stripe Checkout for Premium. */
-export function startCheckout(): Promise<string> {
-  return goToStripe("checkout");
+/** Sends the signed-in user to Stripe Checkout for Premium, monthly or yearly. */
+export function startCheckout(interval: BillingInterval = "month"): Promise<string> {
+  return goToStripe("checkout", interval);
 }
 
 /** Sends the signed-in user to Stripe's portal to cancel or change their card. */

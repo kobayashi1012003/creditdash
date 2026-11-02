@@ -114,15 +114,21 @@ export function CardDrawer({
                     key={rate.category}
                     className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-line pb-2 last:border-0 last:pb-0"
                   >
-                    <EarnChip category={rate.category} multiplier={rate.multiplier} />
                     {rate.boost ? (
-                      // The note describes the boosted channel, so it sits
-                      // under the boost rather than beside the anywhere rate.
-                      <span className="w-full text-[13px] leading-relaxed">
-                        {rate.boost.multiplier}x {rate.boost.where}
-                        {rate.notes && <span className="text-muted">. {rate.notes}</span>}
-                      </span>
+                      // The best rate leads, with where it applies; the
+                      // anywhere rate is the subtext (owner, 2 November 2026).
+                      <>
+                        <EarnChip category={rate.category} multiplier={rate.boost.multiplier} />
+                        <span className="w-full text-[13px] leading-relaxed">
+                          {rate.boost.where.charAt(0).toUpperCase() + rate.boost.where.slice(1)}
+                          {rate.notes ? `. ${rate.notes}.` : "."}{" "}
+                          <span className="text-muted">{rate.multiplier}x elsewhere.</span>
+                        </span>
+                      </>
                     ) : (
+                      <EarnChip category={rate.category} multiplier={rate.multiplier} />
+                    )}
+                    {rate.boost ? null : (
                       <span className="text-[13px] text-muted">
                         {rate.notes ?? (rate.cap ? `Up to ${usd(rate.cap)} a year` : "No cap")}
                       </span>

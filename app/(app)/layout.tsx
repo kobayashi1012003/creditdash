@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { SkipLink } from "@/components/shell/skip-link";
 import { StorageNotice } from "@/components/shell/storage-notice";
+import { DemoBanner } from "@/components/shell/demo-banner";
 
 /**
  * The signed-in shell. Sidebar on desktop, tab bar on mobile, with the
@@ -12,6 +13,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
     <div className="flex min-h-full flex-col lg:pl-[232px]">
       <SkipLink />
       <Sidebar />
+      <DemoBanner />
       {/* Bottom padding clears the mobile tab bar. tabIndex lets the skip
           link move focus here, not just scroll. */}
       <main

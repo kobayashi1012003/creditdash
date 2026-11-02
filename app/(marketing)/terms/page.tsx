@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { LegalPage } from "../legal-page";
 
 export const metadata: Metadata = { title: "Terms" };
@@ -65,24 +65,26 @@ export default function TermsPage() {
 
       <h2>Plans and payment</h2>
       <p>
-        The free plan saves up to {FREE_CARD_LIMIT} cards. Premium, at $
-        {PREMIUM_PRICE_MONTHLY} a month in US dollars, saves as many as you
-        own. It needs an account, and payment is taken by Stripe.
+        The free plan saves {FREE_CARD_LIMIT} card. Premium, at $
+        {PREMIUM_PRICE_MONTHLY} a month or ${PREMIUM_PRICE_YEARLY} a year in
+        US dollars, saves as many as you own. It needs an account, and
+        payment is taken by Stripe.
       </p>
       <ul>
         <li>
-          <strong>Renewal.</strong> Premium renews every month on the day you
-          started it, and charges the same card, until you cancel.
+          <strong>Renewal.</strong> Premium renews every month, or every year
+          on the yearly plan, on the day you started it, and charges the same
+          card, until you cancel.
         </li>
         <li>
           <strong>Cancelling.</strong> Cancel any time from Manage billing in
-          Settings. Premium then stays on until the end of the month you have
-          paid for, and you are not charged again. There are no refunds for a
-          part of a month, unless the law where you live says otherwise.
+          Settings. Premium then stays on until the end of the month or year
+          you have paid for, and you are not charged again. There are no refunds for a
+          part of a month or year, unless the law where you live says otherwise.
         </li>
         <li>
-          <strong>Back to Free.</strong> When Premium ends, your first{" "}
-          {FREE_CARD_LIMIT} cards show and the rest are hidden, not deleted.
+          <strong>Back to Free.</strong> When Premium ends, your first card
+          shows and the rest are hidden, not deleted.
           They come back if you return to Premium.
         </li>
         <li>

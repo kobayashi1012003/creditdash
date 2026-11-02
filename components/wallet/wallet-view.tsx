@@ -37,7 +37,7 @@ import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { rankCards, rateFor } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
-import { cardLimit, FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { cardCount, cardLimit, FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import {
   activeFilterCount,
   matchesFilter,
@@ -143,7 +143,7 @@ export function WalletView() {
       max={room}
       limitNote={
         room === 0
-          ? `The free plan holds ${FREE_CARD_LIMIT} cards and yours is full. Remove one, or move to Premium for as many as you own.`
+          ? `The free plan holds ${cardCount(FREE_CARD_LIMIT)} and yours is full. Remove it, or move to Premium for as many as you own.`
           : "That is all the free plan has room for. Premium saves as many cards as you own."
       }
       onConfirm={addCards}
@@ -662,12 +662,12 @@ function UpgradePanel({ count, hidden }: { count: number; hidden: number }) {
           <h2 className="font-display text-xl leading-tight">
             {hidden > 0
               ? `${hidden} more ${hidden === 1 ? "card is" : "cards are"} saved but hidden on Free.`
-              : `That is ${count} of ${FREE_CARD_LIMIT} cards on the free plan.`}
+              : `That is ${count} of ${cardCount(FREE_CARD_LIMIT)} on the free plan.`}
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-muted">
             {hidden > 0
-              ? `Free shows your first ${FREE_CARD_LIMIT}. ${hidden === 1 ? "The other one keeps its credits and history, and comes" : "The others keep their credits and history, and come"} back with Premium, for $${PREMIUM_PRICE_MONTHLY} a month.`
-              : `Premium saves as many cards as you own, for $${PREMIUM_PRICE_MONTHLY} a month. Your existing cards stay where they are either way.`}
+              ? `Free shows your first card. ${hidden === 1 ? "The other one keeps its credits and history, and comes" : "The others keep their credits and history, and come"} back with Premium, from $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year.`
+              : `Premium saves as many cards as you own, for $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year. Your card stays where it is either way.`}
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/settings#plan" />}>

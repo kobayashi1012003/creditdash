@@ -16,11 +16,14 @@ import { Button } from "@/components/ui/button";
 
 const noSubscribe = () => () => {};
 
-function useSignedIn(): boolean {
+export function useSignedIn(): boolean {
   return useSyncExternalStore(noSubscribe, hasSessionCookie, () => false);
 }
 
-/** "Open the demo" for visitors, "Dashboard" for members. */
+/**
+ * "Dashboard" for members. Visitors go to sign-in first, so a wallet they
+ * build is saved from the start; the demo is one link away there.
+ */
 export function DashboardButton({
   className,
   size,
@@ -32,8 +35,13 @@ export function DashboardButton({
 }) {
   const signedIn = useSignedIn();
   return (
-    <Button size={size} className={className} nativeButton={false} render={<Link href="/wallet" />}>
-      {signedIn ? "Dashboard" : "Open the demo"}
+    <Button
+      size={size}
+      className={className}
+      nativeButton={false}
+      render={<Link href={signedIn ? "/wallet" : "/signin"} />}
+    >
+      {signedIn ? "Dashboard" : "Get started free"}
       {arrow && <ArrowRightIcon size={15} weight="bold" />}
     </Button>
   );

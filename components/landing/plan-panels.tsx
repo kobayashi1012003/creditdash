@@ -1,8 +1,9 @@
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 
 /**
- * Free and Premium side by side, for the home page and the Pricing page.
+ * Free, Premium monthly and Premium yearly side by side, for the home page
+ * and the Pricing page. Yearly is the same Premium with two months free.
  *
  * Each panel is a subgrid over four shared rows (name, price, note, list),
  * so a note that wraps to two lines in one panel pushes both lists down
@@ -10,24 +11,27 @@ import { cn } from "@/lib/cn";
  */
 export function PlanPanels({ className }: { className?: string }) {
   return (
-    <div className={cn("grid gap-x-4 gap-y-4 md:grid-cols-2", className)}>
+    <div className={cn("grid gap-x-4 gap-y-4 md:grid-cols-3", className)}>
       <PlanPanel
         name="Free"
         price="$0"
-        note="Enough to answer the question for the cards you use most."
-        points={[
-          `Up to ${FREE_CARD_LIMIT} saved cards`,
-          "The full Tracker and every calculator",
-          "Compare any cards in the catalog",
-        ]}
+        note="One card, with full tracking and every calculator."
+        points={["1 saved card", "The full Tracker and every calculator", "Compare any cards in the catalog"]}
       />
       <PlanPanel
         name="Premium"
         price={`$${PREMIUM_PRICE_MONTHLY}`}
         per="a month"
-        note="For wallets that outgrew a spreadsheet."
+        note="Every card in your wallet, tracked."
+        points={["Unlimited cards", "Everything in Free", "Cancel whenever you like"]}
+      />
+      <PlanPanel
+        name="Premium yearly"
+        price={`$${PREMIUM_PRICE_YEARLY}`}
+        per="a year"
+        note={`Two months free, against $${PREMIUM_PRICE_MONTHLY * 12} paid monthly.`}
         featured
-        points={["As many cards as you own", "Everything in Free", "Cancel whenever you like"]}
+        points={["Unlimited cards", "Everything in Free", "Cancel whenever you like"]}
       />
     </div>
   );

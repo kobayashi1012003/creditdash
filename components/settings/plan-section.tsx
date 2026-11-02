@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowSquareOutIcon, SparkleIcon } from "@phosphor-icons/react";
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, type Plan } from "@/lib/plan";
+import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY, type BillingInterval, type Plan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import {
   ACCOUNTS_ENABLED,
@@ -78,11 +78,11 @@ export function PlanSection({
     };
   }, [userId]);
 
-  async function go(to: "checkout" | "portal") {
+  async function go(to: "checkout" | "portal", interval: BillingInterval = "month") {
     setWarn(false);
     setBusy(true);
     setError(null);
-    const problem = await (to === "checkout" ? startCheckout() : openBillingPortal());
+    const problem = await (to === "checkout" ? startCheckout(interval) : openBillingPortal());
     // Only reached if the browser did not leave for Stripe.
     setBusy(false);
     setError(problem);
@@ -109,10 +109,15 @@ export function PlanSection({
   let premiumAction: React.ReactNode = null;
   if (plan === "free") {
     premiumAction = account ? (
-      <Button className="mt-4 w-full" onClick={() => go("checkout")} disabled={busy}>
-        <SparkleIcon size={16} weight="fill" />
-        {busy ? "Opening Stripe" : `Upgrade for $${PREMIUM_PRICE_MONTHLY} a month`}
-      </Button>
+      <div className="mt-4 grid gap-2">
+        <Button className="w-full" onClick={() => go("checkout", "year")} disabled={busy}>
+          <SparkleIcon size={16} weight="fill" />
+          {busy ? "Opening Stripe" : `$${PREMIUM_PRICE_YEARLY} a year, 2 months free`}
+        </Button>
+        <Button variant="outline" className="w-full" onClick={() => go("checkout", "month")} disabled={busy}>
+          {busy ? "Opening Stripe" : `$${PREMIUM_PRICE_MONTHLY} a month`}
+        </Button>
+      </div>
     ) : ACCOUNTS_ENABLED ? (
       <Button className="mt-4 w-full" nativeButton={false} render={<Link href="/signin" />}>
         Sign in to upgrade
@@ -141,15 +146,11 @@ export function PlanSection({
           name="Free"
           price="No cost"
           current={plan === "free"}
-          points={[
-            `Up to ${FREE_CARD_LIMIT} saved cards`,
-            "Tracker, calculators and compare",
-            "No ads, ever",
-          ]}
+          points={["1 saved card", "Full Tracker, calculators and compare", "No ads, ever"]}
         />
         <PlanCard
           name="Premium"
-          price={`$${PREMIUM_PRICE_MONTHLY} a month`}
+          price={`$${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year`}
           current={plan === "premium"}
           status={
             giftOnly
@@ -161,7 +162,7 @@ export function PlanSection({
               : undefined
           }
           points={[
-            "As many cards as you own",
+            "Unlimited cards",
             "Everything in Free",
             "Cancel whenever you like",
           ]}
@@ -184,8 +185,7 @@ export function PlanSection({
         )}
         {ending && hiddenIfFree > 0 && (
           <p className="text-muted">
-            When Premium ends, only your first {FREE_CARD_LIMIT} cards will
-            show.{" "}
+            When Premium ends, only your first card will show.{" "}
             {hiddenIfFree === 1
               ? "The other one stays saved and comes back if you return to Premium."
               : `The other ${hiddenIfFree} stay saved and come back if you return to Premium.`}
@@ -219,16 +219,15 @@ export function PlanSection({
         }
       >
         <p>
-          You have {saved} cards saved. Free shows {FREE_CARD_LIMIT}, so if you
-          cancel, only your first {FREE_CARD_LIMIT} will show once Premium ends.
+          You have {saved} cards saved. Free shows one, so if you cancel, only
+          your first card will show once Premium ends.
         </p>
         <p>
           Nothing is deleted.{" "}
           {hiddenIfFree === 1
             ? "The other one keeps its credits and history, and comes back if you return to Premium."
             : `The other ${hiddenIfFree} keep their credits and history, and come back if you return to Premium.`}{" "}
-          To choose which {FREE_CARD_LIMIT} stay, put them first in your Wallet
-          before you go.
+          To choose which one stays, put it first in your Wallet before you go.
         </p>
       </ConfirmDialog>
     </Widget>

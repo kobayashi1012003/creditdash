@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DashboardButton } from "@/components/landing/session-buttons";
-import { PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 
 export const metadata: Metadata = {
   title: "About",
@@ -27,7 +27,7 @@ export default function AboutPage() {
           a card number or links to a bank, and it has no ads.
         </p>
         <p>
-          Premium is ${PREMIUM_PRICE_MONTHLY} a month. It keeps CreditDash
+          Premium is ${PREMIUM_PRICE_MONTHLY} a month or ${PREMIUM_PRICE_YEARLY} a year. It keeps CreditDash
           running, and helps pay for tuition.
         </p>
         <p>

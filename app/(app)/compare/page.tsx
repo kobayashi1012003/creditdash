@@ -12,7 +12,7 @@ export default function ComparePage() {
     <>
       <PageHeader
         title="Compare"
-        description="Two or three cards, side by side, with the winner of each row tinted."
+        description="Pick up to 3 cards to see side by side. The winner of each row is tinted."
       />
       <CompareView all={CARDS} />
     </>

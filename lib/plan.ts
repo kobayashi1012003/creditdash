@@ -9,9 +9,22 @@
 
 export type Plan = "free" | "premium";
 
-export const FREE_CARD_LIMIT = 2;
+/**
+ * Free is one card with everything else (owner, 2 November 2026). Also in
+ * the database's limit trigger; change both.
+ */
+export const FREE_CARD_LIMIT = 1;
 
 export const PREMIUM_PRICE_MONTHLY = 5;
+/** Two months free against paying monthly. */
+export const PREMIUM_PRICE_YEARLY = 50;
+
+export type BillingInterval = "month" | "year";
+
+/** "1 card", "3 cards". */
+export function cardCount(n: number): string {
+  return `${n} ${n === 1 ? "card" : "cards"}`;
+}
 
 /** Features that can be gated. Add to this union rather than inventing strings. */
 export type Feature = "unlimited-cards";

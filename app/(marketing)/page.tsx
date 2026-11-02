@@ -159,12 +159,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing. Two plans, side by side. */}
+      {/* Pricing. Free and both Premium options, side by side. */}
       <section id="pricing" className={cn(SECTION, "scroll-mt-32 lg:scroll-mt-24 py-20 lg:py-28")}>
         <h2 className={H2}>
-          Two plans. <span className="text-muted">Both without ads.</span>
+          Free, or Premium. <span className="text-muted">No ads on either.</span>
         </h2>
-        <PlanPanels className="mt-10 lg:max-w-[880px]" />
+        <PlanPanels className="mt-10" />
         <p className="mt-5 text-[13px] text-muted">
           Payments are not switched on yet. The demo is the whole app, with
           a sample wallet.{" "}

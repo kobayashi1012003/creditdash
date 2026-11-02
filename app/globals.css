@@ -60,7 +60,11 @@
   --cd-radius-widget: 12px;
   --cd-radius-inner: 8px;
   --cd-radius-control: 6px;
-  --cd-radius-card: 12px;
+  /* A real card's corner is about 4.5% of its width, so the radius scales
+     with the card: 12px at wallet size, 2px on a 48px thumbnail. The
+     vertical share is larger because the card is 1.586 times wider than
+     it is tall, which keeps the corner circular. */
+  --cd-radius-card: 4.5% / 7.1%;
   --cd-radius-pill: 999px;
 
   /* Easing. The browser defaults are too weak to read as intentional.

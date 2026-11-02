@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { DashboardButton } from "@/components/landing/session-buttons";
-import { CardStack } from "@/components/landing/card-stack";
-import { CreditDemo } from "@/components/landing/credit-demo";
 import { CalculatorDemo } from "@/components/features/calculator-demo";
-import { getCardsById } from "@/lib/catalog";
+import { TrackerDemo } from "@/components/features/tracker-demo";
+import { WalletPreview } from "@/components/features/wallet-preview";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
@@ -19,14 +18,12 @@ const H2 =
 const BODY = "mt-5 max-w-[42ch] text-[16px] leading-relaxed text-muted sm:text-[17px]";
 
 /**
- * Three features, in the owner's order, each a large two-tone headline and
- * a working animation of the real thing: the Wallet's picker, the Tracker,
- * the calculators. Simple on purpose (owner's brief, 2 November 2026,
+ * Three features, in the owner's order, each a large two-tone headline
+ * beside the real thing: the Wallet's cards, the Tracker at work (a pointer
+ * ticking several months in one slide), and the calculators. Simple on purpose (owner's brief, 2 November 2026,
  * after the Altitude reference).
  */
 export default function FeaturesPage() {
-  const demoCards = getCardsById(["amex-gold", "csr", "venture-x", "blue-business-plus"]);
-
   return (
     <>
       <section className={cn(SECTION, "pt-14 pb-16 lg:pt-24 lg:pb-24")}>
@@ -39,9 +36,10 @@ export default function FeaturesPage() {
         </h1>
       </section>
 
-      {/* Wallet: the hero's picker, which steps through categories itself. */}
+      {/* Wallet: the cards and what they earn. The category picker is the
+          home page's hero, so it is not repeated here. */}
       <section className={cn(SECTION, "pb-24 lg:pb-36")}>
-        <div className="grid items-center gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,13fr)]">
+        <div className="grid items-center gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,10fr)_minmax(0,14fr)]">
           <div>
             <h2 className={H2}>
               Your wallet, sorted.{" "}
@@ -53,16 +51,16 @@ export default function FeaturesPage() {
               comes to the top.
             </p>
           </div>
-          <CardStack cards={demoCards} controlsClassName="-mt-6 lg:col-span-2 lg:-mt-2" />
+          <WalletPreview />
         </div>
       </section>
 
-      {/* Tracker: the animated widget from the home page. */}
+      {/* Tracker: the page itself, ticking months off in one slide. */}
       <section className={cn(SECTION, "pb-24 lg:pb-36")}>
-        <div className="grid items-center gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,13fr)_minmax(0,11fr)]">
-          <div className="rounded-widget bg-lavender p-5 sm:p-7 lg:order-1">
-            <div className="rounded-inner border border-lavender-ink/15 bg-surface/70 p-4 sm:p-5">
-              <CreditDemo />
+        <div className="grid items-center gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,14fr)_minmax(0,10fr)]">
+          <div className="rounded-widget bg-lavender p-3 sm:p-6 lg:order-1">
+            <div className="rounded-inner bg-bg p-3 sm:p-5">
+              <TrackerDemo />
             </div>
           </div>
           <div className="lg:order-2">
@@ -71,9 +69,10 @@ export default function FeaturesPage() {
               <span className="text-muted">Tick it off, and it remembers.</span>
             </h2>
             <p className={BODY}>
-              Mark each credit as you use it, in full or in part. CreditDash
-              knows when every one resets and what is about to run out. You
-              type it in yourself, so there is no bank login.
+              Tick each credit as you use it, or press and slide to tick a run
+              of months at once. CreditDash knows when every one resets and
+              what is about to run out. You type it in yourself, so there is
+              no bank login.
             </p>
           </div>
         </div>
@@ -103,8 +102,8 @@ export default function FeaturesPage() {
       <section className="bg-band text-band-ink">
         <div className={cn(SECTION, "py-20 lg:py-28")}>
           <h2 className="max-w-[16ch] font-display text-[40px] leading-[1.02] tracking-[-0.04em] sm:text-[56px] lg:text-[64px]">
-            Try it with your cards.{" "}
-            <span className="text-band-muted">No sign-up needed.</span>
+            Start with one card.{" "}
+            <span className="text-band-muted">It costs nothing.</span>
           </h2>
           <div className="mt-9">
             <DashboardButton arrow className="bg-band-ink text-band hover:bg-band-ink/90" />

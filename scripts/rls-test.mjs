@@ -208,10 +208,9 @@ try {
   expect(Boolean(anonWrite.error), "A signed-out visitor cannot write");
 
   // --- the free limit holds in the database -------------------------------
+  // Free holds one card (migration 20261102010000); A already has one.
   const second = await a.db.from("user_cards").insert({ user_id: a.id, card_id: "csr", anniversary_month: 1 });
-  expect(!second.error, "A can add a second card on the free plan", second.error?.message);
-  const third = await a.db.from("user_cards").insert({ user_id: a.id, card_id: "bilt", anniversary_month: 1 });
-  expect(third.error?.hint === "card_limit", "A cannot add a third card on the free plan", third.error?.message ?? "insert succeeded");
+  expect(second.error?.hint === "card_limit", "A cannot add a second card on the free plan", second.error?.message ?? "insert succeeded");
 
   // --- A still has everything B tried to touch ----------------------------
   const intact = await a.db.from("user_cards").select("nickname").eq("id", cardId).single();

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { ThemeProvider } from "@/components/theme-provider";
 import { firstCardScript } from "@/lib/data/first-card";
+import { demoBannerScript } from "@/lib/demo-banner";
 import { CARD_ART } from "@/data/card-art.generated";
 import "./globals.css";
 
@@ -54,6 +55,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             so the Wallet skeleton can paint its art straight away. A few
             hundred bytes; see lib/data/first-card.ts. */}
         <script dangerouslySetInnerHTML={{ __html: firstCardScript(CARD_ART) }} />
+        {/* Marks <html data-demo> for visitors with no session who have not
+            closed the demo banner, so it paints with the page. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: demoBannerScript(process.env.NEXT_PUBLIC_SUPABASE_URL),
+          }}
+        />
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider

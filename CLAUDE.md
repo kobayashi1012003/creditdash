@@ -573,6 +573,34 @@ read-only `/admin` page tracks when each card was last checked.
   Platinum's MQD head start amount was not stated on its page and is left
   out.
 
+## Plans, sign-in first, demo banner (2 November 2026)
+
+- **Free is one card** with full tracking and every calculator; Premium
+  is unlimited, $5 a month or $50 a year (two months free).
+  `FREE_CARD_LIMIT = 1` in `lib/plan.ts` and in the database trigger
+  (migration `20261102010000_free_one_card.sql`, run by hand). Existing
+  free accounts with two cards keep both; only the first shows.
+- **Yearly billing.** Checkout takes `{ interval: "year" }` and looks up
+  the price by `creditdash_premium_yearly`; monthly stays
+  `creditdash_premium_monthly`. Both prices go on the same Stripe product,
+  in test and live mode. The webhook does not care which price.
+- **Visitors are sent to sign-in first.** "Get started free" and the
+  Dashboard tab go to `/signin` without a session cookie; Google or the
+  email link creates the account. "Try the demo without saving" there
+  opens the demo.
+- **Demo banner** (`components/shell/demo-banner.tsx`): in the server HTML
+  of every app page, shown by CSS only under `<html data-demo>`, which a
+  `<head>` script sets when there is no session cookie and the banner was
+  not closed (`lib/demo-banner.ts`). No layout shift. Closing it is
+  remembered in localStorage.
+- **Card faces' corner radius scales with the card** (`--cd-radius-card:
+  4.5% / 7.1%`), so a 48px thumbnail has a real card's corner.
+- **The card drawer leads with the best rate** and puts the anywhere rate
+  under it ("Through Chase Travel. 4x elsewhere.").
+- **Venture and VentureOne added**, with art; Venture X and Sapphire
+  Preferred checked against their pages; the Platinum's credit is named
+  the Lodging credit, as Amex's terms now call it.
+
 ## Security (2 November 2026)
 
 A read-only review found no critical or high issues: RLS is on every
@@ -730,9 +758,10 @@ paints a blank card for a frame and puts a failed request on the wire for
 every card. Cards without art are still common. `onError` still falls
 back, for a file removed between a build and a request.
 
-**10 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
+**16 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
 Venture X, Blue Business Plus, Hilton Surpass, and Bilt Blue, Obsidian and
-Palladium), converted to WebP with transparent corners flattened onto the
+Palladium; then the Phase 8 Delta and Hilton cards, Venture and
+VentureOne), converted to WebP with transparent corners flattened onto the
 art's own dominant colour. The first seven are 1536x969; the Bilt sources
 were only 500px (Obsidian 276px) and are kept at that size, never enlarged.
 The owner confirmed permission to use it. 22 more images exist in the

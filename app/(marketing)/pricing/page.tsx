@@ -3,19 +3,19 @@ import Link from "next/link";
 import { CheckIcon, MinusIcon } from "@phosphor-icons/react/ssr";
 import { PlanPanels } from "@/components/landing/plan-panels";
 import { DashboardButton } from "@/components/landing/session-buttons";
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Free for up to ${FREE_CARD_LIMIT} cards. Premium is $${PREMIUM_PRICE_MONTHLY} a month for as many as you own.`,
+  description: `Free for one card, with full tracking. Premium is $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year for unlimited cards.`,
 };
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
 
 /** true: included. false: not. A string: included, with that detail. */
 const ROWS: { label: string; free: boolean | string; premium: boolean | string }[] = [
-  { label: "Saved cards", free: `Up to ${FREE_CARD_LIMIT}`, premium: "As many as you own" },
+  { label: "Saved cards", free: "1", premium: "Unlimited" },
   { label: "Which card to use, by category or store", free: true, premium: true },
   { label: "Credit Tracker", free: true, premium: true },
   { label: "Annual fee check", free: true, premium: true },
@@ -28,11 +28,11 @@ const ROWS: { label: string; free: boolean | string; premium: boolean | string }
 const QUESTIONS: { q: string; a: string }[] = [
   {
     q: "Can I cancel?",
-    a: "Any time, from Settings. Premium stays on until the end of the month you paid for, and you are not charged again.",
+    a: "Any time, from Settings. Premium stays on until the end of the month or year you paid for, and you are not charged again.",
   },
   {
     q: "What happens to my cards if I go back to Free?",
-    a: `Nothing is deleted. Your first ${FREE_CARD_LIMIT} cards show, the rest are kept out of sight with their credits and history, and they come back if you return to Premium.`,
+    a: "Nothing is deleted. Your first card shows, the rest are kept out of sight with their credits and history, and they come back if you return to Premium.",
   },
   {
     q: "Who handles the payment?",
@@ -40,7 +40,7 @@ const QUESTIONS: { q: string; a: string }[] = [
   },
   {
     q: "Do I need an account?",
-    a: "Not to try it. The demo is the whole app in your browser. An account keeps your wallet on every device, and Premium needs one.",
+    a: "A free account saves your wallet and Tracker on every device, and Premium needs one. You can try the demo without one, but nothing in it is saved.",
   },
 ];
 
@@ -69,9 +69,9 @@ export default function PricingPage() {
     <>
       <section className={cn(SECTION, "pt-14 pb-10 lg:pt-20")}>
         <h1 className="max-w-[16ch] font-display text-[40px] leading-[1.02] tracking-[-0.04em] sm:text-[56px]">
-          Two plans. <span className="text-muted">Both without ads.</span>
+          Free, or Premium. <span className="text-muted">No ads on either.</span>
         </h1>
-        <PlanPanels className="mt-10 lg:max-w-[880px]" />
+        <PlanPanels className="mt-10" />
         <p className="mt-5 text-[13px] text-muted">
           Payments are not switched on yet. The demo is the whole app, with a sample wallet.
         </p>

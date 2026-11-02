@@ -18,6 +18,8 @@
  * anywhere. Set it on the price in the Stripe dashboard.
  */
 export const PREMIUM_LOOKUP_KEY = "creditdash_premium_monthly";
+/** The $50 a year price, set up the same way. */
+export const PREMIUM_YEARLY_LOOKUP_KEY = "creditdash_premium_yearly";
 
 /**
  * Statuses that keep Premium on. `past_due` is included: Stripe is still
