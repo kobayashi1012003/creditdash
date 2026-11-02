@@ -758,15 +758,14 @@ paints a blank card for a frame and puts a failed request on the wire for
 every card. Cards without art are still common. `onError` still falls
 back, for a file removed between a build and a request.
 
-**19 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
+**20 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
 Venture X, Blue Business Plus, and Bilt Blue, Obsidian and Palladium; then
-Delta Gold, Platinum and Blue, the four Hilton cards, both Marriott cards,
-Venture and VentureOne). On 2 November the owner's newer issuer images
-replaced Hilton Honors and Delta Blue (the old files showed the wrong
-design) and Surpass, and added Aspire, Bevy and Brilliant; they show a
-sample chip and name. The newer Gold, Platinum and Delta Gold, Platinum
-and Reserve images were not used: the Amex ones are 282px against
-1536px, and the Delta ones are the Business cards. Converted to WebP with transparent corners flattened onto the
+all four Delta cards, the four Hilton cards, both Marriott cards, Venture
+and VentureOne). On 2 November the owner's newer issuer images replaced
+the Delta and Hilton art (Hilton Honors and Delta Blue had shown the wrong
+design) and added Aspire, Bevy, Brilliant and Delta Reserve; they show a
+sample chip and name and are 480px or more. Gold and Platinum keep their
+1536px images: the newer ones were 282px and would be blurry. Converted to WebP with transparent corners flattened onto the
 art's own dominant colour. The first seven are 1536x969; the Bilt sources
 were only 500px (Obsidian 276px) and are kept at that size, never enlarged.
 The owner confirmed permission to use it. 22 more images exist in the
