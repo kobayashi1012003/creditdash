@@ -342,21 +342,29 @@ export function spendWorth(
 export type Ranked = {
   card: Card;
   rate: EarnRate;
-  /** The multiplier this purchase earns: the boost when the brand matches. */
+  /** The multiplier used for the ranking: the boost when it applies. */
   multiplier: number;
-  /** True when the brand's boost is the rate being used. */
+  /** True when the boost is the rate being used; say where, and the anywhere rate. */
   boosted: boolean;
   /** Cents back per dollar spent, at the user's valuation. */
   centsPerDollar: number;
 };
 
 /**
- * The multiplier a purchase earns. The "anywhere" rate unless the purchase
- * is known to be with the brand the boost names: a travel-site boost never
- * applies here, because nothing tells us the booking went through it.
+ * The best multiplier a purchase can earn: the boost (travel site or brand)
+ * when there is one, since someone choosing a card can choose to book that
+ * way (owner's rule, 2 November 2026). The one exception is a brand boost
+ * when the purchase is known to be with a different brand: a Hilton card
+ * earns nothing extra at Marriott. Every line that states a boosted rate
+ * also states the anywhere rate, so the condition is never hidden.
+ *
+ * Spend totals (pointsForSpend) still use the anywhere rate.
  */
 export function multiplierFor(rate: EarnRate, brand?: Brand | null): number {
-  return brand && rate.boost?.brand === brand ? rate.boost.multiplier : rate.multiplier;
+  const boost = rate.boost;
+  if (!boost) return rate.multiplier;
+  if (boost.brand && brand && boost.brand !== brand) return rate.multiplier;
+  return Math.max(rate.multiplier, boost.multiplier);
 }
 
 /**

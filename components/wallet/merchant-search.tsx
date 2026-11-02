@@ -119,6 +119,9 @@ export function MerchantSearch({
                       {best && (
                         <span className="block truncate text-[12px] text-muted">
                           Best: {best.card.name}, {best.multiplier}x
+                          {best.boosted && best.rate.boost
+                            ? ` ${best.rate.boost.where} (${best.rate.multiplier}x elsewhere)`
+                            : ""}
                         </span>
                       )}
                     </span>

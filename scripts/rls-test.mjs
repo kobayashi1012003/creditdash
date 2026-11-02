@@ -88,7 +88,30 @@ try {
   for (const table of ["user_cards", "credit_usage", "point_balances", "valuations", "profiles"]) {
     const res = await b.db.from(table).select("*").eq("user_id", a.id);
     expect(!res.error && res.data.length === 0, `B reads none of A's ${table}`, res.error?.message ?? `${res.data?.length} rows`);
+    // Unfiltered, too: a policy that forgot the user would show up here.
+    const all = await b.db.from(table).select("user_id");
+    expect(
+      !all.error && all.data.every((r) => r.user_id === b.id),
+      `B's unfiltered read of ${table} holds only B's rows`,
+      all.error?.message ?? `${all.data?.filter((r) => r.user_id !== b.id).length} foreign rows`,
+    );
   }
+
+  // --- B cannot change A's other rows, or hand their own to A ------------
+  for (const [table, change] of [
+    ["point_balances", { balance: 1 }],
+    ["valuations", { cents_per_point: 9 }],
+    ["credit_usage", { amount_used: 0 }],
+  ]) {
+    const res = await b.db.from(table).update(change).eq("user_id", a.id).select();
+    expect(!res.error && res.data.length === 0, `B cannot change A's ${table}`, res.error?.message ?? `${res.data?.length} rows changed`);
+  }
+  const bBal = await b.db.from("point_balances").insert({ user_id: b.id, program: "chase-ur", balance: 5 });
+  expect(!bBal.error, "B can save their own balance", bBal.error?.message);
+  const handOver = await b.db.from("point_balances").update({ user_id: a.id }).eq("user_id", b.id).select();
+  expect(Boolean(handOver.error) || handOver.data.length === 0, "B cannot move their own row into A's account");
+  const bProfile = await b.db.from("profiles").insert({ user_id: b.id });
+  expect(Boolean(bProfile.error), "B cannot insert a profile row");
 
   // --- B cannot change or delete it ---------------------------------------
   const upd = await b.db.from("user_cards").update({ nickname: "mine now" }).eq("id", cardId).select();
@@ -177,8 +200,12 @@ try {
 
   // --- signed out sees nothing --------------------------------------------
   const anon = createClient(url, publishable, noSession);
-  const anonRead = await anon.from("user_cards").select("*");
-  expect(Boolean(anonRead.error) || anonRead.data.length === 0, "A signed-out visitor reads no cards");
+  for (const table of ["user_cards", "credit_usage", "point_balances", "valuations", "profiles", "subscriptions"]) {
+    const anonRead = await anon.from(table).select("*");
+    expect(Boolean(anonRead.error) || anonRead.data.length === 0, `A signed-out visitor reads no ${table}`);
+  }
+  const anonWrite = await anon.from("point_balances").insert({ user_id: a.id, program: "amex-mr", balance: 1 });
+  expect(Boolean(anonWrite.error), "A signed-out visitor cannot write");
 
   // --- the free limit holds in the database -------------------------------
   const second = await a.db.from("user_cards").insert({ user_id: a.id, card_id: "csr", anniversary_month: 1 });

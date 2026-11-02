@@ -77,7 +77,7 @@ off and returns 404.
 
 Phase 6 was verified on the live site: the owner signed in with Google on a
 phone, changed the Tracker there, and saw it on another device after a
-reload. `npm run test:rls` passes 34 checks (Phase 7 added eleven). See "Accounts" under the data
+reload. `npm run test:rls` passes 51 checks (Phase 7 added eleven; the 2 November security review added unfiltered reads, every table signed out, and cross-user updates). See "Accounts" under the data
 layer for how it works.
 
 Phase 5 in more detail, since later phases build on these:
@@ -544,16 +544,18 @@ read-only `/admin` page tracks when each card was last checked.
   Gold, Platinum and Blue and Hilton Honors (from the owner's card art
   folder); the rest use the generated face.
 - **`multiplier` is the anywhere rate; `boost` is a narrower channel**
-  (travel site, or the card's own airline or hotel). Ranking, chips,
-  totals and caps use the anywhere rate. A boost with a `brand` counts only
-  when the store search names that brand (`data/merchants.ts` tags Hilton,
-  Marriott, Hyatt, United and Delta), through `multiplierFor` and the
-  `brand` argument of `rankCards`. A travel-site boost never counts in a
-  ranking; the answer line mentions it after the anywhere rate, and Award
-  vs cash has a "Booked through ..." box for it. Notes on a boosted rate
-  describe the boosted channel.
-- **Value still decides.** At default valuations Sapphire Reserve beats
-  Hilton Aspire even at Hilton (4x at 2.0¢ against 14x at 0.5¢).
+  (travel site, or the card's own airline or hotel). Since 2 November 2026
+  (owner's rule) **ranking, sorting, chips and Compare's winners use the
+  best rate, boost included** (`multiplierFor`), and every line that
+  states a boosted rate also states the anywhere rate ("10x on hotels
+  through Capital One Travel, 2x elsewhere"). The one exception: a brand
+  boost does not apply when the store search names a different brand (a
+  Hilton card earns nothing extra at Marriott). Spend totals and caps
+  (`pointsForSpend`) still use the anywhere rate. Award vs cash has a
+  "Booked through ..." box. Notes on a boosted rate describe the boosted
+  channel.
+- **Value still decides.** At default valuations a 5x Amex Travel rate
+  (10¢ a dollar) beats a 14x Hilton rate (7¢).
 - **Credits** carry `enroll` and `spendToUnlock`, shown as tags
   (`CreditConditions`) in the Tracker, the card drawer and Is this card
   worth it?. **Perks** have a `kind` (lounge, status, free night,
@@ -570,6 +572,41 @@ read-only `/admin` page tracks when each card was last checked.
   overstates someone above that in total (said in its fine print). Delta
   Platinum's MQD head start amount was not stated on its page and is left
   out.
+
+## Security (2 November 2026)
+
+A read-only review found no critical or high issues: RLS is on every
+table, no policy is `using (true)`, users cannot write `plan`, `is_admin`,
+`premium_gift` or `stripe_customer_id`, server routes check the token with
+`getUser` and act only on that user, the webhook checks Stripe's signature
+in constant time, and no secret is in git history. Changes made:
+
+- **Security headers** on every response from `next.config.ts`: a CSP
+  (scripts, styles, images and fonts from this origin; `connect-src` adds
+  the Supabase project), `frame-ancestors 'none'`, HSTS, nosniff,
+  Referrer-Policy and Permissions-Policy. Inline scripts are allowed
+  because a nonce would need a proxy. **Any new third-party origin (the
+  Google Identity Services script) must be added to the CSP**, or it is
+  blocked.
+- **Migration `20261102000000_lock_default_privileges.sql`** makes new
+  `public` tables and functions closed to `anon` by default. Run it once
+  in the SQL Editor, then `npm run test:rls`.
+- **`npm run test:rls`** now also reads every table unfiltered as another
+  user and signed out, and tries cross-user updates.
+- **Not done, low risk:** per-user row caps on `point_balances`,
+  `valuations` and `credit_usage`, and a Cloudflare rate-limit rule on
+  `/api/*`. After any migration, confirm every public table shows
+  `relrowsecurity = true` (the query is in the migration's footer).
+
+## Features page (2 November 2026)
+
+`app/(marketing)/features/page.tsx`: three features in the owner's order,
+each a large two-tone headline beside a working animation: the hero's
+`CardStack`, the home page's `CreditDemo`, and
+`components/features/calculator-demo.tsx` (the three calculators in turn,
+figures from the engine at default valuations). The home page's "Left to
+memory" panel is `components/landing/messy-notes.tsx`, a notes doc typed
+and retyped. Marketing tabs are bold ink, the current one underlined.
 
 ## Owner's fixes (2 November 2026)
 

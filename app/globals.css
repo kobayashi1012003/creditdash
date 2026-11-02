@@ -369,3 +369,13 @@
     scroll-behavior: auto !important;
   }
 }
+/* A text caret blinking, for the landing's notes doc. Steps, not a fade:
+   a real caret is either there or not. */
+@keyframes cd-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.cd-caret {
+  animation: cd-caret 1.06s steps(1) infinite;
+}

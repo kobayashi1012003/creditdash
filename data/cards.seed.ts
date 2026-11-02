@@ -131,7 +131,7 @@ export const CARDS: Card[] = [
     ],
     credits: [
       { id: "csr-travel", name: "Travel credit", amount: 300, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Applies automatically to travel purchases" },
-      { id: "csr-edit", name: "The Edit hotel credit", amount: 500, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Up to $250 a stay. Prepaid stays of two nights or more" },
+      { id: "csr-edit-h", name: "The Edit hotel credit", amount: 250, period: "semiannual", resetBasis: "calendar", category: "hotels", notes: "Prepaid stays of two nights or more through The Edit" },
       { id: "csr-select-hotels", name: "Select hotel brands credit", amount: 250, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid Chase Travel stays of two nights or more with the participating brands", endsOn: "2026-12-31" },
       { id: "csr-dining", name: "Exclusive Tables dining", amount: 150, period: "semiannual", resetBasis: "calendar", category: "dining", notes: "Only Exclusive Tables restaurants on OpenTable" },
       { id: "csr-stubhub", name: "StubHub", amount: 150, period: "semiannual", resetBasis: "calendar", notes: "StubHub or viagogo, no gift cards", enroll: true, endsOn: "2027-12-31" },
@@ -144,7 +144,6 @@ export const CARDS: Card[] = [
     ],
     finePrint: [
       "Purchases covered by the travel credit or The Edit credit earn no points.",
-      "Since 2026 the two Edit credits can be used any time in the calendar year, not one per half.",
       "Lyft earns 5x through September 2027, and Peloton equipment over $150 earns 10x through 2027.",
       "Apple TV and Apple Music are included free; activate by 22 June 2027.",
       "$75,000 of spend in a calendar year unlocks Hyatt and IHG status and a $500 Southwest credit.",
@@ -711,7 +710,7 @@ export const DEMO_USAGE: Record<string, number[]> = {
   // Sapphire Reserve, opened November 2021.
   "csr-travel": [300],
   "csr-dining": [150, 85],
-  "csr-edit": [250],
+  "csr-edit-h": [250, 0],
   // Venture X, opened June 2024.
   "vx-travel": [300],
 };

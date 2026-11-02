@@ -626,7 +626,7 @@ function WalletCard({
  * highest it earns in each category, above its everything-else rate. A
  * rate that only applies through the issuer's travel site or at one brand
  * is shown at that rate with an asterisk, and the footnote says where
- * (owner's choice, 2 November 2026). Ranking still uses the anywhere rate.
+ * (owner's choice, 2 November 2026). Ranking uses the same best rate.
  * With no bonus at all, the base rate shows on its own.
  */
 function topRates(card: Card) {

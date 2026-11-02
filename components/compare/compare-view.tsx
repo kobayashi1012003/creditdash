@@ -5,7 +5,7 @@ import { PlusIcon, XIcon } from "@phosphor-icons/react";
 import type { Card } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
-import { centsPerPoint, rateFor } from "@/lib/calculators/engine";
+import { centsPerPoint, multiplierFor, rateFor } from "@/lib/calculators/engine";
 import { cardAnnualCreditValue } from "@/lib/credits";
 import { usd } from "@/lib/format";
 import {
@@ -168,7 +168,7 @@ export function CompareView({ all }: { all: Card[] }) {
                 value={(c) => {
                   const rate = rateFor(c, cat);
                   return rate.boost
-                    ? `${rate.multiplier}x, ${rate.boost.multiplier}x ${rate.boost.where}`
+                    ? `${rate.boost.multiplier}x ${rate.boost.where}, ${rate.multiplier}x elsewhere`
                     : `${rate.multiplier}x`;
                 }}
                 score={(c) => centsFor(c, cat, valuations)}
@@ -294,5 +294,5 @@ function centsFor(
   category: Category,
   valuations: ReturnType<typeof useValuations>,
 ): number {
-  return rateFor(card, category).multiplier * centsPerPoint(card.program, valuations);
+  return multiplierFor(rateFor(card, category)) * centsPerPoint(card.program, valuations);
 }

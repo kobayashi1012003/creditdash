@@ -114,17 +114,14 @@ export function AnswerLine({
             {/* Ranked by value, but the line states only the rate: cents
                 per dollar is held back for now (owner, 28 October 2026). */}
             {top.boosted && top.rate.boost ? (
-              <>earns {top.multiplier}x {top.rate.boost.where}.</>
-            ) : (
+              // The boosted rate wins the ranking, so the anywhere rate
+              // rides along as a short note rather than a disclaimer.
               <>
-                earns {top.multiplier}x on {CATEGORY_LABELS[category].toLowerCase()}
-                {/* A travel-site rate is worth knowing, but it is not what
-                    the card earns on an ordinary purchase, so it never wins. */}
-                {top.rate.boost && !top.rate.boost.brand && (
-                  <>, {top.rate.boost.multiplier}x {top.rate.boost.where}</>
-                )}
-                .
+                earns {top.multiplier}x on {CATEGORY_LABELS[category].toLowerCase()}{" "}
+                {top.rate.boost.where}, {top.rate.multiplier}x elsewhere.
               </>
+            ) : (
+              <>earns {top.multiplier}x on {CATEGORY_LABELS[category].toLowerCase()}.</>
             )}
           </span>
         </>

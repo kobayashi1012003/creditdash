@@ -1,6 +1,6 @@
 import type { Card } from "@/data/types";
 import type { Category } from "@/lib/categories";
-import { centsPerPoint, rateFor } from "@/lib/calculators/engine";
+import { centsPerPoint, multiplierFor, rateFor } from "@/lib/calculators/engine";
 import { cardAnnualCreditValue } from "@/lib/credits";
 
 /**
@@ -30,7 +30,7 @@ export function activeFilterCount(f: WalletFilter): number {
 /** Within a group the choices widen (Amex or Chase); across groups they narrow. */
 export function matchesFilter(card: Card, f: WalletFilter): boolean {
   if (f.issuers.size > 0 && !f.issuers.has(card.issuer)) return false;
-  for (const c of f.bonus) if (rateFor(card, c).multiplier <= 1) return false;
+  for (const c of f.bonus) if (multiplierFor(rateFor(card, c)) <= 1) return false;
   if (f.fee === "none" && card.annualFee > 0) return false;
   if (f.fee === "paid" && card.annualFee === 0) return false;
   return true;
@@ -49,7 +49,7 @@ export function sortCards<T extends { card: Card }>(
   const key = (card: Card): number => {
     switch (sort.by) {
       case "category":
-        return -rateFor(card, sort.category).multiplier * centsPerPoint(card.program, valuations);
+        return -multiplierFor(rateFor(card, sort.category)) * centsPerPoint(card.program, valuations);
       case "fee-low":
         return card.annualFee;
       case "credits":

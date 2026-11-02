@@ -40,7 +40,10 @@ export function MarketingNav({
                 aria-current={current ? "page" : undefined}
                 className={cn(
                   linkClassName,
-                  current ? "text-ink" : "text-muted hover:text-ink",
+                  // Bold ink for every tab (owner, 2 November 2026); the
+                  // current page is underlined.
+                  "font-semibold text-ink decoration-2 underline-offset-[6px] hover:underline",
+                  current && "underline",
                   "focus-visible:outline-focus",
                 )}
               >

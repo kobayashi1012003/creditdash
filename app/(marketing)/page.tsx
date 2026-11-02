@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { CardStack } from "@/components/landing/card-stack";
-import { CreditDemo, ForgottenCredits } from "@/components/landing/credit-demo";
+import { CreditDemo } from "@/components/landing/credit-demo";
+import { MessyNotes } from "@/components/landing/messy-notes";
 import { Button } from "@/components/ui/button";
 import { AccountButton, DashboardButton } from "@/components/landing/session-buttons";
 import { PlanPanels } from "@/components/landing/plan-panels";
@@ -89,14 +90,14 @@ export default function LandingPage() {
           <div className="rounded-widget bg-panel p-5 sm:p-7">
             <p className="text-[15px] font-medium">Left to memory</p>
             <p className="mt-1 text-[13px] text-muted">
-              Two $10 credits a month, used when someone happened to remember.
+              A notes doc, updated whenever someone happens to remember.
             </p>
             <div className="mt-8 rounded-inner border border-line bg-surface p-4 sm:p-5">
-              <ForgottenCredits />
+              <MessyNotes />
             </div>
           </div>
           <div className="rounded-widget bg-lavender p-5 sm:p-7">
-            <p className="text-[15px] font-medium text-lavender-ink">With the Tracker</p>
+            <p className="text-[15px] font-medium text-lavender-ink">With CreditDash</p>
             <p className="mt-1 text-[13px] text-lavender-ink/80">
               Each month gets ticked off. Try it: click any month.
             </p>
