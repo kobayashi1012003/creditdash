@@ -51,6 +51,8 @@ export type Account = {
   billing: Billing | null;
   /** Premium given by the owner, not bought; nothing in Stripe to manage. */
   gifted: boolean;
+  /** `profiles.is_admin`. Opens /admin; grants nothing in the database. */
+  isAdmin: boolean;
 };
 let account: Account | null = null;
 let remote: Remote | null = null;
@@ -207,9 +209,9 @@ async function enterAccount(db: SupabaseClient) {
   }
 
   try {
-    const { state, rowIds, billing, gifted } = await loadAccount(db, user.id);
+    const { state, rowIds, billing, gifted, isAdmin } = await loadAccount(db, user.id);
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null, billing, gifted };
+    account = { userId: user.id, email: user.email ?? null, billing, gifted, isAdmin };
     remote = { db, userId: user.id, rowIds };
     cache = state;
     offer = computeOffer(user.id, state);
@@ -218,7 +220,13 @@ async function enterAccount(db: SupabaseClient) {
     // look like the account had been replaced, so show an empty one and say
     // why. Nothing is written in this state.
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null, billing: null, gifted: false };
+    account = {
+      userId: user.id,
+      email: user.email ?? null,
+      billing: null,
+      gifted: false,
+      isAdmin: false,
+    };
     remote = null;
     cache = emptyState();
     notice = {

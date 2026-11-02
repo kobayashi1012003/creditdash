@@ -103,7 +103,9 @@ export function MerchantSearch({
         {results.length > 0 && (
           <ul className="mt-2 max-w-[520px] divide-y divide-line rounded-inner border border-line bg-bg">
             {results.map((m) => {
-              const best = cards?.length ? bestCardFor(cards, m.category, valuations) : null;
+              const best = cards?.length
+                ? bestCardFor(cards, m.category, valuations, m.brand)
+                : null;
               return (
                 <li key={m.name}>
                   <button
@@ -115,7 +117,7 @@ export function MerchantSearch({
                       <span className="block truncate text-[14px]">{m.name}</span>
                       {best && (
                         <span className="block truncate text-[12px] text-muted">
-                          Best: {best.card.name}, {best.rate.multiplier}x
+                          Best: {best.card.name}, {best.multiplier}x
                         </span>
                       )}
                     </span>

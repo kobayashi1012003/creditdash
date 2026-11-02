@@ -38,12 +38,37 @@ export type FaceStyle = {
   finish: "metal" | "matte";
 };
 
+/**
+ * Brands a card can earn extra with. A merchant in data/merchants.ts with
+ * the same brand switches the ranking to the boosted rate, so "Hilton" in
+ * the store search picks the Hilton card.
+ */
+export type Brand = "hilton" | "marriott" | "delta" | "united" | "hyatt";
+
+/**
+ * A higher rate on a narrower channel: the issuer's travel site, or the
+ * card's own airline or hotel. Shown as a note; ranking uses it only when
+ * the purchase is known to be on that channel (a brand the user searched).
+ */
+export type EarnBoost = {
+  multiplier: number;
+  /** Reads after the rate: "5x prepaid through Amex Travel", "12x at Hilton". */
+  where: string;
+  brand?: Brand;
+};
+
 export type EarnRate = {
   category: Category;
+  /**
+   * What a purchase in this category earns anywhere, including booking
+   * direct with any airline or hotel. This is the rate every ranking and
+   * total uses unless a brand says otherwise.
+   */
   multiplier: number;
   /** Annual spend cap in dollars, or null when uncapped. */
   cap: number | null;
   notes?: string;
+  boost?: EarnBoost;
 };
 
 export type CardCredit = {
@@ -56,17 +81,30 @@ export type CardCredit = {
   category?: Category;
   /** The condition most likely to cost someone the credit. */
   notes?: string;
+  /** Needs enrolling in the issuer's account before the purchase. */
+  enroll?: boolean;
+  /** Only paid after this much spend on the card in a calendar year. */
+  spendToUnlock?: number;
 };
 
+export type PerkKind =
+  | "lounge"
+  | "status"
+  | "free-night"
+  | "companion"
+  | "bags"
+  | "protection"
+  | "other";
+
 /**
- * A benefit with no regular cash value: lounge access, status, insurance,
- * free bags. Worth whatever the user says it is to them. Empty across the
- * catalog until the owner's terms file arrives; the calculator shows a
- * placeholder row for lounge access meanwhile.
+ * A benefit with no regular cash value: lounge access, status, a free
+ * night, a companion ticket, travel and purchase protection. Worth
+ * whatever the user says it is to them, so it has no dollar figure.
  */
 export type CardPerk = {
   id: string;
   name: string;
+  kind: PerkKind;
   notes?: string;
 };
 
@@ -83,6 +121,8 @@ export type Card = {
   issuerUrl: string;
   /** ISO date. Shown as "Last verified" once the data is real. */
   lastVerified: string;
+  /** The issuer's own terms page this card was checked against. */
+  sourceUrl?: string;
   earnRates: EarnRate[];
   credits: CardCredit[];
   /** Percent, 0 when the card charges none. */

@@ -34,7 +34,7 @@ import type { Card } from "@/data/types";
 import { getCard } from "@/data/cards.seed";
 import type { Merchant } from "@/data/merchants";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
-import { rankCards } from "@/lib/calculators/engine";
+import { rankCards, rateFor } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
 import { cardLimit, FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
@@ -194,7 +194,8 @@ export function WalletView() {
     ? entries
     : sortCards(entries.filter((e) => matchesFilter(e.card, filter)), sort, valuations);
   const cards = view.map((e) => e.card);
-  const ranked = category && !editing ? rankCards(cards, category, valuations) : null;
+  const ranked =
+    category && !editing ? rankCards(cards, category, valuations, merchant?.brand) : null;
   const winnerId = ranked?.[0]?.card.id ?? null;
   const openEntry = entries.find((e) => e.card.id === openCardId) ?? null;
   const filters = activeFilterCount(filter);
@@ -608,12 +609,20 @@ function WalletCard({
   );
 }
 
-/** The two or three rates worth showing under a card in the grid. */
+/**
+ * The two or three rates worth showing under a card in the grid: those
+ * above its everything-else rate. A category listed only for its travel
+ * site boost (1x hotels, 5x through the portal) would read as a reason to
+ * use the card, so it is left out; with no bonus at all, the base rate
+ * shows on its own.
+ */
 function topRates(card: Card) {
-  return [...card.earnRates]
-    .filter((r) => r.category !== "other")
+  const base = rateFor(card, "other");
+  const bonus = card.earnRates
+    .filter((r) => r.category !== "other" && r.multiplier > base.multiplier)
     .sort((a, b) => b.multiplier - a.multiplier)
     .slice(0, 3);
+  return bonus.length > 0 ? bonus : [base];
 }
 
 /**

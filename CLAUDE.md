@@ -19,11 +19,13 @@ that plan, the plan wins, and the deviation gets recorded here.
 
 ## Where the build has got to
 
-Phases 0 to 7 of `creditdash-plan.md` are built. **Phase 7 (Stripe)
+Phases 0 to 8 of `creditdash-plan.md` are built. **Phase 7 (Stripe)
 passed end to end in the Stripe sandbox on 29 October 2026, but the live
 site has no Stripe keys yet**, so Upgrade there says payments are not
 switched on. Going live is dashboard work only; the steps are under
-"Billing" in the data layer section. **Phase 8 (real card data) is next.**
+"Billing" in the data layer section. **Phase 8 (real card data) is built
+for the American Express cards** (1 November 2026); more issuers follow as
+the owner sends terms links.
 
 Since Phase 7: on 28 October the site was redesigned to the owner's Zaro
 reference (landing rebuilt, off-white ground, new wordmark, Geist
@@ -71,6 +73,7 @@ off and returns 404.
 | 5 | States, keyboard, legal text, PWA, Lighthouse 100, first deploy |
 | 6 | Supabase Auth (Google, email link), account-backed `lib/data/`, RLS proven, demo import, account deletion |
 | 7 | Stripe Checkout, Customer Portal, signed webhook, hidden cards on Free, gifted Premium, billing terms. Sandbox-tested end to end; live keys not set |
+| 8 | Amex cards checked against issuer terms, 8 new cards, anywhere vs boosted rates, brand-aware store search, credit conditions, structured perks, `/admin` catalog review |
 
 Phase 6 was verified on the live site: the owner signed in with Google on a
 phone, changed the Tracker there, and saw it on another device after a
@@ -162,9 +165,10 @@ for accessibility on mobile; the small drop is real network latency.
 
 - **The owner has UI tweaks saved for the end of the build.** Ask for them
   before calling the project finished; do not guess at them.
-- **Next, in the owner's order:** Phase 8 (real card data, from a terms
-  file the owner will send); then the Google Identity Services sign-in
-  below; then the owner's saved UI tweaks.
+- **Next, in the owner's order:** the Google Identity Services sign-in
+  below; then the owner's saved UI tweaks. Further Phase 8 terms links
+  (Chase, Capital One, Citi, Bilt) are checked the same way when they
+  arrive.
 - **"Payments are not switched on yet"** is written on the home page and
   on `/pricing`. Remove both lines when the live Stripe keys go in.
 - **Email is set up.** Sign-in links go through Resend (custom SMTP in
@@ -475,6 +479,8 @@ format means a schema version and a migration, never an edit in place.
 
 ## Card data
 
+The American Express cards were checked against Amex's benefit terms
+pages on 1 November 2026 (see Phase 8 below). The rest of
 `data/cards.seed.ts` was checked card by card on 28 October 2026 against
 each issuer's own page, cross-checked with The Points Guy and recent
 coverage, and `lastVerified` set to that date. Facts are in our own words;
@@ -517,6 +523,54 @@ though ranking and Compare's winners still use value.
 - **About** is a first draft (college student, membership helps with
   tuition), for the owner to expand.
 
+## Phase 8: real card data (1 November 2026)
+
+The owner's source is a list of issuer benefit-terms links (so far 11
+American Express pages, kept in the owner's Downloads as
+`creditcarddata/linkscreditdata.txt`). The catalog stays in code; the
+read-only `/admin` page tracks when each card was last checked.
+
+- **Reading Amex terms pages.** They render with JavaScript behind bot
+  protection, so `WebFetch` and `curl` get an empty shell. Open them in the
+  browser pane and read `main.innerText`; pull only the earn, credit and
+  perk sections, because each page is about 45,000 characters. Annual fees
+  are not on the terms pages: each card's "Rates and Fees" page (linked
+  from americanexpress.com's card listings) has them, readable with
+  `fetch` from that origin.
+- **20 cards.** The 11 Amex cards carry `sourceUrl` and `lastVerified`
+  2026-11-01; the other nine keep their 28 October data. New: Hilton
+  Honors Aspire and Hilton Honors, Marriott Bonvoy Bevy and Brilliant,
+  Delta SkyMiles Reserve, Platinum, Gold and Blue. Real art for Delta
+  Gold, Platinum and Blue and Hilton Honors (from the owner's card art
+  folder); the rest use the generated face.
+- **`multiplier` is the anywhere rate; `boost` is a narrower channel**
+  (travel site, or the card's own airline or hotel). Ranking, chips,
+  totals and caps use the anywhere rate. A boost with a `brand` counts only
+  when the store search names that brand (`data/merchants.ts` tags Hilton,
+  Marriott, Hyatt, United and Delta), through `multiplierFor` and the
+  `brand` argument of `rankCards`. A travel-site boost never counts in a
+  ranking; the answer line mentions it after the anywhere rate, and Award
+  vs cash has a "Booked through ..." box for it. Notes on a boosted rate
+  describe the boosted channel.
+- **Value still decides.** At default valuations Sapphire Reserve beats
+  Hilton Aspire even at Hilton (4x at 2.0¢ against 14x at 0.5¢).
+- **Credits** carry `enroll` and `spendToUnlock`, shown as tags
+  (`CreditConditions`) in the Tracker, the card drawer and Is this card
+  worth it?. **Perks** have a `kind` (lounge, status, free night,
+  companion, bags, protection) and appear in the drawer and as "What it's
+  worth to you" rows.
+- **`/admin`** is not in the navigation and is `noindex`. It renders for an
+  account with `profiles.is_admin = true` (set it in the SQL Editor; users
+  cannot write the column). `lib/catalog-review.ts` flags a card 90 days
+  after its last check; its tests also check the catalog itself (unique
+  ids, boosts above their base rate, a `sourceUrl` on every terms-checked
+  card).
+- **Known approximations.** Bevy's 4x on dining and groceries has one
+  $15,000 cap across both; the engine caps each at $15,000, so it
+  overstates someone above that in total (said in its fine print). Delta
+  Platinum's MQD head start amount was not stated on its page and is left
+  out.
+
 ## Calculators and Points (30 October 2026)
 
 Built from `docs/calculators-upgrade.md`. The three calculators are Award
@@ -556,14 +610,10 @@ queries, not a `dense` prop, adapt them to the 360px panel).
 - **What is typed into the spend calculator is shared in memory**
   (`lib/calculators/spend-store.ts`), so Is this card worth it? can add the
   same card's rewards from spending. Not saved.
-- **Card data gaps, waiting on the owner's terms file.** Lounge access is
-  a sentence, so it shows as a $0 "What it's worth to you" row; status,
-  insurance, bags and free nights exist only in `finePrint`. `Card.perks`
-  exists for them and is empty. Travel earn rates are portal rates (the
-  calculator shows the rate's note). The Platinum's December Uber bonus is
-  not modelled. Spend-gated and per-stay credits read as unconditional.
-  Bilt Obsidian assumes dining. Blue Business Plus and Bilt Blue have no
-  benefits at all.
+- **Card data gaps** were closed by Phase 8 for the Amex cards (perks,
+  conditions, anywhere vs boosted rates, the Platinum's December Uber
+  credit). Still open: Bilt Obsidian assumes dining, and Blue Business
+  Plus and Bilt Blue have no credits or perks.
 
 ## Wallet, Tracker and Compare controls (29 October 2026)
 

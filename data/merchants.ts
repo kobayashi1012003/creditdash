@@ -1,4 +1,5 @@
 import type { Category } from "@/lib/categories";
+import type { Brand } from "@/data/types";
 
 /**
  * Common US merchants and the spend category they usually fall into, for
@@ -22,6 +23,8 @@ export type Merchant = {
   /** Other names people type: abbreviations, old names, parent brands. */
   aliases?: string[];
   note?: string;
+  /** Cards with a boost for this brand earn their boosted rate here. */
+  brand?: Brand;
 };
 
 const SUPERSTORE =
@@ -160,8 +163,8 @@ export const MERCHANTS: Merchant[] = [
 
   // --- Flights --------------------------------------------------------------
   m("Airlines", "flights", ["airline", "flight", "flights", "plane", "airfare"]),
-  m("United Airlines", "flights", ["united"]),
-  m("Delta Air Lines", "flights", ["delta"]),
+  { ...m("United Airlines", "flights", ["united"]), brand: "united" },
+  { ...m("Delta Air Lines", "flights", ["delta"]), brand: "delta" },
   m("American Airlines", "flights", ["american", "aa"]),
   m("Southwest Airlines", "flights", ["southwest"]),
   m("JetBlue", "flights", ["jet blue"]),
@@ -187,9 +190,9 @@ export const MERCHANTS: Merchant[] = [
 
   // --- Hotels ---------------------------------------------------------------
   m("Hotels", "hotels", ["hotel", "motel", "resort", "inn", "lodging"]),
-  m("Marriott", "hotels", ["marriott bonvoy", "westin", "sheraton", "w hotels", "ritz carlton", "courtyard", "residence inn", "st regis"]),
-  m("Hilton", "hotels", ["hilton honors", "doubletree", "hampton inn", "conrad", "waldorf astoria", "embassy suites", "homewood suites"]),
-  m("Hyatt", "hotels", ["world of hyatt", "park hyatt", "andaz", "grand hyatt", "hyatt regency"]),
+  { ...m("Marriott", "hotels", ["marriott bonvoy", "westin", "sheraton", "w hotels", "ritz carlton", "courtyard", "residence inn", "st regis"]), brand: "marriott" },
+  { ...m("Hilton", "hotels", ["hilton honors", "doubletree", "hampton inn", "conrad", "waldorf astoria", "embassy suites", "homewood suites"]), brand: "hilton" },
+  { ...m("Hyatt", "hotels", ["world of hyatt", "park hyatt", "andaz", "grand hyatt", "hyatt regency"]), brand: "hyatt" },
   m("IHG Hotels", "hotels", ["ihg", "holiday inn", "intercontinental", "kimpton", "crowne plaza"]),
   m("Wyndham", "hotels", ["la quinta", "days inn", "super 8", "ramada"]),
   m("Choice Hotels", "hotels", ["comfort inn", "quality inn", "sleep inn"]),

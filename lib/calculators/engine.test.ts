@@ -6,6 +6,7 @@ import {
   cardWorth,
   centsPerPoint,
   earnCategories,
+  multiplierFor,
   pointsForSpend,
   pointsToDollars,
   rankCards,
@@ -404,5 +405,71 @@ describe("rankCards", () => {
       assert.equal(ranked.length, 2, category);
       assert.ok(ranked[0].centsPerDollar >= ranked[1].centsPerDollar, category);
     }
+  });
+});
+
+describe("boosted rates", () => {
+  // Gold-style: hotels earn 5x only prepaid through the issuer's site.
+  const portal = card({
+    id: "portal",
+    program: "amex-mr",
+    earnRates: [
+      {
+        category: "hotels",
+        multiplier: 1,
+        cap: null,
+        boost: { multiplier: 5, where: "prepaid through Amex Travel" },
+      },
+      { category: "other", multiplier: 1, cap: null },
+    ],
+  });
+  // Hilton-style: hotels earn 3x anywhere, 14x at Hilton.
+  const hilton = card({
+    id: "hilton",
+    program: "hilton",
+    earnRates: [
+      {
+        category: "hotels",
+        multiplier: 3,
+        cap: null,
+        boost: { multiplier: 14, where: "at Hilton", brand: "hilton" },
+      },
+      { category: "other", multiplier: 3, cap: null },
+    ],
+  });
+  const flat = card({
+    id: "flat",
+    program: "capital-one",
+    earnRates: [{ category: "other", multiplier: 2, cap: null }],
+  });
+  const vals = { "amex-mr": 2.0, hilton: 0.5, "capital-one": 1.8 };
+
+  test("a travel-site boost never counts in the ranking", () => {
+    const ranked = rankCards([portal, flat], "hotels", vals);
+    assert.equal(ranked[0].card.id, "flat");
+    const p = ranked.find((r) => r.card.id === "portal");
+    assert.equal(p?.multiplier, 1);
+    assert.equal(p?.boosted, false);
+  });
+
+  test("a brand boost counts only for that brand", () => {
+    assert.equal(rankCards([hilton, flat], "hotels", vals)[0].card.id, "flat");
+    const atHilton = rankCards([hilton, flat], "hotels", vals, "hilton");
+    assert.equal(atHilton[0].card.id, "hilton");
+    assert.equal(atHilton[0].multiplier, 14);
+    assert.equal(atHilton[0].boosted, true);
+    assert.ok(Math.abs(atHilton[0].centsPerDollar - 7) < 1e-9);
+    assert.equal(rankCards([hilton, flat], "hotels", vals, "marriott")[0].card.id, "flat");
+  });
+
+  test("multiplierFor ignores boosts with no brand", () => {
+    assert.equal(multiplierFor(portal.earnRates[0], "hilton"), 1);
+    assert.equal(multiplierFor(hilton.earnRates[0], "hilton"), 14);
+    assert.equal(multiplierFor(hilton.earnRates[0]), 3);
+  });
+
+  test("spend totals use the anywhere rate", () => {
+    assert.equal(pointsForSpend(portal, "hotels", 1000), 1000);
+    assert.equal(pointsForSpend(hilton, "hotels", 1000), 3000);
   });
 });

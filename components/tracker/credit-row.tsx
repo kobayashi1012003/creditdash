@@ -10,6 +10,7 @@ import { setCreditUsed } from "@/lib/data";
 import { money, usd, usdExact } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { CheckmarkRow } from "@/components/ui/checkmark-row";
+import { CreditConditions } from "@/components/ui/credit-conditions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -44,7 +45,9 @@ export function CreditRow({
     <li>
       <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
-          <p className="text-[15px]">{credit.name}</p>
+          <p className="text-[15px]">
+            {credit.name} <CreditConditions credit={credit} className="ml-1" />
+          </p>
           <p className="text-[13px] text-muted">
             {usd(credit.amount)} per period, resets on {resetsOn}
             {state.expiringSoon && state.currentIndex !== -1 && (

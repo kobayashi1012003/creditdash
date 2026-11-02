@@ -121,7 +121,10 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
       }
     : null;
   const gifted = profile.data?.premium_gift === true;
-  return { state, rowIds, billing, gifted };
+  // Shown, never trusted: it only decides whether /admin renders. The
+  // column cannot be written by users (see the init migration's grants).
+  const isAdmin = profile.data?.is_admin === true;
+  return { state, rowIds, billing, gifted, isAdmin };
 }
 
 /** The latest Stripe subscription, as Settings shows it. Written by the webhook only. */

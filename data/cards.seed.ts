@@ -1,7 +1,9 @@
 import type { Card, PointBalance, UserCard } from "./types";
 
 /**
- * CARD DATA, checked 28 October 2026.
+ * CARD DATA. Most cards checked 28 October 2026; the American Express
+ * cards against Amex's own benefit terms pages on 1 November 2026 (each
+ * carries its `sourceUrl`).
  *
  * Every card was researched against the issuer's own page and
  * cross-checked with The Points Guy and recent coverage. Facts are recorded
@@ -16,8 +18,10 @@ import type { Card, PointBalance, UserCard } from "./types";
  * Modelling rules:
  * - A credit that changed period or amount meaningfully gets a new id, so
  *   usage stored under the old rules is never read under the new ones.
- * - Earn rates through a travel portal are listed as the category rate with
- *   the channel in `notes`, as before; the direct rate goes in the note.
+ * - `multiplier` is what a purchase earns anywhere, booking direct with any
+ *   airline or hotel included. A higher rate on the issuer's travel site,
+ *   or with the card's own airline or hotel, is a `boost`, so the Wallet
+ *   never sends someone to a card for a rate they will not get.
  * - Benefits with no regular period (per stay, every four years, unlocked
  *   by spend) are not credits the Tracker can tick; they go in finePrint.
  */
@@ -33,26 +37,34 @@ export const CARDS: Card[] = [
     program: "amex-mr",
     faceStyle: { base: "#8A8D91", shade: "#6F7276", foil: "#1C1C1E", finish: "metal" },
     issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/platinum/",
-    lastVerified: "2026-10-28",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/platinum",
+    lastVerified: "2026-11-01",
     foreignTransactionFee: 0,
     loungeAccess: "Centurion, Delta Sky Club (10 visits a year), Priority Pass",
     earnRates: [
       { category: "flights", multiplier: 5, cap: 500000, notes: "Booked direct or through Amex Travel, up to $500,000 a year" },
-      { category: "hotels", multiplier: 5, cap: null, notes: "Prepaid through Amex Travel only" },
+      { category: "hotels", multiplier: 1, cap: null, boost: { multiplier: 5, where: "prepaid through Amex Travel" } },
       { category: "other", multiplier: 1, cap: null },
     ],
     credits: [
       { id: "plat-hotel", name: "Hotel credit", amount: 300, period: "semiannual", resetBasis: "calendar", category: "hotels", notes: "Prepaid Fine Hotels and Resorts or The Hotel Collection through Amex Travel" },
-      { id: "plat-resy", name: "Resy dining", amount: 100, period: "quarterly", resetBasis: "calendar", category: "dining", notes: "Enroll first. US Resy restaurants" },
-      { id: "plat-digital", name: "Digital entertainment", amount: 25, period: "monthly", resetBasis: "calendar", category: "streaming", notes: "Enroll first. Peacock counts only when bought direct from Peacock" },
-      { id: "plat-uber", name: "Uber Cash", amount: 15, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Lapses at the end of each month. December adds $20" },
+      { id: "plat-resy", name: "Resy dining", amount: 100, period: "quarterly", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Resy restaurants" },
+      { id: "plat-digital", name: "Digital entertainment", amount: 25, period: "monthly", resetBasis: "calendar", category: "streaming", enroll: true, notes: "Peacock counts only when bought direct from Peacock" },
+      { id: "plat-uber", name: "Uber Cash", amount: 15, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Add the card in the Uber app. Lapses at the end of each month" },
+      { id: "plat-uber-december", name: "Uber Cash, December extra", amount: 20, period: "annual", resetBasis: "calendar", category: "transit", notes: "December only, on top of that month's $15" },
       { id: "plat-uber-one", name: "Uber One", amount: 120, period: "annual", resetBasis: "calendar", category: "transit", notes: "Auto-renewing Uber One membership" },
-      { id: "plat-airline", name: "Airline fee credit", amount: 200, period: "annual", resetBasis: "calendar", category: "flights", notes: "Incidental fees on the one airline you select, not tickets" },
+      { id: "plat-airline", name: "Airline fee credit", amount: 200, period: "annual", resetBasis: "calendar", category: "flights", enroll: true, notes: "Incidental fees on the one airline you select, not tickets" },
       { id: "plat-clear", name: "CLEAR+", amount: 219, period: "annual", resetBasis: "calendar", category: "flights" },
-      { id: "plat-lululemon", name: "lululemon", amount: 75, period: "quarterly", resetBasis: "calendar", notes: "Enroll first. US stores, not outlets, and lululemon.com" },
+      { id: "plat-lululemon", name: "lululemon", amount: 75, period: "quarterly", resetBasis: "calendar", enroll: true, notes: "US stores, not outlets, and lululemon.com" },
       { id: "plat-walmart", name: "Walmart+", amount: 12.95, period: "monthly", resetBasis: "calendar", category: "groceries", notes: "Monthly Walmart+ membership, not Plus Ups" },
-      { id: "plat-equinox", name: "Equinox", amount: 300, period: "annual", resetBasis: "calendar", notes: "Enroll first. Club or Equinox+ app membership" },
-      { id: "plat-oura", name: "Oura", amount: 200, period: "annual", resetBasis: "calendar", notes: "Enroll first. Ring hardware only" },
+      { id: "plat-equinox", name: "Equinox", amount: 300, period: "annual", resetBasis: "calendar", enroll: true, notes: "Club or Equinox+ app membership" },
+      { id: "plat-oura", name: "Oura", amount: 200, period: "annual", resetBasis: "calendar", enroll: true, notes: "Ring hardware from ouraring.com only" },
+      { id: "plat-airbnb", name: "Airbnb Experiences", amount: 250, period: "annual", resetBasis: "calendar", notes: "Only after a prepaid Airbnb Luxe booking through Amex Travel" },
+    ],
+    perks: [
+      { id: "plat-lounge", name: "Lounge access", kind: "lounge", notes: "Centurion, Escape and Plaza Premium lounges, Priority Pass (enroll first) and 10 Delta Sky Club visits a year" },
+      { id: "plat-status", name: "Hotel and car rental status", kind: "status", notes: "Hilton Gold and Marriott Gold (enroll first), Leaders Club Sterling, and Hertz, Avis and National status" },
+      { id: "plat-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
     ],
     finePrint: [
       "Most credits need enrollment in your Amex account before the purchase, not after.",
@@ -60,7 +72,6 @@ export const CARDS: Card[] = [
       "The Saks credit ended on 1 July 2026, and Lufthansa lounge access ended on 1 October 2026.",
       "Centurion Lounge guests and unlimited Delta Sky Club visits need $75,000 of spend in a calendar year.",
       "Global Entry ($120 every four years) or TSA PreCheck is covered when the fee is charged to the card.",
-      "Equinox and Oura terms were confirmed only by third parties; check them in your Amex account.",
     ],
   },
   {
@@ -72,21 +83,26 @@ export const CARDS: Card[] = [
     program: "amex-mr",
     faceStyle: { base: "#C8A253", shade: "#A8853F", foil: "#2A2112", finish: "metal" },
     issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/gold-card/",
-    lastVerified: "2026-10-28",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/gold",
+    lastVerified: "2026-11-01",
     foreignTransactionFee: 0,
     loungeAccess: null,
     earnRates: [
       { category: "dining", multiplier: 4, cap: 50000, notes: "Restaurants worldwide, up to $50,000 a year, then 1x" },
       { category: "groceries", multiplier: 4, cap: 25000, notes: "US supermarkets only, up to $25,000 a year, then 1x" },
-      { category: "hotels", multiplier: 5, cap: null, notes: "Prepaid through Amex Travel only" },
-      { category: "flights", multiplier: 3, cap: null, notes: "Booked direct or through Amex Travel" },
+      { category: "hotels", multiplier: 1, cap: null, boost: { multiplier: 5, where: "prepaid through Amex Travel" } },
+      { category: "flights", multiplier: 3, cap: null, notes: "Booked direct with the airline or through Amex Travel" },
       { category: "other", multiplier: 1, cap: null },
     ],
     credits: [
-      { id: "gold-dining", name: "Dining credit", amount: 10, period: "monthly", resetBasis: "calendar", category: "dining", notes: "Enroll first. Grubhub, Five Guys, Cheesecake Factory, Buffalo Wild Wings, Wonder" },
+      { id: "gold-dining", name: "Dining credit", amount: 10, period: "monthly", resetBasis: "calendar", category: "dining", enroll: true, notes: "Grubhub, Five Guys, Cheesecake Factory, Buffalo Wild Wings, Wonder" },
       { id: "gold-uber", name: "Uber Cash", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Add the card in the Uber app. Lapses at the end of each month" },
-      { id: "gold-resy-50", name: "Resy credit", amount: 50, period: "semiannual", resetBasis: "calendar", category: "dining", notes: "Enroll first. US Resy restaurants" },
-      { id: "gold-dunkin", name: "Dunkin'", amount: 7, period: "monthly", resetBasis: "calendar", category: "dining", notes: "Enroll first. US Dunkin' locations" },
+      { id: "gold-resy-50", name: "Resy credit", amount: 50, period: "semiannual", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Resy restaurants" },
+      { id: "gold-dunkin", name: "Dunkin'", amount: 7, period: "monthly", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Dunkin' locations" },
+    ],
+    perks: [
+      { id: "gold-status", name: "Hertz Five Star status", kind: "status" },
+      { id: "gold-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, baggage, car rental, purchase and extended warranty cover" },
     ],
     finePrint: [
       "Goldbelly and Wine.com stopped counting for the dining credit on 1 July 2026.",
@@ -107,8 +123,8 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: "Sapphire Lounge, Priority Pass, Air Canada Maple Leaf",
     earnRates: [
-      { category: "flights", multiplier: 8, cap: null, notes: "Through Chase Travel. 4x booked direct" },
-      { category: "hotels", multiplier: 8, cap: null, notes: "Through Chase Travel. 4x booked direct" },
+      { category: "flights", multiplier: 4, cap: null, boost: { multiplier: 8, where: "through Chase Travel" } },
+      { category: "hotels", multiplier: 4, cap: null, boost: { multiplier: 8, where: "through Chase Travel" } },
       { category: "dining", multiplier: 3, cap: null, notes: "Includes takeout and eligible delivery" },
       { category: "other", multiplier: 1, cap: null },
     ],
@@ -120,6 +136,9 @@ export const CARDS: Card[] = [
       { id: "csr-doordash", name: "DoorDash promos", amount: 35, period: "monthly", resetBasis: "calendar", category: "dining", notes: "$15 on one order plus two $10 non-restaurant promos. No rollover" },
       { id: "csr-lyft", name: "Lyft", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Add the card in the Lyft app. Rides only" },
       { id: "csr-peloton", name: "Peloton membership", amount: 10, period: "monthly", resetBasis: "calendar", notes: "Activate first" },
+    ],
+    perks: [
+      { id: "csr-lounge", name: "Lounge access", kind: "lounge", notes: "Sapphire Lounge, Priority Pass and Air Canada Maple Leaf" },
     ],
     finePrint: [
       "Purchases covered by the travel credit or The Edit credit earn no points.",
@@ -143,8 +162,8 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: null,
     earnRates: [
-      { category: "flights", multiplier: 5, cap: null, notes: "Through Chase Travel. 2x on other travel" },
-      { category: "hotels", multiplier: 5, cap: null, notes: "Through Chase Travel. 2x on other travel, 3x vacation homes" },
+      { category: "flights", multiplier: 2, cap: null, boost: { multiplier: 5, where: "through Chase Travel" } },
+      { category: "hotels", multiplier: 2, cap: null, notes: "Vacation homes earn 3x", boost: { multiplier: 5, where: "through Chase Travel" } },
       { category: "dining", multiplier: 3, cap: null, notes: "Includes takeout and eligible delivery" },
       { category: "gas", multiplier: 3, cap: null, notes: "Gas stations and EV charging" },
       { category: "streaming", multiplier: 3, cap: null, notes: "Select streaming services" },
@@ -176,12 +195,15 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: "Capital One Lounge, Priority Pass",
     earnRates: [
-      { category: "hotels", multiplier: 10, cap: null, notes: "Hotels and rental cars through Capital One Travel" },
-      { category: "flights", multiplier: 5, cap: null, notes: "Flights and vacation rentals through Capital One Travel" },
+      { category: "hotels", multiplier: 2, cap: null, notes: "Rental cars through Capital One Travel too", boost: { multiplier: 10, where: "through Capital One Travel" } },
+      { category: "flights", multiplier: 2, cap: null, notes: "Vacation rentals through Capital One Travel too", boost: { multiplier: 5, where: "through Capital One Travel" } },
       { category: "other", multiplier: 2, cap: null },
     ],
     credits: [
       { id: "vx-travel", name: "Travel credit", amount: 300, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Capital One Travel bookings only. Expires at the next anniversary" },
+    ],
+    perks: [
+      { id: "venture-x-lounge", name: "Lounge access", kind: "lounge", notes: "Capital One Lounge and Priority Pass" },
     ],
     finePrint: [
       "10,000 bonus miles post every account anniversary.",
@@ -204,7 +226,7 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: null,
     earnRates: [
-      { category: "hotels", multiplier: 10, cap: null, notes: "Hotels, car rentals and attractions through Citi Travel. 3x other hotels" },
+      { category: "hotels", multiplier: 3, cap: null, notes: "Car rentals and attractions through Citi Travel too", boost: { multiplier: 10, where: "through Citi Travel" } },
       { category: "flights", multiplier: 3, cap: null },
       { category: "dining", multiplier: 3, cap: null, notes: "Restaurants, including takeout" },
       { category: "groceries", multiplier: 3, cap: null, notes: "Supermarkets" },
@@ -232,8 +254,8 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: null,
     earnRates: [
-      { category: "hotels", multiplier: 3, cap: null, notes: "Through Bilt Travel" },
-      { category: "flights", multiplier: 2, cap: null, notes: "Through Bilt Travel" },
+      { category: "hotels", multiplier: 1, cap: null, boost: { multiplier: 3, where: "through Bilt Travel" } },
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 2, where: "through Bilt Travel" } },
       { category: "other", multiplier: 1, cap: null, notes: "Up to 4x at Bilt partner restaurants, 3x on Lyft" },
     ],
     credits: [],
@@ -258,8 +280,8 @@ export const CARDS: Card[] = [
     loungeAccess: null,
     earnRates: [
       { category: "dining", multiplier: 3, cap: null, notes: "If you choose dining. Or 3x groceries to $25,000 a year instead" },
-      { category: "hotels", multiplier: 4, cap: null, notes: "Through Bilt Travel. 2x other travel" },
-      { category: "flights", multiplier: 3, cap: null, notes: "Through Bilt Travel. 2x other travel" },
+      { category: "hotels", multiplier: 2, cap: null, boost: { multiplier: 4, where: "through Bilt Travel" } },
+      { category: "flights", multiplier: 2, cap: null, boost: { multiplier: 3, where: "through Bilt Travel" } },
       { category: "other", multiplier: 1, cap: null, notes: "Up to 6x at Bilt partner restaurants, 3x on Lyft" },
     ],
     credits: [
@@ -286,13 +308,16 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: "Priority Pass",
     earnRates: [
-      { category: "hotels", multiplier: 4, cap: null, notes: "Through Bilt Travel. 2x other travel" },
-      { category: "flights", multiplier: 3, cap: null, notes: "Through Bilt Travel. 2x other travel" },
+      { category: "hotels", multiplier: 2, cap: null, boost: { multiplier: 4, where: "through Bilt Travel" } },
+      { category: "flights", multiplier: 2, cap: null, boost: { multiplier: 3, where: "through Bilt Travel" } },
       { category: "other", multiplier: 2, cap: null, notes: "Up to 5x at Bilt partner restaurants, 4x on Lyft" },
     ],
     credits: [
       { id: "bilt-palladium-hotel", name: "Hotel credit", amount: 200, period: "semiannual", resetBasis: "calendar", category: "hotels", notes: "Hotels booked through Bilt Travel" },
       { id: "bilt-palladium-cash", name: "Bilt Cash", amount: 200, period: "annual", resetBasis: "calendar", notes: "Spendable inside Bilt only" },
+    ],
+    perks: [
+      { id: "bilt-palladium-lounge", name: "Lounge access", kind: "lounge", notes: "Priority Pass" },
     ],
     finePrint: [
       "Rent and mortgage earn up to 1.25x with no fee, depending on how much you spend on the card that month.",
@@ -331,25 +356,29 @@ export const CARDS: Card[] = [
     program: "hilton",
     faceStyle: { base: "#0F3A5C", shade: "#0A2942", foil: "#D6E4EF", finish: "matte" },
     issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/",
-    lastVerified: "2026-10-28",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/hilton-surpass",
+    lastVerified: "2026-11-01",
     foreignTransactionFee: 0,
     loungeAccess: null,
     earnRates: [
-      { category: "hotels", multiplier: 12, cap: null, notes: "Booked direct with Hilton properties" },
+      { category: "hotels", multiplier: 3, cap: null, boost: { multiplier: 12, where: "at Hilton", brand: "hilton" }, notes: "Booked direct with Hilton, including charges to the room" },
       { category: "dining", multiplier: 6, cap: null, notes: "US restaurants" },
-      { category: "groceries", multiplier: 6, cap: null, notes: "US supermarkets" },
+      { category: "groceries", multiplier: 6, cap: null, notes: "US supermarkets, not superstores or warehouse clubs" },
       { category: "gas", multiplier: 6, cap: null, notes: "US gas stations" },
       { category: "other", multiplier: 3, cap: null },
     ],
     credits: [
       { id: "hilton-resort", name: "Hilton credit", amount: 50, period: "quarterly", resetBasis: "calendar", category: "hotels", notes: "Purchases made directly with a Hilton property, room or on-site dining" },
     ],
+    perks: [
+      { id: "surpass-free-night", name: "Free Night Reward", kind: "free-night", notes: "After $15,000 of spend in a calendar year, not given each year" },
+      { id: "surpass-status", name: "Hilton Gold status", kind: "status", notes: "Diamond after $40,000 of spend in a calendar year. National Emerald Club too" },
+      { id: "surpass-protection", name: "Purchase and car rental protection", kind: "protection", notes: "Baggage, car rental, purchase and extended warranty cover" },
+    ],
     finePrint: [
       "US online retail earns 4x.",
-      "A free night is earned after $15,000 of spend in a calendar year, not given each year.",
-      "Diamond status comes after $40,000 of spend in a calendar year; Gold is automatic.",
       "Priority Pass was removed; this card has no lounge access.",
-      "Checked with third-party sources only; the Amex page could not be read.",
+      "10% back, up to $250 a year, on food and drink at stadiums in the Amex Venue Collection (enroll first).",
     ],
   },
   {
@@ -365,24 +394,282 @@ export const CARDS: Card[] = [
     foreignTransactionFee: 0,
     loungeAccess: "Two United Club passes a year",
     earnRates: [
-      { category: "flights", multiplier: 3, cap: null, notes: "United purchases. Plus 6x MileagePlus miles on United fares, 9x in total" },
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 3, where: "on United", brand: "united" }, notes: "United fares also earn 6x as a MileagePlus member, 9x in total" },
       { category: "dining", multiplier: 2, cap: null, notes: "Includes delivery" },
       { category: "hotels", multiplier: 2, cap: null, notes: "Booked direct with the hotel" },
       { category: "other", multiplier: 1, cap: null },
     ],
     credits: [
-      { id: "united-tb-10k", name: "United TravelBank cash", amount: 100, period: "annual", resetBasis: "calendar", category: "flights", notes: "Only after $10,000 of spend in the calendar year" },
+      { id: "united-tb-10k", name: "United TravelBank cash", amount: 100, period: "annual", resetBasis: "calendar", category: "flights", spendToUnlock: 10000, notes: "Paid into United TravelBank" },
       { id: "united-hotels", name: "United Hotels", amount: 100, period: "annual", resetBasis: "anniversary", category: "hotels", notes: "$50 on each of the first two prepaid United Hotels stays" },
       { id: "united-rideshare", name: "Rideshare", amount: 5, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Opt in every calendar year" },
       { id: "united-instacart", name: "Instacart", amount: 10, period: "monthly", resetBasis: "calendar", category: "groceries", notes: "Orders of $10 or more. Needs the Instacart+ trial activated" },
       { id: "united-avis", name: "Avis or Budget", amount: 50, period: "annual", resetBasis: "anniversary", notes: "$25 on each of the first two rentals of two days or more" },
       { id: "united-jsx", name: "JSX", amount: 100, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Flights booked direct with JSX" },
     ],
+    perks: [
+      { id: "united-explorer-lounge", name: "Lounge access", kind: "lounge", notes: "Two United Club passes a year" },
+    ],
     finePrint: [
       "The annual fee is $0 in the first year, then $150.",
       "The first checked bag is free for you and one companion when the ticket is bought with the card.",
       "$20,000 of spend in a calendar year earns a 10,000-mile award discount.",
       "Chase's terms also describe an older version of the TravelBank credit; confirm which applies to your account.",
+    ],
+  },
+  {
+    id: "hilton-aspire",
+    name: "Hilton Honors Aspire",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 550,
+    program: "hilton",
+    faceStyle: { base: "#1E2430", shade: "#141922", foil: "#D9DDE4", finish: "metal" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-aspire/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/hilton-aspire",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "hotels", multiplier: 3, cap: null, boost: { multiplier: 14, where: "at Hilton", brand: "hilton" }, notes: "Booked direct with Hilton, including charges to the room" },
+      { category: "dining", multiplier: 7, cap: null, notes: "US restaurants" },
+      { category: "flights", multiplier: 7, cap: null, notes: "Booked direct with the airline or through Amex Travel" },
+      { category: "other", multiplier: 3, cap: null },
+    ],
+    credits: [
+      { id: "aspire-resort", name: "Hilton Resort credit", amount: 200, period: "semiannual", resetBasis: "calendar", category: "hotels", notes: "Charges at participating Hilton Resorts" },
+      { id: "aspire-flight", name: "Flight credit", amount: 50, period: "quarterly", resetBasis: "calendar", category: "flights", notes: "Flights booked direct with an airline or through Amex Travel" },
+      { id: "aspire-clear", name: "CLEAR+", amount: 219, period: "annual", resetBasis: "calendar", category: "flights" },
+    ],
+    perks: [
+      { id: "aspire-free-night", name: "Free Night Reward", kind: "free-night", notes: "One each card membership year, plus one more at $30,000 and again at $60,000 of spend in a calendar year" },
+      { id: "aspire-diamond", name: "Hilton Diamond status", kind: "status", notes: "Also National Car Rental Emerald Club Executive" },
+      { id: "aspire-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "Two-night stays at Waldorf Astoria or Conrad booked through the card's own Hilton page come with up to $100 to spend at the hotel.",
+      "Restaurants inside a hotel can code as the hotel, not as dining.",
+    ],
+  },
+  {
+    id: "hilton-honors",
+    name: "Hilton Honors",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 0,
+    program: "hilton",
+    faceStyle: { base: "#123E6B", shade: "#0C2C4E", foil: "#E0E9F3", finish: "matte" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/hilton-honors/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/hilton-honors",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "hotels", multiplier: 3, cap: null, boost: { multiplier: 7, where: "at Hilton", brand: "hilton" }, notes: "Booked direct with Hilton, including charges to the room" },
+      { category: "dining", multiplier: 5, cap: null, notes: "US restaurants" },
+      { category: "groceries", multiplier: 5, cap: null, notes: "US supermarkets, not superstores or warehouse clubs" },
+      { category: "gas", multiplier: 5, cap: null, notes: "US gas stations" },
+      { category: "other", multiplier: 3, cap: null },
+    ],
+    credits: [],
+    perks: [
+      { id: "hh-status", name: "Hilton Silver status", kind: "status", notes: "Gold after $20,000 of spend in a calendar year" },
+      { id: "hh-protection", name: "Purchase and car rental protection", kind: "protection", notes: "Car rental, purchase and extended warranty cover" },
+    ],
+    finePrint: [],
+  },
+  {
+    id: "marriott-bevy",
+    name: "Marriott Bonvoy Bevy",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 250,
+    program: "marriott",
+    faceStyle: { base: "#2C2A33", shade: "#1F1D25", foil: "#E4DCCB", finish: "matte" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/marriott-bonvoy-bevy/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/marriott-bonvoy-bevy",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "hotels", multiplier: 2, cap: null, boost: { multiplier: 6, where: "at Marriott", brand: "marriott" }, notes: "At participating Marriott Bonvoy hotels" },
+      { category: "dining", multiplier: 4, cap: 15000, notes: "Restaurants worldwide. The $15,000 a year is shared with supermarkets, then 2x" },
+      { category: "groceries", multiplier: 4, cap: 15000, notes: "US supermarkets. The $15,000 a year is shared with dining, then 2x" },
+      { category: "other", multiplier: 2, cap: null },
+    ],
+    credits: [],
+    perks: [
+      { id: "bevy-free-night", name: "Free Night Award", kind: "free-night", notes: "After $15,000 of spend in a calendar year, at hotels up to 50,000 points a night" },
+      { id: "bevy-status", name: "Marriott Gold Elite status", kind: "status", notes: "Plus 15 Elite Night Credits each year and 1,000 bonus points a stay" },
+      { id: "bevy-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, baggage, car rental, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "The 4x on dining and groceries stops after $15,000 across both together, so the app overstates it for someone spending more than that in total.",
+    ],
+  },
+  {
+    id: "marriott-brilliant",
+    name: "Marriott Bonvoy Brilliant",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 650,
+    program: "marriott",
+    faceStyle: { base: "#1A1A1C", shade: "#0F0F11", foil: "#C9B27C", finish: "metal" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/marriott-bonvoy-brilliant/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/marriott-bonvoy-brilliant",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: "Priority Pass",
+    earnRates: [
+      { category: "hotels", multiplier: 2, cap: null, boost: { multiplier: 6, where: "at Marriott", brand: "marriott" }, notes: "At participating Marriott Bonvoy hotels" },
+      { category: "dining", multiplier: 3, cap: null, notes: "Restaurants worldwide" },
+      { category: "flights", multiplier: 3, cap: null, notes: "Booked direct with the airline" },
+      { category: "other", multiplier: 2, cap: null },
+    ],
+    credits: [
+      { id: "brilliant-dining", name: "Dining credit", amount: 25, period: "monthly", resetBasis: "calendar", category: "dining", notes: "Restaurants worldwide. Lapses at the end of each month" },
+    ],
+    perks: [
+      { id: "brilliant-free-night", name: "Free Night Award", kind: "free-night", notes: "Each year after your card renews, at hotels up to 85,000 points a night" },
+      { id: "brilliant-lounge", name: "Priority Pass", kind: "lounge", notes: "Enroll first. Two guests free" },
+      { id: "brilliant-status", name: "Marriott Platinum Elite status", kind: "status", notes: "Plus 25 Elite Night Credits each year" },
+      { id: "brilliant-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "$60,000 of spend in a calendar year earns a choice of five upgrade awards, another free night or 50,000 points.",
+      "Bookings at The Ritz-Carlton or St. Regis on the card's own rate come with up to $100 to spend at the hotel.",
+      "Global Entry ($120 every four years) or TSA PreCheck is covered when the fee is charged to the card.",
+    ],
+  },
+  {
+    id: "delta-reserve",
+    name: "Delta SkyMiles Reserve",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 650,
+    program: "delta",
+    faceStyle: { base: "#E7E6E2", shade: "#CFCDC7", foil: "#1C2B4A", finish: "metal" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-reserve-american-express-card/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/delta-reserve",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: "Delta Sky Club (15 visits a year), Centurion, Escape",
+    earnRates: [
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 3, where: "on Delta", brand: "delta" }, notes: "Purchases made directly with Delta" },
+      { category: "other", multiplier: 1, cap: null },
+    ],
+    credits: [
+      { id: "reserve-resy", name: "Resy credit", amount: 20, period: "monthly", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Resy restaurants" },
+      { id: "reserve-rideshare", name: "Rideshare", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", enroll: true, notes: "US rideshare rides" },
+      { id: "reserve-stays", name: "Delta Stays credit", amount: 200, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid hotels booked through Delta Stays" },
+    ],
+    perks: [
+      { id: "reserve-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip" },
+      { id: "reserve-lounge", name: "Delta Sky Club", kind: "lounge", notes: "15 visits a year when flying Delta, plus Centurion and Escape lounges" },
+      { id: "reserve-bags", name: "Free checked bags", kind: "bags", notes: "First and second bag on Delta, with Zone 5 boarding" },
+      { id: "reserve-status", name: "Medallion head start", kind: "status", notes: "$2,500 in Medallion Qualification Dollars each year, plus 1 for every $10 spent. Hertz President's Circle too" },
+      { id: "reserve-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "Award flights on Delta cost 15% fewer miles when booked on delta.com or the Fly Delta app (TakeOff 15).",
+      "20% back as a statement credit on Delta in-flight food and drink.",
+      "Global Entry ($120 every four years) or TSA PreCheck is covered when the fee is charged to the card.",
+    ],
+  },
+  {
+    id: "delta-platinum",
+    name: "Delta SkyMiles Platinum",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 350,
+    program: "delta",
+    faceStyle: { base: "#B9BBBF", shade: "#9C9EA3", foil: "#1C2B4A", finish: "metal" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-platinum-american-express-card/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/delta-platinum",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 3, where: "on Delta", brand: "delta" }, notes: "Purchases made directly with Delta" },
+      { category: "hotels", multiplier: 3, cap: null, notes: "Booked direct with the hotel" },
+      { category: "dining", multiplier: 2, cap: null, notes: "Restaurants worldwide" },
+      { category: "groceries", multiplier: 2, cap: null, notes: "US supermarkets" },
+      { category: "other", multiplier: 1, cap: null },
+    ],
+    credits: [
+      { id: "dplat-resy", name: "Resy credit", amount: 10, period: "monthly", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Resy restaurants" },
+      { id: "dplat-rideshare", name: "Rideshare", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", enroll: true, notes: "US rideshare rides" },
+      { id: "dplat-stays", name: "Delta Stays credit", amount: 150, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid hotels booked through Delta Stays" },
+    ],
+    perks: [
+      { id: "dplat-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip" },
+      { id: "dplat-bags", name: "Free checked bags", kind: "bags", notes: "First and second bag on Delta, with priority boarding" },
+      { id: "dplat-status", name: "Medallion head start", kind: "status", notes: "Medallion Qualification Dollars each year, plus 1 for every $20 spent. Hertz Five Star too" },
+      { id: "dplat-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, cell phone, baggage, car rental, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "Award flights on Delta cost 15% fewer miles when booked on delta.com or the Fly Delta app (TakeOff 15).",
+      "Global Entry ($120 every four years) or TSA PreCheck is covered when the fee is charged to the card.",
+    ],
+  },
+  {
+    id: "delta-gold",
+    name: "Delta SkyMiles Gold",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 150,
+    program: "delta",
+    faceStyle: { base: "#C9A55A", shade: "#AD8C47", foil: "#1C2B4A", finish: "metal" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-gold-american-express-card/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/delta-gold",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 2, where: "on Delta", brand: "delta" }, notes: "Purchases made directly with Delta" },
+      { category: "dining", multiplier: 2, cap: null, notes: "Restaurants worldwide" },
+      { category: "groceries", multiplier: 2, cap: null, notes: "US supermarkets" },
+      { category: "other", multiplier: 1, cap: null },
+    ],
+    credits: [
+      { id: "dgold-rideshare", name: "Rideshare", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", enroll: true, notes: "US rideshare rides" },
+      { id: "dgold-stays", name: "Delta Stays credit", amount: 100, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid hotels booked through Delta Stays" },
+      { id: "dgold-flight", name: "Delta flight credit", amount: 200, period: "annual", resetBasis: "calendar", category: "flights", spendToUnlock: 10000, notes: "Paid as a Delta eCredit for Delta flights" },
+    ],
+    perks: [
+      { id: "dgold-bags", name: "Free checked bags", kind: "bags", notes: "First and second bag on Delta, with priority boarding" },
+      { id: "dgold-protection", name: "Purchase and car rental protection", kind: "protection", notes: "Baggage, car rental, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "The annual fee is $0 in the first year, then $150.",
+      "Award flights on Delta cost 15% fewer miles when booked on delta.com or the Fly Delta app (TakeOff 15).",
+      "20% back as a statement credit on Delta in-flight food and drink.",
+    ],
+  },
+  {
+    id: "delta-blue",
+    name: "Delta SkyMiles Blue",
+    issuer: "American Express",
+    network: "amex",
+    annualFee: 0,
+    program: "delta",
+    faceStyle: { base: "#1F5FB0", shade: "#174A8A", foil: "#E8F0FA", finish: "matte" },
+    issuerUrl: "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-blue-american-express-card/",
+    sourceUrl: "https://global.americanexpress.com/card-benefits/terms/delta-blue",
+    lastVerified: "2026-11-01",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 2, where: "on Delta", brand: "delta" }, notes: "Purchases made directly with Delta" },
+      { category: "dining", multiplier: 2, cap: null, notes: "Restaurants worldwide" },
+      { category: "other", multiplier: 1, cap: null },
+    ],
+    credits: [],
+    perks: [
+      { id: "dblue-protection", name: "Purchase and car rental protection", kind: "protection", notes: "Car rental, purchase and extended warranty cover" },
+    ],
+    finePrint: [
+      "20% back as a statement credit on Delta in-flight food and drink.",
     ],
   },
 ];

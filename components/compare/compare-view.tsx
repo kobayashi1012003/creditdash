@@ -165,7 +165,12 @@ export function CompareView({ all }: { all: Card[] }) {
                 key={cat}
                 label={CATEGORY_LABELS[cat]}
                 cards={chosen}
-                value={(c) => `${rateFor(c, cat).multiplier}x`}
+                value={(c) => {
+                  const rate = rateFor(c, cat);
+                  return rate.boost
+                    ? `${rate.multiplier}x, ${rate.boost.multiplier}x ${rate.boost.where}`
+                    : `${rate.multiplier}x`;
+                }}
                 score={(c) => centsFor(c, cat, valuations)}
               />
             ))}

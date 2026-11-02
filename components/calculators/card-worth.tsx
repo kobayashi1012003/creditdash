@@ -18,6 +18,7 @@ import { money, percent, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { CreditConditions } from "@/components/ui/credit-conditions";
 import {
   CardSelect,
   NotAdvice,
@@ -45,13 +46,12 @@ const UNIT: Record<CreditPeriod, [string, string]> = {
 type Benefit =
   | { kind: "periodic"; id: string; name: string; credit: CardCredit; count: number }
   | { kind: "annual"; id: string; name: string; credit: CardCredit }
-  | { kind: "perk"; id: string; name: string; notes?: string; waiting: boolean };
+  | { kind: "perk"; id: string; name: string; notes?: string };
 
 /**
  * Everything the catalog knows a card gives back. Credits carry a cash
- * value; perks do not, so they are worth what the user says. Lounge access
- * is only a sentence in the catalog for now, so it becomes a perk row marked
- * as waiting on card data rather than disappearing.
+ * value; perks (lounges, status, free nights, protection) do not, so they
+ * are worth what the user says.
  */
 function benefitsOf(card: Card): Benefit[] {
   const credits: Benefit[] = card.credits.map((credit) =>
@@ -70,17 +70,7 @@ function benefitsOf(card: Card): Benefit[] {
     id: p.id,
     name: p.name,
     notes: p.notes,
-    waiting: false,
   }));
-  if (card.loungeAccess && !perks.some((p) => p.id === "lounge")) {
-    perks.unshift({
-      kind: "perk",
-      id: "lounge",
-      name: "Lounge access",
-      notes: card.loungeAccess,
-      waiting: true,
-    });
-  }
   return [...credits, ...perks];
 }
 
@@ -353,11 +343,6 @@ function BenefitRow({
           {benefit.notes && (
             <p className="mt-0.5 text-[12px] leading-snug text-muted">{benefit.notes}</p>
           )}
-          {benefit.waiting && (
-            <p className="mt-0.5 text-[12px] leading-snug text-muted">
-              No cash value in the catalog yet.
-            </p>
-          )}
         </div>
         <NumberField
           kind="money"
@@ -376,6 +361,7 @@ function BenefitRow({
   const head = (
     <div className="min-w-0">
       <p className="text-[14px] font-medium leading-snug">{benefit.name}</p>
+      <CreditConditions credit={credit} className="mt-1" />
       <p className="mt-0.5 text-[12px] leading-snug text-muted">
         {money(credit.amount)} {RENEWS[credit.period]}
         {benefit.kind === "periodic" && <>, up to {money(max)} a year</>}

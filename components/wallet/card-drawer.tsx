@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CardFace } from "@/components/ui/card-face";
 import { EarnChip } from "@/components/ui/earn-chip";
+import { CreditConditions } from "@/components/ui/credit-conditions";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { longDate, monthName, usd, usdExact } from "@/lib/format";
@@ -43,6 +44,9 @@ export function CardDrawer({
   const isDesktop = useIsDesktop();
 
   if (!card) return null;
+
+  const perks = card.perks ?? [];
+  const hasLoungePerk = perks.some((p) => p.kind === "lounge");
 
   const annualCreditValue = card.credits.reduce((sum, c) => {
     const per = { monthly: 12, quarterly: 4, semiannual: 2, annual: 1 }[c.period];
@@ -82,7 +86,7 @@ export function CardDrawer({
               {userCard && (
                 <Fact label="Anniversary" value={monthName(userCard.anniversaryMonth)} />
               )}
-              {card.loungeAccess && (
+              {card.loungeAccess && !hasLoungePerk && (
                 <Fact label="Lounges" value={card.loungeAccess} className="col-span-2" />
               )}
             </dl>
@@ -96,10 +100,18 @@ export function CardDrawer({
                     className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-line pb-2 last:border-0 last:pb-0"
                   >
                     <EarnChip category={rate.category} multiplier={rate.multiplier} />
-                    <span className="text-[13px] text-muted">
-                      {rate.notes ??
-                        (rate.cap ? `Up to ${usd(rate.cap)} a year` : "No cap")}
-                    </span>
+                    {rate.boost ? (
+                      // The note describes the boosted channel, so it sits
+                      // under the boost rather than beside the anywhere rate.
+                      <span className="w-full text-[13px] leading-relaxed">
+                        {rate.boost.multiplier}x {rate.boost.where}
+                        {rate.notes && <span className="text-muted">. {rate.notes}</span>}
+                      </span>
+                    ) : (
+                      <span className="text-[13px] text-muted">
+                        {rate.notes ?? (rate.cap ? `Up to ${usd(rate.cap)} a year` : "No cap")}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -126,7 +138,9 @@ export function CardDrawer({
                       className="flex items-baseline justify-between gap-3"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm">{credit.name}</p>
+                        <p className="text-sm">
+                          {credit.name} <CreditConditions credit={credit} className="ml-1" />
+                        </p>
                         <p className="text-[13px] text-muted">
                           {PERIOD_LABEL[credit.period]}, resets on the{" "}
                           {credit.resetBasis === "calendar" ? "calendar year" : "anniversary"}
@@ -144,6 +158,22 @@ export function CardDrawer({
               )}
             </section>
 
+            {perks.length > 0 && (
+              <section>
+                <h3 className="mb-3 text-sm font-medium">Perks</h3>
+                <ul className="space-y-2">
+                  {perks.map((perk) => (
+                    <li key={perk.id} className="border-b border-line pb-2 last:border-0 last:pb-0">
+                      <p className="text-sm">{perk.name}</p>
+                      {perk.notes && (
+                        <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{perk.notes}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {card.finePrint && card.finePrint.length > 0 && (
               <section>
                 <h3 className="mb-3 text-sm font-medium">Worth knowing</h3>
@@ -157,10 +187,23 @@ export function CardDrawer({
               </section>
             )}
 
-            <p className="text-[13px] text-muted">
-              Last checked {longDate(card.lastVerified)}. Benefits change often,
-              so confirm anything that matters with {card.issuer} before you
-              rely on it.
+            <p className="text-[13px] leading-relaxed text-muted">
+              Last checked {longDate(card.lastVerified)}
+              {card.sourceUrl ? (
+                <>
+                  {" "}against{" "}
+                  <a
+                    href={card.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="rounded-control text-ink underline decoration-line underline-offset-4 transition-[text-decoration-color] duration-[var(--cd-dur-hover)] ease-out hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  >
+                    {card.issuer}&apos;s benefit terms
+                  </a>
+                </>
+              ) : null}
+              . Benefits change often, so confirm anything that matters with{" "}
+              {card.issuer} before you rely on it.
             </p>
           </div>
         </div>

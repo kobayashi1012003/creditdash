@@ -1,4 +1,4 @@
-import type { Card, EarnRate, Program } from "@/data/types";
+import type { Brand, Card, EarnRate, Program } from "@/data/types";
 import type { Category } from "@/lib/categories";
 
 /**
@@ -157,17 +157,21 @@ export function awardVsCash(input: AwardInput): AwardResult {
 
 /**
  * Dollars a card would earn on a cash booking: the price at the card's rate
- * for that category, at the user's valuation. One booking never reaches an
- * annual cap, so this is a straight multiplication.
+ * for that category, at the user's valuation. `boosted` uses the rate's
+ * boost, for a booking the user says went through that channel. One
+ * booking never reaches an annual cap, so this is a straight multiplication.
  */
 export function rewardsOnPurchase(
   card: Card,
   category: Category,
   price: number,
   cpp: number,
+  boosted = false,
 ): number {
   if (!(price > 0)) return 0;
-  return pointsToDollars(price * rateFor(card, category).multiplier, cpp);
+  const rate = rateFor(card, category);
+  const multiplier = boosted && rate.boost ? rate.boost.multiplier : rate.multiplier;
+  return pointsToDollars(price * multiplier, cpp);
 }
 
 /* --- is this card worth it? ---------------------------------------------- */
@@ -338,9 +342,22 @@ export function spendWorth(
 export type Ranked = {
   card: Card;
   rate: EarnRate;
+  /** The multiplier this purchase earns: the boost when the brand matches. */
+  multiplier: number;
+  /** True when the brand's boost is the rate being used. */
+  boosted: boolean;
   /** Cents back per dollar spent, at the user's valuation. */
   centsPerDollar: number;
 };
+
+/**
+ * The multiplier a purchase earns. The "anywhere" rate unless the purchase
+ * is known to be with the brand the boost names: a travel-site boost never
+ * applies here, because nothing tells us the booking went through it.
+ */
+export function multiplierFor(rate: EarnRate, brand?: Brand | null): number {
+  return brand && rate.boost?.brand === brand ? rate.boost.multiplier : rate.multiplier;
+}
 
 /**
  * Cards ordered best first for a category.
@@ -353,15 +370,18 @@ export function rankCards(
   cards: Card[],
   category: Category,
   valuations: Valuations,
+  brand?: Brand | null,
 ): Ranked[] {
   return cards
     .map((card) => {
       const rate = rateFor(card, category);
+      const multiplier = multiplierFor(rate, brand);
       return {
         card,
         rate,
-        centsPerDollar:
-          rate.multiplier * centsPerPoint(card.program, valuations),
+        multiplier,
+        boosted: multiplier !== rate.multiplier,
+        centsPerDollar: multiplier * centsPerPoint(card.program, valuations),
       };
     })
     .sort((a, b) => b.centsPerDollar - a.centsPerDollar);
@@ -371,6 +391,7 @@ export function bestCardFor(
   cards: Card[],
   category: Category,
   valuations: Valuations,
+  brand?: Brand | null,
 ): Ranked | null {
-  return rankCards(cards, category, valuations)[0] ?? null;
+  return rankCards(cards, category, valuations, brand)[0] ?? null;
 }

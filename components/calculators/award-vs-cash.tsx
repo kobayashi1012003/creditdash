@@ -43,14 +43,18 @@ export function AwardVsCashCalculator({ cards }: { cards: Card[] }) {
     PROGRAM_GROUP[program] === "hotel" ? "hotels" : "flights",
   );
   const [typedRewards, setTypedRewards] = useState<number | null>(null);
+  const [viaBoost, setViaBoost] = useState(false);
   const moreId = useId();
+  const boostId = useId();
 
   const { cpp } = useValuation(program);
   const valuations = useValuations();
   const rewardCard = rewardCardId ? getCard(rewardCardId) : undefined;
   const rewardCpp = rewardCard ? (valuations[rewardCard.program] ?? 0) : 0;
+  const rewardRate = rewardCard ? rateFor(rewardCard, booking) : undefined;
+  const boosted = viaBoost && !!rewardRate?.boost;
   const cardRewards = rewardCard
-    ? rewardsOnPurchase(rewardCard, booking, cash ?? 0, rewardCpp)
+    ? rewardsOnPurchase(rewardCard, booking, cash ?? 0, rewardCpp, boosted)
     : 0;
   const rewardsForgone = typedRewards ?? cardRewards;
 
@@ -140,13 +144,34 @@ export function AwardVsCashCalculator({ cards }: { cards: Card[] }) {
                       { value: "hotels", label: "Hotel" },
                     ]}
                   />
+                  {rewardRate?.boost && (
+                    <label
+                      htmlFor={boostId}
+                      className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug"
+                    >
+                      <input
+                        id={boostId}
+                        type="checkbox"
+                        checked={viaBoost}
+                        onChange={(e) => setViaBoost(e.target.checked)}
+                        className="mt-0.5 size-4 shrink-0 accent-[var(--cd-text)]"
+                      />
+                      <span>
+                        Booked {rewardRate.boost.where}
+                        <span className="block text-muted">
+                          Earns {rewardRate.boost.multiplier}x instead of {rewardRate.multiplier}x
+                        </span>
+                      </span>
+                    </label>
+                  )}
                   <p className="text-[13px] leading-relaxed text-muted">
-                    {rewardCard.name} earns {rateFor(rewardCard, booking).multiplier}x on{" "}
-                    {CATEGORY_LABELS[booking].toLowerCase()}
+                    {rewardCard.name} earns{" "}
+                    {boosted && rewardRate?.boost ? rewardRate.boost.multiplier : rewardRate?.multiplier}x
+                    {boosted && rewardRate?.boost
+                      ? ` ${rewardRate.boost.where}`
+                      : ` on ${CATEGORY_LABELS[booking].toLowerCase()}`}
                     {cash ? <>, about {money(round2(cardRewards))} on this booking</> : null}.
-                    {rateFor(rewardCard, booking).notes && (
-                      <> {rateFor(rewardCard, booking).notes}.</>
-                    )}
+                    {!boosted && rewardRate?.notes && <> {rewardRate.notes}.</>}
                   </p>
                 </>
               )}

@@ -168,6 +168,11 @@ function SpendField({
         {row.rate.notes && (
           <p className="mt-1.5 text-[12px] leading-snug text-muted">{row.rate.notes}</p>
         )}
+        {row.rate.boost && (
+          <p className="mt-0.5 text-[12px] leading-snug text-muted">
+            {row.rate.boost.multiplier}x {row.rate.boost.where}, not counted here
+          </p>
+        )}
         {row.capReached && (
           <p className="mt-0.5 text-[12px] font-medium leading-snug text-ink">
             Cap reached. Extra spend earns {row.overflowRate}x.
