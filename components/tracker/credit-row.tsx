@@ -15,6 +15,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /**
+ * Months sit in a tight grid, a row of twelve once there is room. Longer
+ * periods get wider slots spread across the row, each captioned with the
+ * months it covers.
+ */
+const SLOT_LAYOUT: Record<CardCredit["period"], string> = {
+  monthly: "grid grid-cols-[repeat(6,minmax(0,2.5rem))] gap-x-1.5 gap-y-3 md:grid-cols-[repeat(12,minmax(0,2.5rem))]",
+  quarterly: "grid max-w-md grid-cols-4 gap-2",
+  semiannual: "grid max-w-xs grid-cols-2 gap-3",
+  annual: "grid max-w-[12rem] grid-cols-1",
+};
+
+/**
  * One credit: the period slots, what has been used, and when it resets.
  *
  * Tapping a slot marks the whole credit used, which is the common case.
@@ -102,6 +114,11 @@ export function CreditRow({
             )
           }
           slotLabel={(i) => state.windows[i]?.label ?? `Period ${i + 1}`}
+          caption={(i) => {
+            const label = state.windows[i]?.label ?? "";
+            return credit.period === "monthly" ? label.slice(0, 3) : label;
+          }}
+          className={SLOT_LAYOUT[credit.period]}
         />
       )}
     </li>

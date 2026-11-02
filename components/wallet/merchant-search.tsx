@@ -8,6 +8,7 @@ import { searchMerchants } from "@/lib/merchants";
 import { CATEGORY_LABELS, categoryStyle, type Category } from "@/lib/categories";
 import { bestCardFor } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 /**
  * "Where are you buying?" under the category buttons. Typing a store finds
@@ -143,10 +144,11 @@ function CategoryTag({ category }: { category: Category }) {
     <span
       style={category === "other" ? undefined : categoryStyle(category)}
       className={cn(
-        "shrink-0 rounded-control px-2 py-0.5 text-[12px] font-medium",
+        "inline-flex shrink-0 items-center gap-1 rounded-control px-2 py-0.5 text-[12px] font-medium",
         category === "other" && "border border-line text-muted",
       )}
     >
+      <CategoryIcon category={category} size={12} />
       {CATEGORY_LABELS[category]}
     </span>
   );

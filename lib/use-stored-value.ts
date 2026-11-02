@@ -8,6 +8,9 @@ import { useCallback, useSyncExternalStore } from "react";
  * last showed); nothing that must survive or follow the account.
  */
 
+/** Which card the Tracker shows. The card drawer's "Open tracker" sets it. */
+export const TRACKER_CARD_KEY = "creditdash:tracker-card";
+
 const listeners = new Set<() => void>();
 
 function subscribe(onChange: () => void) {

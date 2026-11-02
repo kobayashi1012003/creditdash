@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowSquareOutIcon } from "@phosphor-icons/react";
+import Link from "next/link";
+import { ArrowSquareOutIcon, ListChecksIcon } from "@phosphor-icons/react";
 import {
   Drawer,
   DrawerClose,
@@ -17,6 +18,7 @@ import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { longDate, monthName, usd, usdExact } from "@/lib/format";
 import { useIsDesktop } from "@/lib/use-media-query";
+import { TRACKER_CARD_KEY, useStoredValue } from "@/lib/use-stored-value";
 
 const PERIOD_LABEL: Record<string, string> = {
   monthly: "each month",
@@ -42,6 +44,7 @@ export function CardDrawer({
   onOpenChange: (open: boolean) => void;
 }) {
   const isDesktop = useIsDesktop();
+  const [, setTrackerCard] = useStoredValue(TRACKER_CARD_KEY);
 
   if (!card) return null;
 
@@ -73,6 +76,18 @@ export function CardDrawer({
               {card.issuer}
               {userCard?.nickname ? ` · ${card.name}` : ""}
             </DrawerDescription>
+            {userCard && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 self-start"
+                nativeButton={false}
+                render={<Link href="/tracker" onClick={() => setTrackerCard(card.id)} />}
+              >
+                <ListChecksIcon size={15} />
+                Open tracker
+              </Button>
+            )}
           </DrawerHeader>
 
           <div className="space-y-7 px-5 py-6">

@@ -17,6 +17,8 @@ export type ReviewRow = {
   stale: boolean;
   /** The issuer terms page it was checked against, if one is recorded. */
   source: string | null;
+  /** Limited-time credits whose end date has passed: due for removal. */
+  ended: string[];
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -28,16 +30,26 @@ function daysBetween(fromIso: string, to: Date): number {
   return Math.max(0, Math.round((today - from) / DAY_MS));
 }
 
+/** True once the whole of `endsOn` (an ISO date, its last day) is past. */
+export function endedBy(endsOn: string, today = new Date()): boolean {
+  const [y, m, d] = endsOn.split("-").map(Number);
+  return today.getTime() >= new Date(y, m - 1, d + 1).getTime();
+}
+
 /** Every card, stalest first, then by name. */
 export function reviewCatalog(cards: Card[], today = new Date()): ReviewRow[] {
   return cards
     .map((card) => {
       const daysSince = daysBetween(card.lastVerified, today);
+      const ended = (card.credits ?? [])
+        .filter((c) => c.endsOn && endedBy(c.endsOn, today))
+        .map((c) => c.name);
       return {
         card,
         daysSince,
-        stale: daysSince >= STALE_AFTER_DAYS,
+        stale: daysSince >= STALE_AFTER_DAYS || ended.length > 0,
         source: card.sourceUrl ?? null,
+        ended,
       };
     })
     .sort((a, b) => b.daysSince - a.daysSince || a.card.name.localeCompare(b.card.name));

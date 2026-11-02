@@ -10,6 +10,7 @@ import {
 } from "@/lib/categories";
 import type { Ranked } from "@/lib/calculators/engine";
 import { cn } from "@/lib/cn";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 /**
  * The category buttons. Shared by the landing hero and the Wallet, so the
@@ -58,7 +59,7 @@ export function CategoryBar({
             onClick={() => onChange(selected ? null : c)}
             style={selected ? categoryStyle(c) : undefined}
             className={cn(
-              "rounded-control border font-medium",
+              "inline-flex items-center gap-1.5 rounded-control border font-medium",
               compact ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-sm",
               "transition-[background-color,border-color,color,transform]",
               "duration-[var(--cd-dur-press)] ease-out",
@@ -70,6 +71,7 @@ export function CategoryBar({
                 : "border-line bg-surface text-muted hover:border-muted hover:text-ink",
             )}
           >
+            <CategoryIcon category={c} size={compact ? 14 : 15} className="shrink-0" />
             {CATEGORY_LABELS[c]}
           </button>
         );

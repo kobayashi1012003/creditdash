@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { reviewCatalog, STALE_AFTER_DAYS } from "./catalog-review.ts";
+import { endedBy, reviewCatalog, STALE_AFTER_DAYS } from "./catalog-review.ts";
 import { CARDS } from "../data/cards.seed.ts";
 import type { Card } from "../data/types.ts";
 
@@ -37,6 +37,24 @@ describe("reviewCatalog", () => {
     assert.equal(row.source, "https://example.test/terms");
     assert.equal(reviewCatalog([card("y", "2026-11-01")], today)[0].source, null);
   });
+
+  test("a limited credit counts as ended the day after its last day", () => {
+    assert.equal(endedBy("2026-10-31", today), true);
+    assert.equal(endedBy("2026-11-01", today), false);
+  });
+
+  test("flags a fresh card whose limited credit has ended", () => {
+    const fresh = {
+      ...card("x", "2026-11-01"),
+      credits: [
+        { id: "a", name: "Lyft", endsOn: "2026-10-31" },
+        { id: "b", name: "Peloton", endsOn: "2027-12-31" },
+      ],
+    } as Card;
+    const [row] = reviewCatalog([fresh], today);
+    assert.deepEqual(row.ended, ["Lyft"]);
+    assert.equal(row.stale, true);
+  });
 });
 
 describe("the catalog itself", () => {
@@ -47,6 +65,14 @@ describe("the catalog itself", () => {
     assert.equal(new Set(credits).size, credits.length);
     const perks = CARDS.flatMap((c) => (c.perks ?? []).map((x) => x.id));
     assert.equal(new Set(perks).size, perks.length);
+  });
+
+  test("every end date is a real ISO date", () => {
+    for (const c of CARDS) {
+      for (const x of c.credits) {
+        if (x.endsOn) assert.match(x.endsOn, /^\d{4}-\d{2}-\d{2}$/, x.id);
+      }
+    }
   });
 
   test("a boost is always above the rate it boosts", () => {

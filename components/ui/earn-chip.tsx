@@ -4,26 +4,42 @@ import {
   categoryStyle,
   type Category,
 } from "@/lib/categories";
+import { CategoryIcon } from "@/components/ui/category-icon";
 
 type EarnChipProps = {
   category: Category;
   /** Points per dollar, e.g. 4 renders as "4x Dining". */
   multiplier: number;
+  /**
+   * Where the rate applies when it is not everywhere ("through Capital One
+   * Travel"). Marks the chip with an asterisk; the caller prints the
+   * matching footnote.
+   */
+  where?: string;
   className?: string;
 };
 
 /** The earn rate badge that sits under a card face in the wallet. */
-export function EarnChip({ category, multiplier, className }: EarnChipProps) {
+export function EarnChip({ category, multiplier, where, className }: EarnChipProps) {
   return (
     <span
       style={categoryStyle(category)}
       className={cn(
-        "inline-flex items-center rounded-control px-2.5 py-1 text-[13px] font-medium",
+        "relative inline-flex items-center gap-1.5 rounded-control px-2.5 py-1 text-[13px] font-medium",
         category === "other" && "border border-line",
         className,
       )}
     >
-      {multiplier}x {CATEGORY_LABELS[category]}
+      <CategoryIcon category={category} size={14} className="shrink-0" />
+      <span>
+        {multiplier}x {CATEGORY_LABELS[category]}
+        {where && (
+          <>
+            <span aria-hidden>*</span>
+            <span className="sr-only">, {where}</span>
+          </>
+        )}
+      </span>
     </span>
   );
 }

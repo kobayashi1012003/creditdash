@@ -571,6 +571,28 @@ read-only `/admin` page tracks when each card was last checked.
   Platinum's MQD head start amount was not stated on its page and is left
   out.
 
+## Owner's fixes (2 November 2026)
+
+- **Wallet chips show the best rate a card earns**, travel site or brand
+  included, with an asterisk and a footnote saying where ("10x Hotels*",
+  "* through Capital One Travel"). Ranking and the answer line still use
+  the anywhere rate. `topRates` in `wallet-view.tsx`.
+- **Category icons** come from `components/ui/category-icon.tsx`, one
+  Phosphor glyph per category, on chips, the category row and store tags.
+- **Limited-time credits** carry `endsOn` (the last day) and show "Limited,
+  ends Sep 2027" in ink wherever `CreditConditions` renders. `/admin` flags
+  a card once one of its credits has ended, so it gets removed.
+- **The Tracker's calculator panel starts collapsed.** Opening it is
+  remembered in sessionStorage (`useStoredFlag(..., { session: true })`)
+  until the tab closes; `signOut` clears it (`forgetSessionFlags`).
+- **Slots are captioned** (Jan, Jan to Jun), fill from the bottom for a
+  partial amount, and take press-and-slide: the first slot decides fill or
+  clear. The first slot only changes on release or on sliding, so a
+  vertical scroll that starts on a slot (`touch-action: pan-y`) changes
+  nothing. Keyboard toggles through `click` with `detail === 0`.
+- **The card drawer's "Open tracker"** sets `TRACKER_CARD_KEY` and goes to
+  `/tracker`.
+
 ## Calculators and Points (30 October 2026)
 
 Built from `docs/calculators-upgrade.md`. The three calculators are Award

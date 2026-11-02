@@ -4,6 +4,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { Card, PointBalance, Program, UserCard } from "@/data/types";
 import { CARDS, getCard } from "@/data/cards.seed";
 import { cardLimit, type Plan } from "@/lib/plan";
+import { forgetSessionFlags } from "@/lib/use-stored-flag";
 import {
   mergeValuations,
   valuationOf,
@@ -438,6 +439,7 @@ export async function sendSignInLink(email: string): Promise<string | null> {
 
 export async function signOut(): Promise<void> {
   await (await supabase())?.auth.signOut();
+  forgetSessionFlags();
   switchToLocal();
 }
 

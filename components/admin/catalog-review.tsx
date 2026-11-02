@@ -74,7 +74,7 @@ export function CatalogReview() {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {rows.map(({ card, daysSince, stale, source }) => (
+            {rows.map(({ card, daysSince, stale, source, ended }) => (
               <tr key={card.id} className="align-top">
                 <th scope="row" className="px-5 py-3 font-normal">
                   <span className="block">{card.name}</span>
@@ -84,7 +84,13 @@ export function CatalogReview() {
                 <td className="px-3 py-3">
                   <span className="block tabular-nums">{longDate(card.lastVerified)}</span>
                   <span className={cn("block text-[12px]", stale ? "font-medium text-ink" : "text-muted")}>
-                    {stale ? `Due, ${daysSince} days ago` : daysSince === 0 ? "Today" : `${daysSince} days ago`}
+                    {ended.length > 0
+                      ? `Ended: ${ended.join(", ")}`
+                      : stale
+                        ? `Due, ${daysSince} days ago`
+                        : daysSince === 0
+                          ? "Today"
+                          : `${daysSince} days ago`}
                   </span>
                 </td>
                 <td className="py-3 pr-5 pl-3 text-right">
@@ -108,7 +114,9 @@ export function CatalogReview() {
       <p className="max-w-[64ch] text-[13px] leading-relaxed text-muted">
         To update a card, change it in <code className="text-ink">data/cards.seed.ts</code> with
         the terms page open, set its <code className="text-ink">lastVerified</code> date, and give
-        any credit whose amount or period changed a new id.
+        any credit whose amount or period changed a new id. A limited-time credit carries
+        <code className="text-ink"> endsOn</code>; once that date passes, the card shows here as
+        due until the credit is removed.
       </p>
     </div>
   );

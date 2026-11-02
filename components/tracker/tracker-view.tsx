@@ -18,7 +18,7 @@ import {
   type WalletEntry,
 } from "@/lib/data";
 import type { CreditUsage } from "@/lib/data/schema";
-import { useStoredValue } from "@/lib/use-stored-value";
+import { TRACKER_CARD_KEY, useStoredValue } from "@/lib/use-stored-value";
 import { useRovingFocus } from "@/lib/use-roving-focus";
 import { Widget } from "@/components/ui/widget";
 import { ProgressRing } from "@/components/ui/progress-ring";
@@ -27,7 +27,6 @@ import { CreditRow } from "@/components/tracker/credit-row";
 import { Button } from "@/components/ui/button";
 
 /** Which card the Tracker last showed, in this browser. */
-const STORED_CARD = "creditdash:tracker-card";
 
 /** The app's ease-out curve (--cd-ease-out), for Motion, which takes numbers. */
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -38,7 +37,7 @@ export function TrackerView() {
   const balances = usePointBalances();
   const valuations = useValuations();
   const isLoading = useIsLoading();
-  const [storedId, setStoredId] = useStoredValue(STORED_CARD);
+  const [storedId, setStoredId] = useStoredValue(TRACKER_CARD_KEY);
   const reduceMotion = useReducedMotion();
 
   if (isLoading) return <TrackerSkeleton />;

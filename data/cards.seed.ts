@@ -119,7 +119,8 @@ export const CARDS: Card[] = [
     program: "chase-ur",
     faceStyle: { base: "#1B2A4A", shade: "#121D35", foil: "#D8DEE9", finish: "metal" },
     issuerUrl: "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve",
-    lastVerified: "2026-10-28",
+    lastVerified: "2026-11-02",
+    sourceUrl: "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve",
     foreignTransactionFee: 0,
     loungeAccess: "Sapphire Lounge, Priority Pass, Air Canada Maple Leaf",
     earnRates: [
@@ -131,11 +132,12 @@ export const CARDS: Card[] = [
     credits: [
       { id: "csr-travel", name: "Travel credit", amount: 300, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Applies automatically to travel purchases" },
       { id: "csr-edit", name: "The Edit hotel credit", amount: 500, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Up to $250 a stay. Prepaid stays of two nights or more" },
+      { id: "csr-select-hotels", name: "Select hotel brands credit", amount: 250, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid Chase Travel stays of two nights or more with the participating brands", endsOn: "2026-12-31" },
       { id: "csr-dining", name: "Exclusive Tables dining", amount: 150, period: "semiannual", resetBasis: "calendar", category: "dining", notes: "Only Exclusive Tables restaurants on OpenTable" },
-      { id: "csr-stubhub", name: "StubHub", amount: 150, period: "semiannual", resetBasis: "calendar", notes: "Activate first. StubHub or viagogo, no gift cards" },
-      { id: "csr-doordash", name: "DoorDash promos", amount: 35, period: "monthly", resetBasis: "calendar", category: "dining", notes: "$15 on one order plus two $10 non-restaurant promos. No rollover" },
-      { id: "csr-lyft", name: "Lyft", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Add the card in the Lyft app. Rides only" },
-      { id: "csr-peloton", name: "Peloton membership", amount: 10, period: "monthly", resetBasis: "calendar", notes: "Activate first" },
+      { id: "csr-stubhub", name: "StubHub", amount: 150, period: "semiannual", resetBasis: "calendar", notes: "StubHub or viagogo, no gift cards", enroll: true, endsOn: "2027-12-31" },
+      { id: "csr-doordash", name: "DoorDash promos", amount: 35, period: "monthly", resetBasis: "calendar", category: "dining", notes: "$15 on one order plus two $10 non-restaurant promos. Needs DashPass, free with the card. No rollover", endsOn: "2029-12-31" },
+      { id: "csr-lyft", name: "Lyft", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Add the card in the Lyft app. Rides only", endsOn: "2027-09-30" },
+      { id: "csr-peloton", name: "Peloton membership", amount: 10, period: "monthly", resetBasis: "calendar", notes: "Eligible Peloton memberships", enroll: true, endsOn: "2027-12-31" },
     ],
     perks: [
       { id: "csr-lounge", name: "Lounge access", kind: "lounge", notes: "Sapphire Lounge, Priority Pass and Air Canada Maple Leaf" },
@@ -709,7 +711,7 @@ export const DEMO_USAGE: Record<string, number[]> = {
   // Sapphire Reserve, opened November 2021.
   "csr-travel": [300],
   "csr-dining": [150, 85],
-  "csr-stays": [250, 0],
+  "csr-edit": [250],
   // Venture X, opened June 2024.
   "vx-travel": [300],
 };

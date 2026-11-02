@@ -598,11 +598,23 @@ function WalletCard({
           )}
         </div>
         {!editing && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {top.map((rate) => (
-              <EarnChip key={rate.category} category={rate.category} multiplier={rate.multiplier} />
-            ))}
-          </div>
+          <>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {top.rates.map((rate) => (
+                <EarnChip
+                  key={rate.category}
+                  category={rate.category}
+                  multiplier={rate.multiplier}
+                  where={rate.where}
+                />
+              ))}
+            </div>
+            {top.wheres.length > 0 && (
+              <p aria-hidden className="mt-1.5 text-[12px] leading-snug text-muted">
+                * {top.wheres.join("; ")}
+              </p>
+            )}
+          </>
         )}
       </div>
     </li>
@@ -610,19 +622,30 @@ function WalletCard({
 }
 
 /**
- * The two or three rates worth showing under a card in the grid: those
- * above its everything-else rate. A category listed only for its travel
- * site boost (1x hotels, 5x through the portal) would read as a reason to
- * use the card, so it is left out; with no bonus at all, the base rate
- * shows on its own.
+ * The two or three rates worth showing under a card in the grid: the
+ * highest it earns in each category, above its everything-else rate. A
+ * rate that only applies through the issuer's travel site or at one brand
+ * is shown at that rate with an asterisk, and the footnote says where
+ * (owner's choice, 2 November 2026). Ranking still uses the anywhere rate.
+ * With no bonus at all, the base rate shows on its own.
  */
 function topRates(card: Card) {
   const base = rateFor(card, "other");
-  const bonus = card.earnRates
-    .filter((r) => r.category !== "other" && r.multiplier > base.multiplier)
+  const rates = card.earnRates
+    .filter((r) => r.category !== "other")
+    .map((r) =>
+      r.boost
+        ? { category: r.category, multiplier: r.boost.multiplier, where: r.boost.where }
+        : { category: r.category, multiplier: r.multiplier, where: undefined },
+    )
+    .filter((r) => r.multiplier > base.multiplier)
     .sort((a, b) => b.multiplier - a.multiplier)
     .slice(0, 3);
-  return bonus.length > 0 ? bonus : [base];
+  if (rates.length === 0) {
+    return { rates: [{ category: base.category, multiplier: base.multiplier, where: undefined }], wheres: [] };
+  }
+  const wheres = [...new Set(rates.flatMap((r) => (r.where ? [r.where] : [])))];
+  return { rates, wheres };
 }
 
 /**

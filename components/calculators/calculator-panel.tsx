@@ -20,14 +20,13 @@ const STORAGE_KEY = "creditdash:calc-panel-open";
  * Tracker scrolls. A slim tab at the edge collapses and restores it.
  * Mobile: a floating button opens it as a bottom sheet, swipe down to close.
  *
- * Whether it was left open is remembered per browser.
+ * Collapsed until the user opens it (owner's choice, 2 November 2026). Once
+ * opened it stays open until the tab closes or the user signs out.
  */
 export function CalculatorPanel() {
   const cards = useWallet().map((e) => e.card);
   const isDesktop = useIsDesktop();
-  // Open by default where it costs nothing (a docked desktop column) and
-  // closed by default where it would cover the page the user came for.
-  const [open, persist] = useStoredFlag(STORAGE_KEY, isDesktop);
+  const [open, persist] = useStoredFlag(STORAGE_KEY, false, { session: true });
   const [active, setActive] = useState<string>(CALCULATORS[0].id);
   const isLoading = useIsLoading();
 

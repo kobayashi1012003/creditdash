@@ -85,6 +85,12 @@ export type CardCredit = {
   enroll?: boolean;
   /** Only paid after this much spend on the card in a calendar year. */
   spendToUnlock?: number;
+  /**
+   * A limited-time credit's last day (ISO). It ends then and does not
+   * renew, so it is labelled everywhere it appears. Absent for credits that
+   * come with the card for as long as the card has them.
+   */
+  endsOn?: string;
 };
 
 export type PerkKind =
