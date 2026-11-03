@@ -77,7 +77,7 @@ off and returns 404.
 
 Phase 6 was verified on the live site: the owner signed in with Google on a
 phone, changed the Tracker there, and saw it on another device after a
-reload. `npm run test:rls` passes 56 checks (Phase 7 added eleven; the 2 November security review added unfiltered reads, every table signed out, and cross-user updates). See "Accounts" under the data
+reload. `npm run test:rls` passes 55 checks (Phase 7 added eleven; the 2 November security review added unfiltered reads, every table signed out, and cross-user updates). See "Accounts" under the data
 layer for how it works.
 
 Phase 5 in more detail, since later phases build on these:
