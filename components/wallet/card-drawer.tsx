@@ -99,7 +99,10 @@ export function CardDrawer({
                 value={card.foreignTransactionFee === 0 ? "No fee" : `${card.foreignTransactionFee}%`}
               />
               {userCard && (
-                <Fact label="Anniversary" value={monthName(userCard.anniversaryMonth)} />
+                <Fact
+                  label="Anniversary"
+                  value={`${monthName(userCard.anniversaryMonth)}${userCard.anniversaryDay ? ` ${userCard.anniversaryDay}` : ""}`}
+                />
               )}
               {card.loungeAccess && !hasLoungePerk && (
                 <Fact label="Lounges" value={card.loungeAccess} className="col-span-2" />

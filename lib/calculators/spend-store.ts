@@ -2,7 +2,6 @@
 
 import { useSyncExternalStore } from "react";
 import type { Category } from "@/lib/categories";
-import type { Timeframe } from "@/lib/calculators/engine";
 
 /**
  * What has been typed into "What is my spend worth?", per card, held in
@@ -16,11 +15,10 @@ import type { Timeframe } from "@/lib/calculators/engine";
 export type SpendInputs = Partial<Record<Category, number | null>>;
 
 type State = {
-  timeframe: Timeframe;
   byCard: Record<string, SpendInputs>;
 };
 
-let state: State = { timeframe: "month", byCard: {} };
+let state: State = { byCard: {} };
 const listeners = new Set<() => void>();
 const EMPTY: SpendInputs = {};
 
@@ -44,24 +42,11 @@ export function setSpendInput(cardId: string, category: Category, value: number 
   emit();
 }
 
-export function setTimeframe(timeframe: Timeframe) {
-  state = { ...state, timeframe };
-  emit();
-}
-
 export function useSpendInputs(cardId: string): SpendInputs {
   return useSyncExternalStore(
     subscribe,
     () => state.byCard[cardId] ?? EMPTY,
     () => EMPTY,
-  );
-}
-
-export function useTimeframe(): Timeframe {
-  return useSyncExternalStore(
-    subscribe,
-    () => state.timeframe,
-    () => "month" as const,
   );
 }
 

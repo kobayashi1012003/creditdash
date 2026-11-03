@@ -77,7 +77,7 @@ off and returns 404.
 
 Phase 6 was verified on the live site: the owner signed in with Google on a
 phone, changed the Tracker there, and saw it on another device after a
-reload. `npm run test:rls` passes 51 checks (Phase 7 added eleven; the 2 November security review added unfiltered reads, every table signed out, and cross-user updates). See "Accounts" under the data
+reload. `npm run test:rls` passes 56 checks (Phase 7 added eleven; the 2 November security review added unfiltered reads, every table signed out, and cross-user updates). See "Accounts" under the data
 layer for how it works.
 
 Phase 5 in more detail, since later phases build on these:
@@ -572,6 +572,39 @@ read-only `/admin` page tracks when each card was last checked.
   overstates someone above that in total (said in its fine print). Delta
   Platinum's MQD head start amount was not stated on its page and is left
   out.
+
+## Tracker customisation, auto-fill, anniversary days (3 November 2026)
+
+- **Customize** (`components/tracker/customize-drawer.tsx`, opened from
+  the card's Tracker widget): drag credits into order, hide them (hidden
+  credits leave the totals too), and pick a colour per credit. Stored per
+  card as `UserCard.prefs` (`TrackerPrefs`; `user_cards.credit_prefs`
+  jsonb), so it follows the account. `lib/tracker-prefs.ts` applies it;
+  `cleanPrefs` in `schema.ts` validates whatever is read.
+- **Auto-fill (Premium, `hasFeature(plan, "autofill")`).** A credit set
+  to auto-fill is ticked in full as each period opens, in the device's
+  local time. `lib/credits/autofill.ts` is pure and tested (139 tests run
+  in Pacific, Tokyo, Auckland and London time): each entry stores
+  `through`, the first day of the last period filled, as a local
+  `YYYY-MM-DD`, so switching on fills the open period only, a device
+  that was off catches up every missed period, and an unticked period
+  stays unticked. `runAutoFill` in `lib/data` writes each period, then
+  moves `through` on only if the write held. `AutoFillRunner` in the app
+  shell runs it on load, a second after each local midnight, and on
+  returning to the foreground. Nothing runs on a server. On Free the
+  choices are kept and nothing is ticked.
+- **Anniversary days.** `UserCard.anniversaryDay` (`user_cards.
+  anniversary_day`, null = the 1st). Set from "Opened on" on the
+  Tracker. Windows then start on that day, clamped to short months;
+  storage keys still name the cycle by month, so no data moves.
+- **Calculators fold away** on the Calculators page, remembered per
+  browser; the body folds on grid rows with `overflow: clip`, which keeps
+  the sticky verdicts working. **What is my spend worth? has no
+  timeframe**: amounts are read as a year for the caps.
+- **`addCard` records the local date**, not `toISOString`'s UTC one.
+- Migration `20261103000000_tracker_prefs.sql` adds both columns. Until it
+  runs, accounts load fine but saving a layout or auto-fill fails with a
+  notice.
 
 ## Plans, sign-in first, demo banner (2 November 2026)
 

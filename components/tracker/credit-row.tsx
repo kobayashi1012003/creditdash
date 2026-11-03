@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { PencilSimpleIcon } from "@phosphor-icons/react";
+import { LightningIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import type { CardCredit } from "@/data/types";
-import { categoryStyle } from "@/lib/categories";
-import { creditState } from "@/lib/credits";
+import { creditState, type Anniversary } from "@/lib/credits";
 import type { CreditUsage } from "@/lib/data/schema";
 import { setCreditUsed } from "@/lib/data";
 import { money, usd, usdExact } from "@/lib/format";
@@ -35,18 +34,21 @@ const SLOT_LAYOUT: Record<CardCredit["period"], string> = {
  */
 export function CreditRow({
   credit,
-  anniversaryMonth,
+  anniversary,
   usage,
+  tint,
+  autoFill = false,
 }: {
   credit: CardCredit;
-  anniversaryMonth: number;
+  anniversary: Anniversary;
   usage: CreditUsage;
+  /** Filled slots' colour: the user's choice or the category's. */
+  tint: string;
+  /** Ticked automatically as each period opens (Premium). */
+  autoFill?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const state = creditState(credit, anniversaryMonth, usage);
-  const tint = credit.category
-    ? categoryStyle(credit.category).color
-    : "var(--cd-text)";
+  const state = creditState(credit, anniversary, usage);
 
   const resetsOn =
     credit.resetBasis === "calendar"
@@ -59,6 +61,12 @@ export function CreditRow({
         <div className="min-w-0">
           <p className="text-[15px]">
             {credit.name} <CreditConditions credit={credit} className="ml-1" />
+            {autoFill && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-control bg-panel px-1.5 py-px align-middle text-[11.5px] leading-snug text-muted">
+                <LightningIcon size={11} weight="fill" aria-hidden />
+                Auto-fill
+              </span>
+            )}
           </p>
           <p className="text-[13px] text-muted">
             {usd(credit.amount)} per period, resets on {resetsOn}

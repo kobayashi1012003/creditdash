@@ -45,16 +45,20 @@ export type CreditState = {
   expiringSoon: boolean;
 };
 
+/** Where a card's anniversary falls: a UserCard has both fields. */
+export type Anniversary = { anniversaryMonth: number; anniversaryDay?: number };
+
 export function creditState(
   credit: CardCredit,
-  anniversaryMonth: number,
+  anniversary: Anniversary,
   usage: CreditUsage,
   on = new Date(),
 ): CreditState {
   const options = {
     period: credit.period,
     resetBasis: credit.resetBasis,
-    anniversaryMonth,
+    anniversaryMonth: anniversary.anniversaryMonth,
+    anniversaryDay: anniversary.anniversaryDay,
     on,
   } as const;
 
@@ -78,7 +82,7 @@ export function creditState(
  */
 export function usedInRecentYear(
   credit: CardCredit,
-  anniversaryMonth: number,
+  anniversary: Anniversary,
   usage: CreditUsage,
   on = new Date(),
 ): number {
@@ -86,7 +90,8 @@ export function usedInRecentYear(
   const used = recentWindows({
     period: credit.period,
     resetBasis: credit.resetBasis,
-    anniversaryMonth,
+    anniversaryMonth: anniversary.anniversaryMonth,
+    anniversaryDay: anniversary.anniversaryDay,
     on,
   }).reduce((sum, w) => sum + (row[w.key] ?? 0), 0);
   return Math.min(used, annualValue(credit));

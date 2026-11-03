@@ -11,7 +11,7 @@ import {
   spendWorth,
   type BenefitUse,
 } from "@/lib/calculators/engine";
-import { toSpend, useSpendInputs, useTimeframe } from "@/lib/calculators/spend-store";
+import { toSpend, useSpendInputs } from "@/lib/calculators/spend-store";
 import { usedInRecentYear } from "@/lib/credits";
 import { useCreditUsage, useValuation, useWallet } from "@/lib/data";
 import { money, percent, usd } from "@/lib/format";
@@ -137,9 +137,9 @@ function CardWorthBody({ card }: { card: Card }) {
   const usage = useCreditUsage();
 
   const spendInputs = useSpendInputs(card.id);
-  const timeframe = useTimeframe();
   const { cpp } = useValuation(card.program);
-  const spend = spendWorth(card, toSpend(spendInputs), timeframe, cpp);
+  // The spend calculator has no timeframe, so its amounts count as a year.
+  const spend = spendWorth(card, toSpend(spendInputs), "year", cpp);
   const rewardsPerYear = pointsToDollars(spend.pointsPerYear, cpp);
 
   const result = cardWorth(
@@ -158,7 +158,7 @@ function CardWorthBody({ card }: { card: Card }) {
     const next: Record<string, number> = {};
     for (const b of benefits) {
       if (b.kind === "perk") continue;
-      const used = usedInRecentYear(b.credit, owned.userCard.anniversaryMonth, usage);
+      const used = usedInRecentYear(b.credit, owned.userCard, usage);
       next[b.id] =
         b.kind === "periodic" ? Math.round((used / b.credit.amount) * 10) / 10 : used;
     }

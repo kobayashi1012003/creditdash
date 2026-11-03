@@ -1,6 +1,7 @@
 import type { Category } from "@/lib/categories";
 import type { Program } from "@/data/programs";
 import type { CreditPeriod, ResetBasis } from "@/lib/credits/reset";
+import type { AutoFillEntry } from "@/lib/credits/autofill";
 
 /**
  * Shapes mirror the tables in creditdash-plan.md section 6, so Phase 6 can
@@ -144,13 +145,34 @@ export type Card = {
   finePrint?: string[];
 };
 
+/** Colours a tracked credit can be drawn in, besides its category's. */
+export const TRACKER_COLORS = ["mint", "lavender", "peach", "sky", "butter", "ink"] as const;
+export type TrackerColor = (typeof TRACKER_COLORS)[number];
+
+/**
+ * How someone has arranged one card's Tracker. Every field is optional; an
+ * empty object is the catalog's order, everything shown, category colours,
+ * nothing auto-filled. Keys are credit ids.
+ */
+export type TrackerPrefs = {
+  /** Credit ids in the order to show them. Credits not listed follow, in catalog order. */
+  order?: string[];
+  hidden?: string[];
+  colors?: Record<string, TrackerColor>;
+  /** Premium. See lib/credits/autofill.ts. */
+  autofill?: Record<string, AutoFillEntry>;
+};
+
 /** A card the demo user owns. Mirrors `user_cards`. */
 export type UserCard = {
   cardId: string;
   nickname?: string;
   openedOn: string;
   anniversaryMonth: number;
+  /** 1 to 31, for credits that reset on the exact anniversary. Absent means the 1st. */
+  anniversaryDay?: number;
   sortOrder: number;
+  prefs?: TrackerPrefs;
 };
 
 export type PointBalance = {

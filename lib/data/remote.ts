@@ -1,10 +1,10 @@
 "use client";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { PointBalance, Program, UserCard } from "@/data/types";
+import type { PointBalance, Program, TrackerPrefs, UserCard } from "@/data/types";
 import { getCard } from "@/data/cards.seed";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
-import { SCHEMA_VERSION, type CreditUsage, type Persisted } from "@/lib/data/schema";
+import { cleanUserCard, SCHEMA_VERSION, type CreditUsage, type Persisted } from "@/lib/data/schema";
 
 /**
  * The Supabase side of lib/data: reading an account into the same Persisted
@@ -44,7 +44,9 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
     db.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
     db
       .from("user_cards")
-      .select("id, card_id, nickname, opened_on, anniversary_month, sort_order")
+      // "*" so a database without the anniversary_day and credit_prefs
+      // migration still loads; the fields are simply absent.
+      .select("*")
       .eq("user_id", userId)
       .order("sort_order"),
     db
@@ -68,15 +70,17 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
   const rowIds = new Map<string, string>();
   const userCards: UserCard[] = (cards.data ?? []).map((c, i) => {
     rowIds.set(c.card_id, c.id);
-    return {
+    return cleanUserCard({
       cardId: c.card_id,
       nickname: c.nickname ?? undefined,
       openedOn: c.opened_on,
       anniversaryMonth: c.anniversary_month,
+      anniversaryDay: c.anniversary_day ?? undefined,
       // Renumbered on read, so a gap left by a failed write cannot leak into
       // the drag-and-drop indices.
       sortOrder: i,
-    };
+      prefs: c.credit_prefs ?? undefined,
+    });
   });
 
   const creditUsage: CreditUsage = {};
@@ -175,6 +179,28 @@ export async function saveOrder(r: Remote, before: UserCard[], after: UserCard[]
     ),
   );
   for (const res of results) check(res.error);
+}
+
+export async function setAnniversary(
+  r: Remote,
+  cardId: string,
+  openedOn: string,
+  month: number,
+  day: number,
+) {
+  const { error } = await r.db
+    .from("user_cards")
+    .update({ opened_on: openedOn, anniversary_month: month, anniversary_day: day })
+    .eq("id", r.rowIds.get(cardId) ?? "");
+  check(error);
+}
+
+export async function setPrefs(r: Remote, cardId: string, prefs: TrackerPrefs) {
+  const { error } = await r.db
+    .from("user_cards")
+    .update({ credit_prefs: prefs })
+    .eq("id", r.rowIds.get(cardId) ?? "");
+  check(error);
 }
 
 export async function setNickname(r: Remote, cardId: string, nickname: string | undefined) {
@@ -290,6 +316,10 @@ export async function importState(r: Remote, local: Persisted, limit: number) {
           nickname: c.nickname ?? null,
           opened_on: c.openedOn,
           anniversary_month: c.anniversaryMonth,
+          // Only when set, so an import still works before the migration
+          // that adds these columns.
+          ...(c.anniversaryDay ? { anniversary_day: c.anniversaryDay } : {}),
+          ...(c.prefs ? { credit_prefs: c.prefs } : {}),
           sort_order: i,
         })),
       )

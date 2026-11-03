@@ -27,9 +27,9 @@ export function cardCount(n: number): string {
 }
 
 /** Features that can be gated. Add to this union rather than inventing strings. */
-export type Feature = "unlimited-cards";
+export type Feature = "unlimited-cards" | "autofill";
 
-const PREMIUM_ONLY: ReadonlySet<Feature> = new Set<Feature>(["unlimited-cards"]);
+const PREMIUM_ONLY: ReadonlySet<Feature> = new Set<Feature>(["unlimited-cards", "autofill"]);
 
 export function hasFeature(plan: Plan, feature: Feature): boolean {
   return plan === "premium" || !PREMIUM_ONLY.has(feature);

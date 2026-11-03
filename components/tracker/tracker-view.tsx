@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useId, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { PlusIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { PlusIcon, SlidersHorizontalIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { cardAnnualCreditValue, creditState } from "@/lib/credits";
 import { daysUntilReset } from "@/lib/credits/reset";
-import { longDate, money, pointsValue, pts, usd } from "@/lib/format";
+import { longDate, money, monthName, pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import {
+  setAnniversary,
   useCreditUsage,
   useIsLoading,
   usePointBalances,
@@ -24,6 +26,9 @@ import { Widget } from "@/components/ui/widget";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { CardFace } from "@/components/ui/card-face";
 import { CreditRow } from "@/components/tracker/credit-row";
+import { CustomizeDrawer } from "@/components/tracker/customize-drawer";
+import { arrangeCredits, creditTint } from "@/lib/tracker-prefs";
+import { localDate } from "@/lib/credits/autofill";
 import { Button } from "@/components/ui/button";
 
 /** Which card the Tracker last showed, in this browser. */
@@ -66,9 +71,12 @@ export function TrackerView() {
   }
 
   const { card, userCard } = selected;
-  const states = card.credits.map((credit) => ({
+  // Hidden credits leave the totals as well as the list: hiding one says
+  // it is not worth tracking.
+  const { shown } = arrangeCredits(card.credits, userCard.prefs);
+  const states = shown.map((credit) => ({
     credit,
-    state: creditState(credit, userCard.anniversaryMonth, usage),
+    state: creditState(credit, userCard, usage),
   }));
   const available = states.reduce((s, x) => s + x.state.available, 0);
   const used = states.reduce((s, x) => s + x.state.usedTotal, 0);
@@ -92,6 +100,7 @@ export function TrackerView() {
         period: x.credit.period,
         resetBasis: x.credit.resetBasis,
         anniversaryMonth: userCard.anniversaryMonth,
+        anniversaryDay: userCard.anniversaryDay,
       }),
     }))
     .sort((a, b) => (a.days ?? 99) - (b.days ?? 99));
@@ -221,7 +230,7 @@ function ChooseCard({
         {entries.map(({ card, userCard }, i) => {
           const value = cardAnnualCreditValue(card);
           const used = card.credits.reduce(
-            (s, c) => s + creditState(c, userCard.anniversaryMonth, usage).usedTotal,
+            (s, c) => s + creditState(c, userCard, usage).usedTotal,
             0,
           );
           return (
@@ -325,11 +334,11 @@ function CardCredits({
   userCard: UserCard;
   usage: CreditUsage;
 }) {
-  const available = cardAnnualCreditValue(card);
-  const used = card.credits.reduce(
-    (s, c) => s + creditState(c, userCard.anniversaryMonth, usage).usedTotal,
-    0,
-  );
+  const [customizing, setCustomizing] = useState(false);
+  const { shown, hidden } = arrangeCredits(card.credits, userCard.prefs);
+  const available = shown.reduce((s, c) => s + creditState(c, userCard, usage).available, 0);
+  const used = shown.reduce((s, c) => s + creditState(c, userCard, usage).usedTotal, 0);
+  const autofill = userCard.prefs?.autofill ?? {};
 
   if (card.credits.length === 0) {
     return (
@@ -348,28 +357,94 @@ function CardCredits({
     <Widget
       title={userCard.nickname ?? card.name}
       action={
-        <p className="text-sm tabular-nums text-muted">
-          {money(used)} of {usd(available)}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm tabular-nums text-muted max-sm:hidden">
+            {money(used)} of {usd(available)}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => setCustomizing(true)}>
+            <SlidersHorizontalIcon size={15} />
+            Customize
+          </Button>
+        </div>
       }
     >
       <FeeBar annualFee={card.annualFee} creditsUsed={used} />
 
+      {card.credits.some((c) => c.resetBasis === "anniversary") && (
+        <AnniversaryField userCard={userCard} cardName={userCard.nickname ?? card.name} />
+      )}
+
       <ul className="mt-6 space-y-6">
-        {card.credits.map((credit) => (
+        {shown.map((credit) => (
           <CreditRow
             key={credit.id}
             credit={credit}
-            anniversaryMonth={userCard.anniversaryMonth}
+            anniversary={userCard}
             usage={usage}
+            tint={creditTint(credit, userCard.prefs)}
+            autoFill={Boolean(autofill[credit.id])}
           />
         ))}
       </ul>
 
+      {shown.length === 0 && (
+        <p className="mt-6 text-sm text-muted">Every credit on this card is hidden.</p>
+      )}
+      {hidden.length > 0 && (
+        <p className="mt-6 text-[13px] text-muted">
+          {hidden.length} hidden.{" "}
+          <button
+            type="button"
+            onClick={() => setCustomizing(true)}
+            className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            Show them in Customize
+          </button>
+        </p>
+      )}
+
       <p className="mt-6 text-[13px] text-muted">
         Last checked {longDate(card.lastVerified)}. Confirm with {card.issuer}.
       </p>
+
+      <CustomizeDrawer card={card} userCard={userCard} open={customizing} onOpenChange={setCustomizing} />
     </Widget>
+  );
+}
+
+/**
+ * When the card's anniversary credits reset. The date the card was opened
+ * sets the day (Venture X's travel credit renews on the exact date), not
+ * just the month. Until someone sets it, they reset on the 1st.
+ */
+function AnniversaryField({ userCard, cardName }: { userCard: UserCard; cardName: string }) {
+  const id = useId();
+  const day = userCard.anniversaryDay;
+  const month = monthName(userCard.anniversaryMonth);
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-inner bg-bg px-3.5 py-2.5">
+      <p className="text-[13px] leading-snug">
+        <span className="text-muted">Anniversary credits reset on </span>
+        <span className="font-medium">
+          {month} {day ?? 1}
+        </span>
+        {!day && <span className="text-muted">. Set the date you opened the card for the exact day.</span>}
+      </p>
+      <label htmlFor={id} className="flex items-center gap-2 text-[13px] text-muted">
+        Opened on
+        <input
+          id={id}
+          type="date"
+          aria-label={`Date you opened ${cardName}`}
+          value={day ? userCard.openedOn : ""}
+          max={localDate(new Date())}
+          onChange={(e) => {
+            if (e.target.value) void setAnniversary(userCard.cardId, e.target.value);
+          }}
+          className="h-8 rounded-control border border-line bg-surface px-2 text-[13px] text-ink tabular-nums transition-[border-color] duration-[var(--cd-dur-hover)] ease-out hover:border-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+        />
+      </label>
+    </div>
   );
 }
 

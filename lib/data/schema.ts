@@ -1,4 +1,11 @@
-import type { PointBalance, UserCard, Valuation } from "@/data/types";
+import {
+  TRACKER_COLORS,
+  type PointBalance,
+  type TrackerPrefs,
+  type UserCard,
+  type Valuation,
+} from "@/data/types";
+import { parseLocalDate } from "@/lib/credits/autofill";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
 import {
   DEMO_BALANCES,
@@ -110,7 +117,7 @@ export function parseStored(raw: string | null): Persisted | null {
   const base = emptyState();
 
   const userCards = Array.isArray(v.userCards)
-    ? v.userCards.filter(isUserCard)
+    ? v.userCards.filter(isUserCard).map(cleanUserCard)
     : base.userCards;
 
   let creditUsage = isUsage(v.creditUsage) ? v.creditUsage : base.creditUsage;
@@ -237,6 +244,59 @@ function isUserCard(x: unknown): x is UserCard {
   if (typeof x !== "object" || x === null) return false;
   const c = x as Partial<UserCard>;
   return typeof c.cardId === "string" && typeof c.sortOrder === "number";
+}
+
+/** Keeps a stored card's optional fields only when they are well formed. */
+export function cleanUserCard(c: UserCard): UserCard {
+  const out: UserCard = { ...c };
+  const day = c.anniversaryDay;
+  if (!(typeof day === "number" && Number.isInteger(day) && day >= 1 && day <= 31)) {
+    delete out.anniversaryDay;
+  }
+  const prefs = cleanPrefs(c.prefs);
+  if (prefs) out.prefs = prefs;
+  else delete out.prefs;
+  return out;
+}
+
+const isId = (x: unknown): x is string => typeof x === "string" && x.length > 0 && x.length <= 64;
+
+/**
+ * Tracker preferences from storage or the database, with anything malformed
+ * dropped field by field, so one bad value never loses the rest.
+ */
+export function cleanPrefs(x: unknown): TrackerPrefs | undefined {
+  if (typeof x !== "object" || x === null || Array.isArray(x)) return undefined;
+  const p = x as Record<string, unknown>;
+  const out: TrackerPrefs = {};
+  if (Array.isArray(p.order)) out.order = [...new Set(p.order.filter(isId))];
+  if (Array.isArray(p.hidden)) out.hidden = [...new Set(p.hidden.filter(isId))];
+  if (typeof p.colors === "object" && p.colors !== null) {
+    const colors: TrackerPrefs["colors"] = {};
+    for (const [id, c] of Object.entries(p.colors)) {
+      if (isId(id) && (TRACKER_COLORS as readonly unknown[]).includes(c)) {
+        colors[id] = c as (typeof TRACKER_COLORS)[number];
+      }
+    }
+    out.colors = colors;
+  }
+  if (typeof p.autofill === "object" && p.autofill !== null) {
+    const autofill: TrackerPrefs["autofill"] = {};
+    for (const [id, e] of Object.entries(p.autofill)) {
+      const entry = e as { since?: unknown; through?: unknown } | null;
+      if (
+        isId(id) &&
+        entry &&
+        typeof entry.since === "string" &&
+        typeof entry.through === "string" &&
+        parseLocalDate(entry.through)
+      ) {
+        autofill[id] = { since: entry.since, through: entry.through };
+      }
+    }
+    out.autofill = autofill;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function isBalance(x: unknown): x is PointBalance {

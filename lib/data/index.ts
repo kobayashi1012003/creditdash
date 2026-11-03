@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import type { Card, PointBalance, Program, UserCard } from "@/data/types";
+import type { Card, PointBalance, Program, TrackerPrefs, UserCard } from "@/data/types";
 import { CARDS, getCard } from "@/data/cards.seed";
-import { cardLimit, type BillingInterval, type Plan } from "@/lib/plan";
+import { cardLimit, hasFeature, type BillingInterval, type Plan } from "@/lib/plan";
+import { autoFillDue, localDate, parseLocalDate } from "@/lib/credits/autofill";
 import { forgetSessionFlags } from "@/lib/use-stored-flag";
 import {
   mergeValuations,
@@ -188,7 +189,9 @@ export async function addCard(cardId: string): Promise<void> {
       const now = new Date();
       added = {
         cardId,
-        openedOn: now.toISOString().slice(0, 10),
+        // The local date, not toISOString's UTC one, which is already
+        // tomorrow on a US evening.
+        openedOn: localDate(now),
         anniversaryMonth: now.getMonth() + 1,
         sortOrder: s.userCards.length,
       };
@@ -273,6 +276,107 @@ export async function setNickname(
     }),
     (r) => remote.setNickname(r, cardId, value),
   );
+}
+
+/**
+ * Sets the date a card was opened, from which its anniversary month and
+ * day follow. Anniversary credits then reset on that day (see reset.ts).
+ * `date` is a local "YYYY-MM-DD"; anything else is ignored.
+ */
+export async function setAnniversary(cardId: string, date: string): Promise<void> {
+  const d = parseLocalDate(date);
+  if (!d) return;
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  await mutate(
+    (s) => ({
+      ...s,
+      userCards: s.userCards.map((c) =>
+        c.cardId === cardId ? { ...c, openedOn: date, anniversaryMonth: month, anniversaryDay: day } : c,
+      ),
+    }),
+    (r) => remote.setAnniversary(r, cardId, date, month, day),
+  );
+}
+
+/**
+ * Changes how one card's Tracker is arranged. `update` gets the current
+ * preferences (an empty object if none) and returns the new ones.
+ */
+export async function setTrackerPrefs(
+  cardId: string,
+  update: (prefs: TrackerPrefs) => TrackerPrefs,
+): Promise<void> {
+  let next: TrackerPrefs = {};
+  await mutate(
+    (s) => ({
+      ...s,
+      userCards: s.userCards.map((c) => {
+        if (c.cardId !== cardId) return c;
+        next = update(c.prefs ?? {});
+        return { ...c, prefs: next };
+      }),
+    }),
+    (r) => remote.setPrefs(r, cardId, next),
+  );
+}
+
+let autoFilling = false;
+
+/**
+ * Ticks every auto-filled credit whose period has opened since it was last
+ * filled, in this device's local time (lib/credits/autofill.ts). Premium
+ * only: on Free the choices are kept but nothing is ticked. Safe to call as
+ * often as you like; a run already going makes the next call return.
+ *
+ * Each period is written first and its `through` date moved on after, and
+ * only if the write held, so a refused write is retried next time rather
+ * than skipped.
+ */
+export async function runAutoFill(now = new Date()): Promise<void> {
+  if (autoFilling || !isLoaded()) return;
+  autoFilling = true;
+  try {
+    const state = getSnapshot();
+    if (!hasFeature(state.profile.plan, "autofill")) return;
+    for (const userCard of state.userCards) {
+      const entries = userCard.prefs?.autofill;
+      const card = getCard(userCard.cardId);
+      if (!entries || !card) continue;
+      for (const [creditId, entry] of Object.entries(entries)) {
+        const credit = card.credits.find((c) => c.id === creditId);
+        if (!credit) continue;
+        const options = {
+          period: credit.period,
+          resetBasis: credit.resetBasis,
+          anniversaryMonth: userCard.anniversaryMonth,
+          anniversaryDay: userCard.anniversaryDay,
+        };
+        const due = autoFillDue(options, entry, now);
+        if (due.windows.length === 0) continue;
+        let held = true;
+        for (const window of due.windows) {
+          const used = getSnapshot().creditUsage[creditId]?.[window.key] ?? 0;
+          if (used >= credit.amount) continue;
+          await setCreditUsed(creditId, window.key, credit.amount);
+          if ((getSnapshot().creditUsage[creditId]?.[window.key] ?? 0) < credit.amount) {
+            held = false;
+            break;
+          }
+        }
+        if (!held) continue;
+        // Read afresh: the user may have switched it off meanwhile.
+        const latest = getSnapshot().userCards.find((c) => c.cardId === userCard.cardId)?.prefs?.autofill?.[creditId];
+        if (!latest) continue;
+        await setTrackerPrefs(userCard.cardId, (p) => ({
+          ...p,
+          autofill: { ...p.autofill, [creditId]: { ...latest, through: due.through } },
+        }));
+      }
+    }
+  } finally {
+    autoFilling = false;
+  }
 }
 
 /**

@@ -3,6 +3,7 @@ import { TabBar } from "@/components/shell/tab-bar";
 import { SkipLink } from "@/components/shell/skip-link";
 import { StorageNotice } from "@/components/shell/storage-notice";
 import { DemoBanner } from "@/components/shell/demo-banner";
+import { AutoFillRunner } from "@/components/shell/autofill-runner";
 
 /**
  * The signed-in shell. Sidebar on desktop, tab bar on mobile, with the
@@ -25,6 +26,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <TabBar />
+      <AutoFillRunner />
     </div>
   );
 }

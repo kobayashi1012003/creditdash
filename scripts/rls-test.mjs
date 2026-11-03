@@ -117,6 +117,29 @@ try {
   const upd = await b.db.from("user_cards").update({ nickname: "mine now" }).eq("id", cardId).select();
   expect(!upd.error && upd.data.length === 0, "B cannot rename A's card", upd.error?.message ?? `${upd.data?.length} rows changed`);
 
+  // --- Tracker preferences (migration 20261103000000) ---------------------
+  const ownPrefs = await a.db
+    .from("user_cards")
+    .update({ anniversary_day: 21, credit_prefs: { hidden: ["gold-uber"] } })
+    .eq("id", cardId)
+    .select("anniversary_day, credit_prefs");
+  expect(
+    !ownPrefs.error && ownPrefs.data?.[0]?.anniversary_day === 21,
+    "A can set their card's anniversary day and Tracker preferences",
+    ownPrefs.error?.message,
+  );
+  const peekPrefs = await b.db.from("user_cards").update({ credit_prefs: { hidden: [] } }).eq("id", cardId).select();
+  expect(!peekPrefs.error && peekPrefs.data.length === 0, "B cannot change A's Tracker preferences");
+  const badDay = await a.db.from("user_cards").update({ anniversary_day: 32 }).eq("id", cardId);
+  expect(Boolean(badDay.error), "An anniversary day past 31 is refused");
+  const notObject = await a.db.from("user_cards").update({ credit_prefs: [1, 2] }).eq("id", cardId);
+  expect(Boolean(notObject.error), "Tracker preferences must be an object");
+  const huge = await a.db
+    .from("user_cards")
+    .update({ credit_prefs: { order: Array.from({ length: 3000 }, (_, i) => `credit-${i}-padding`) } })
+    .eq("id", cardId);
+  expect(Boolean(huge.error), "Oversized Tracker preferences are refused");
+
   const del = await b.db.from("user_cards").delete().eq("id", cardId).select();
   expect(!del.error && del.data.length === 0, "B cannot delete A's card", del.error?.message ?? `${del.data?.length} rows deleted`);
 
