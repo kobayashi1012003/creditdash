@@ -163,6 +163,7 @@ export function PlanSection({
           }
           points={[
             "Unlimited cards",
+            "Auto-fill for credits you always use",
             "Everything in Free",
             "Cancel whenever you like",
           ]}

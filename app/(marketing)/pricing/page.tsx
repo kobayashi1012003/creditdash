@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Free for one card, with full tracking. Premium is $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year for unlimited cards.`,
+  description: `Free for one card, with full tracking. Premium is $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year for unlimited cards and auto-fill.`,
 };
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
@@ -18,6 +18,7 @@ const ROWS: { label: string; free: boolean | string; premium: boolean | string }
   { label: "Saved cards", free: "1", premium: "Unlimited" },
   { label: "Which card to use, by category or store", free: true, premium: true },
   { label: "Credit Tracker", free: true, premium: true },
+  { label: "Auto-fill credits as each period starts", free: false, premium: true },
   { label: "Annual fee check", free: true, premium: true },
   { label: "Calculators", free: true, premium: true },
   { label: "Compare any cards", free: true, premium: true },
@@ -26,6 +27,10 @@ const ROWS: { label: string; free: boolean | string; premium: boolean | string }
 ];
 
 const QUESTIONS: { q: string; a: string }[] = [
+  {
+    q: "What is auto-fill?",
+    a: "Pick the credits you always use, like a monthly Dunkin' or Uber credit, and Premium ticks each one for you the moment its period starts, at midnight where you are. Untick one and it stays unticked. You can switch it on or off per credit in the Tracker's Customize panel.",
+  },
   {
     q: "Can I cancel?",
     a: "Any time, from Settings. Premium stays on until the end of the month or year you paid for, and you are not charged again.",

@@ -67,8 +67,8 @@ export default function TermsPage() {
       <p>
         The free plan saves {FREE_CARD_LIMIT} card. Premium, at $
         {PREMIUM_PRICE_MONTHLY} a month or ${PREMIUM_PRICE_YEARLY} a year in
-        US dollars, saves as many as you own. It needs an account, and
-        payment is taken by Stripe.
+        US dollars, saves as many as you own and can auto-fill credits in
+        the Tracker. It needs an account, and payment is taken by Stripe.
       </p>
       <ul>
         <li>

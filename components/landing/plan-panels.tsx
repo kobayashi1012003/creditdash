@@ -22,8 +22,8 @@ export function PlanPanels({ className }: { className?: string }) {
         name="Premium"
         price={`$${PREMIUM_PRICE_MONTHLY}`}
         per="a month"
-        note="Every card in your wallet, tracked."
-        points={["Unlimited cards", "Everything in Free", "Cancel whenever you like"]}
+        note="Every card in your wallet, tracked, and credits ticked for you."
+        points={["Unlimited cards", "Auto-fill for credits you always use", "Everything in Free", "Cancel whenever you like"]}
       />
       <PlanPanel
         name="Premium yearly"
@@ -31,7 +31,7 @@ export function PlanPanels({ className }: { className?: string }) {
         per="a year"
         note={`Two months free, against $${PREMIUM_PRICE_MONTHLY * 12} paid monthly.`}
         featured
-        points={["Unlimited cards", "Everything in Free", "Cancel whenever you like"]}
+        points={["Unlimited cards", "Auto-fill for credits you always use", "Everything in Free", "Cancel whenever you like"]}
       />
     </div>
   );
