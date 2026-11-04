@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { PlusIcon, SlidersHorizontalIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
-import { cardAnnualCreditValue, creditState } from "@/lib/credits";
+import { cardAnnualCreditValue, creditState, liveCredits } from "@/lib/credits";
 import { daysUntilReset } from "@/lib/credits/reset";
 import { longDate, money, monthName, pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -73,7 +73,7 @@ export function TrackerView() {
   const { card, userCard } = selected;
   // Hidden credits leave the totals as well as the list: hiding one says
   // it is not worth tracking.
-  const { shown } = arrangeCredits(card.credits, userCard.prefs);
+  const { shown } = arrangeCredits(liveCredits(card.credits), userCard.prefs);
   const states = shown.map((credit) => ({
     credit,
     state: creditState(credit, userCard, usage),
@@ -229,7 +229,7 @@ function ChooseCard({
       <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 @2xl:grid-cols-3">
         {entries.map(({ card, userCard }, i) => {
           const value = cardAnnualCreditValue(card);
-          const used = card.credits.reduce(
+          const used = liveCredits(card.credits).reduce(
             (s, c) => s + creditState(c, userCard, usage).usedTotal,
             0,
           );
@@ -335,7 +335,7 @@ function CardCredits({
   usage: CreditUsage;
 }) {
   const [customizing, setCustomizing] = useState(false);
-  const { shown, hidden } = arrangeCredits(card.credits, userCard.prefs);
+  const { shown, hidden } = arrangeCredits(liveCredits(card.credits), userCard.prefs);
   const available = shown.reduce((s, c) => s + creditState(c, userCard, usage).available, 0);
   const used = shown.reduce((s, c) => s + creditState(c, userCard, usage).usedTotal, 0);
   const autofill = userCard.prefs?.autofill ?? {};

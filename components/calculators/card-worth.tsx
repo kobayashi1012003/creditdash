@@ -12,7 +12,7 @@ import {
   type BenefitUse,
 } from "@/lib/calculators/engine";
 import { toSpend, useSpendInputs } from "@/lib/calculators/spend-store";
-import { usedInRecentYear } from "@/lib/credits";
+import { annualValue, liveCredits, usedInRecentYear } from "@/lib/credits";
 import { useCreditUsage, useValuation, useWallet } from "@/lib/data";
 import { money, percent, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -54,7 +54,9 @@ type Benefit =
  * are worth what the user says.
  */
 function benefitsOf(card: Card): Benefit[] {
-  const credits: Benefit[] = card.credits.map((credit) =>
+  // Ended credits drop out, and a limited-time credit only counts the
+  // periods that open before it ends.
+  const credits: Benefit[] = liveCredits(card.credits).map((credit) =>
     credit.period === "annual"
       ? { kind: "annual", id: credit.id, name: credit.name, credit }
       : {
@@ -62,7 +64,9 @@ function benefitsOf(card: Card): Benefit[] {
           id: credit.id,
           name: credit.name,
           credit,
-          count: PERIOD_COUNT[credit.period],
+          count: credit.endsOn
+            ? Math.round(annualValue(credit) / credit.amount)
+            : PERIOD_COUNT[credit.period],
         },
   );
   const perks: Benefit[] = (card.perks ?? []).map((p) => ({

@@ -5,6 +5,7 @@ import type { Card, PointBalance, Program, TrackerPrefs, UserCard } from "@/data
 import { CARDS, getCard } from "@/data/cards.seed";
 import { cardLimit, hasFeature, type BillingInterval, type Plan } from "@/lib/plan";
 import { autoFillDue, localDate, parseLocalDate } from "@/lib/credits/autofill";
+import { windowOffered } from "@/lib/credits";
 import { forgetSessionFlags } from "@/lib/use-stored-flag";
 import {
   mergeValuations,
@@ -356,6 +357,9 @@ export async function runAutoFill(now = new Date()): Promise<void> {
         if (due.windows.length === 0) continue;
         let held = true;
         for (const window of due.windows) {
+          // A limited-time credit is not ticked for periods after it ends.
+          // `through` still moves on past them, so they are not retried.
+          if (!windowOffered(credit, window)) continue;
           const used = getSnapshot().creditUsage[creditId]?.[window.key] ?? 0;
           if (used >= credit.amount) continue;
           await setCreditUsed(creditId, window.key, credit.amount);

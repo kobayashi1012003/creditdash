@@ -20,6 +20,8 @@ type CheckmarkRowProps = {
   slotLabel?: (index: number) => string;
   /** Short visible text under each slot, e.g. "Jan" or "Jan to Jun". */
   caption?: (index: number) => string;
+  /** Periods that open after a limited-time credit ends: shown, not usable. */
+  ended?: (index: number) => boolean;
   /** Slots fill a grid cell instead of a fixed 32px, so a row can be laid
    *  out as one deliberate line at any width. */
   fluid?: boolean;
@@ -45,6 +47,7 @@ export function CheckmarkRow({
   currentIndex = -1,
   slotLabel,
   caption,
+  ended,
   fluid = false,
   className,
 }: CheckmarkRowProps) {
@@ -76,7 +79,7 @@ export function CheckmarkRow({
     const d = drag.current;
     if (!d) return;
     const i = slotAt(e.clientX, e.clientY);
-    if (i < 0 || d.seen.has(i)) return;
+    if (i < 0 || d.seen.has(i) || ended?.(i)) return;
     applyStart();
     d.seen.add(i);
     if (isFull(i) !== d.fill) onToggle?.(i);
@@ -105,6 +108,8 @@ export function CheckmarkRow({
         const partial = value > 0 && !full;
         const label = slotLabel?.(i) ?? `Period ${i + 1}`;
         const isCurrent = i === currentIndex;
+        const isEnded = ended?.(i) ?? false;
+        const usable = onToggle && !isEnded;
 
         const slot = (
           <button
@@ -112,7 +117,7 @@ export function CheckmarkRow({
             type="button"
             data-slot={i}
             onPointerDown={(e) => {
-              if (!onToggle || e.button !== 0) return;
+              if (!usable || e.button !== 0) return;
               // Capture so the release lands here even off the row; moves
               // still bubble to the group, which finds the slot underneath.
               try {
@@ -125,13 +130,13 @@ export function CheckmarkRow({
             onClick={(e) => {
               // Pointer presses are handled above. A click with no pointer
               // behind it is the keyboard (Enter or Space).
-              if (e.detail === 0) onToggle?.(i);
+              if (e.detail === 0 && usable) onToggle?.(i);
             }}
-            disabled={!onToggle}
+            disabled={!usable}
             aria-pressed={full}
             aria-label={[
               label,
-              full ? "used" : partial ? "partly used" : "not used",
+              isEnded ? "credit has ended" : full ? "used" : partial ? "partly used" : "not used",
               isCurrent ? "current period" : null,
             ]
               .filter(Boolean)
@@ -144,8 +149,9 @@ export function CheckmarkRow({
               "transition-[background-color,border-color,transform,color]",
               "duration-[var(--cd-dur-press)] ease-out",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-              onToggle && "active:scale-[0.94] hover:border-muted",
-              !onToggle && "cursor-default",
+              usable && "active:scale-[0.94] hover:border-muted",
+              !usable && "cursor-default",
+              isEnded && "border-dashed opacity-50",
               isCurrent && "ring-1 ring-muted ring-offset-2 ring-offset-surface",
               full ? "text-surface" : "border-line bg-bg",
             )}

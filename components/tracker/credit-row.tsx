@@ -121,6 +121,7 @@ export function CreditRow({
               state.used[i] >= credit.amount ? 0 : credit.amount,
             )
           }
+          ended={(i) => state.offered[i] === false}
           slotLabel={(i) => state.windows[i]?.label ?? `Period ${i + 1}`}
           caption={(i) => {
             const label = state.windows[i]?.label ?? "";

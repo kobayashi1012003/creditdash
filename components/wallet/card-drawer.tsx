@@ -17,6 +17,7 @@ import { CreditConditions } from "@/components/ui/credit-conditions";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { longDate, monthName, usd, usdExact } from "@/lib/format";
+import { cardAnnualCreditValue, liveCredits } from "@/lib/credits";
 import { useIsDesktop } from "@/lib/use-media-query";
 import { TRACKER_CARD_KEY, useStoredValue } from "@/lib/use-stored-value";
 
@@ -51,10 +52,8 @@ export function CardDrawer({
   const perks = card.perks ?? [];
   const hasLoungePerk = perks.some((p) => p.kind === "lounge");
 
-  const annualCreditValue = card.credits.reduce((sum, c) => {
-    const per = { monthly: 12, quarterly: 4, semiannual: 2, annual: 1 }[c.period];
-    return sum + c.amount * per;
-  }, 0);
+  const annualCreditValue = cardAnnualCreditValue(card);
+  const credits = liveCredits(card.credits);
 
   return (
     <Drawer
@@ -150,13 +149,13 @@ export function CardDrawer({
                   </p>
                 )}
               </div>
-              {card.credits.length === 0 ? (
+              {credits.length === 0 ? (
                 <p className="text-sm text-muted">
                   This card has no credits to track.
                 </p>
               ) : (
                 <ul className="space-y-3">
-                  {card.credits.map((credit) => (
+                  {credits.map((credit) => (
                     <li
                       key={credit.id}
                       className="flex items-baseline justify-between gap-3"

@@ -35,6 +35,7 @@ import { arrangeCredits, creditTint, TRACKER_COLOR_INK, TRACKER_COLOR_LABEL } fr
 import { useIsDesktop } from "@/lib/use-media-query";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
+import { liveCredits } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -74,7 +75,7 @@ export function CustomizeDrawer({
   const plan = usePlan();
   const canAutoFill = hasFeature(plan, "autofill");
   const prefs = userCard.prefs;
-  const { all } = arrangeCredits(card.credits, prefs);
+  const { all } = arrangeCredits(liveCredits(card.credits), prefs);
   const hidden = new Set(prefs?.hidden ?? []);
 
   const sensors = useSensors(
