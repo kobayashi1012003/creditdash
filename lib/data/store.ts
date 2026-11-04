@@ -13,6 +13,9 @@ import { hasSessionCookie, supabase } from "@/lib/data/supabase";
 import { FIRST_CARD_KEY } from "@/lib/data/first-card";
 import { loadAccount, SyncError, type Billing, type Remote } from "@/lib/data/remote";
 
+/** An unreadable local wallet, kept rather than seeded over (see readLocal). */
+const BACKUP_KEY = `${STORAGE_KEY}:backup`;
+
 /**
  * The backing for lib/data, in one of two modes:
  *
@@ -111,7 +114,13 @@ export function readLocal(): Persisted {
       return stored;
     }
     // First visit, or storage held something unusable. Seed rather than
-    // show an empty shell.
+    // show an empty shell. Something unusable may be a real wallet written
+    // by a newer build (a rollback, or an installed app on an old bundle),
+    // so keep the original under a backup key before seeding over it, and
+    // never replace an earlier backup.
+    if (raw && window.localStorage.getItem(BACKUP_KEY) === null) {
+      window.localStorage.setItem(BACKUP_KEY, raw);
+    }
     const seeded = seededState();
     persist(seeded);
     return seeded;

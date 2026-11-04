@@ -219,7 +219,10 @@ function ProgramRow({
       timer: setTimeout(async () => {
         pending.current = null;
         await setPointBalance(program, value);
-        setTyped(undefined);
+        // Only hand the field back to the stored value if nothing newer was
+        // typed while this save was in flight; otherwise the field would
+        // jump back to this value until the next save landed.
+        if (pending.current === null) setTyped(undefined);
       }, SAVE_DELAY_MS),
     };
   }
