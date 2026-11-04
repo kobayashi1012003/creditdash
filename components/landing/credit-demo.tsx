@@ -171,7 +171,7 @@ export function CreditDemo() {
         <p className="hidden text-right font-mono text-[11px] leading-snug text-lavender-ink/80 sm:block">
           Resets monthly
           <br />
-          Next on 1 November
+          Next on the 1st
         </p>
       </div>
 

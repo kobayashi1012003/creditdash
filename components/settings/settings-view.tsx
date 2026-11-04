@@ -124,8 +124,9 @@ export function SettingsView() {
 
       {/* Development only, and demo user only: a real account's plan is set
           by the server. Lets the free card limit be exercised without a
-          payment flow existing yet. */}
-      {!account && (
+          payment flow. Never in a production build: it showed visitors a
+          "Not shipped" widget on the live site (review D1). */}
+      {process.env.NODE_ENV !== "production" && !account && (
         <Widget
           title="Development"
           action={<span className="text-[13px] text-muted">Not shipped</span>}

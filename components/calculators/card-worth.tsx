@@ -351,7 +351,7 @@ function BenefitRow({
         <NumberField
           kind="money"
           label="What it's worth to you"
-          labelHidden={`What ${benefit.name.toLowerCase()} is worth to you a year`}
+          labelHidden={`What ${benefit.name} is worth to you a year`}
           value={value || null}
           onValue={(v) => onValue(v ?? 0)}
           inputClassName="text-right"
