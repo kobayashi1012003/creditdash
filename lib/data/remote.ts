@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PointBalance, Program, TrackerPrefs, UserCard } from "@/data/types";
 import { getCard } from "@/data/cards.seed";
+import { cardCount, FREE_CARD_LIMIT } from "@/lib/plan";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
 import { cleanUserCard, SCHEMA_VERSION, type CreditUsage, type Persisted } from "@/lib/data/schema";
 
@@ -29,7 +30,8 @@ function check(error: { message: string; hint?: string | null } | null) {
   if (!error) return;
   if (error.hint === "card_limit") {
     throw new SyncError(
-      "The free plan holds 2 cards, so that card was not added. Remove one first, or move to Premium.",
+      `The free plan holds ${cardCount(FREE_CARD_LIMIT)}, so that card was not added. ` +
+        `Remove ${FREE_CARD_LIMIT === 1 ? "the one you have" : "one"} first, or move to Premium.`,
     );
   }
   throw new SyncError(

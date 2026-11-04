@@ -694,11 +694,11 @@ function EmptyWallet({ onAdd }: { onAdd: () => void }) {
     <section aria-labelledby="empty-wallet-heading">
       <div className="max-w-[52ch]">
         <h2 id="empty-wallet-heading" className="font-display text-2xl leading-tight">
-          Add the first card you carry.
+          Add the card you carry most.
         </h2>
         <p className="mt-2.5 text-[15px] leading-relaxed text-muted">
-          Two cards are enough to start getting an answer. Nothing is linked to
-          a bank, and you can change your mind at any time.
+          Its credits, fee and earn rates show straight away. Nothing is linked
+          to a bank, and you can change your mind at any time.
         </p>
       </div>
 
