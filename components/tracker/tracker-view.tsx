@@ -441,7 +441,7 @@ function AnniversaryField({ userCard, cardName }: { userCard: UserCard; cardName
           onChange={(e) => {
             if (e.target.value) void setAnniversary(userCard.cardId, e.target.value);
           }}
-          className="h-8 rounded-control border border-line bg-surface px-2 text-[13px] text-ink tabular-nums transition-[border-color] duration-[var(--cd-dur-hover)] ease-out hover:border-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
+          className="h-8 rounded-control border border-line bg-surface px-2 text-[16px] md:text-[13px] text-ink tabular-nums transition-[border-color] duration-[var(--cd-dur-hover)] ease-out hover:border-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
         />
       </label>
     </div>

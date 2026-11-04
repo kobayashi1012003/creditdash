@@ -283,7 +283,9 @@ function CreditPrefRow({
               checked={autoFill && canAutoFill}
               disabled={!canAutoFill || hidden}
               onCheckedChange={(on) => onAutoFill(on)}
-              aria-labelledby={autoId}
+              // Eight switches all named "Auto-fill" cannot be told apart
+              // by a screen reader, so the name carries the credit too.
+              aria-label={`Auto-fill ${credit.name}`}
               size="sm"
               className="data-checked:bg-ink data-unchecked:bg-line"
             />

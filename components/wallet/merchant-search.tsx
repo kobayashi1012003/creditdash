@@ -77,7 +77,8 @@ export function MerchantSearch({
           autoComplete="off"
           enterKeyHint="search"
           className={cn(
-            "h-9 w-full rounded-control border border-line bg-bg pr-9 pl-8.5 text-[14px]",
+            // 16px on phones, or iOS zooms the page on focus.
+            "h-9 w-full rounded-control border border-line bg-bg pr-9 pl-8.5 text-[16px] md:text-[14px]",
             "placeholder:text-muted transition-[border-color] duration-[var(--cd-dur-hover)] ease-out",
             "hover:border-muted focus-visible:border-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
             "disabled:opacity-40 [&::-webkit-search-cancel-button]:hidden",

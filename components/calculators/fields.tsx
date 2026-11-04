@@ -22,8 +22,9 @@ import { Label } from "@/components/ui/label";
  * than insisting on a bare number.
  */
 
+// 16px on phones: iOS zooms the page into any field under 16px on focus.
 const SELECT_CLASS =
-  "h-10 w-full min-w-0 rounded-inner border border-line bg-surface px-3 text-sm text-ink transition-colors duration-[var(--cd-dur-hover)] ease-out hover:border-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+  "h-10 w-full min-w-0 rounded-inner border border-line bg-surface px-3 text-base md:text-sm text-ink transition-colors duration-[var(--cd-dur-hover)] ease-out hover:border-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 
 export function FieldLabel({
   htmlFor,

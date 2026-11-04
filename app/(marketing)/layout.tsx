@@ -100,7 +100,13 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
                       <li key={href}>
                         <Link
                           href={href}
-                          className={cn(LINK, "text-band-muted hover:text-band-ink focus-visible:outline-band-ink")}
+                          className={cn(
+                            LINK,
+                            "text-band-muted hover:text-band-ink focus-visible:outline-band-ink",
+                            // Tap area at least 24px tall (WCAG 2.5.8) without
+                            // changing the spacing; neighbours do not overlap.
+                            "relative after:absolute after:-inset-x-1 after:-inset-y-[5px] after:content-['']",
+                          )}
                         >
                           {label}
                         </Link>

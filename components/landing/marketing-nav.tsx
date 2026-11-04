@@ -46,6 +46,9 @@ export function MarketingNav({
                   // Bold ink for every tab (owner, 2 November 2026); the
                   // current page is underlined.
                   "font-semibold text-ink decoration-2 underline-offset-[6px] hover:underline",
+                  // A 44px-tall tap area without moving the text: the row
+                  // is 44px, the label 18px.
+                  "relative after:absolute after:-inset-x-2 after:-inset-y-[13px] after:content-['']",
                   current && "underline",
                   "focus-visible:outline-focus",
                 )}
