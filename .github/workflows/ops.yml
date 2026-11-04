@@ -1,0 +1,150 @@
+# Operations checks for the live site (review items O1 and O2, 3 November 2026).
+#
+#  - deploy-check: after each push to main, wait for Cloudflare's build and
+#    fail unless https://creditdash.co/api/version reports this commit.
+#    Daily, also check / and /wallet answer 200 and the live commit is main's.
+#  - keep-alive: Supabase Free pauses a project after a week with no
+#    activity. One read every three days counts as activity.
+#  - backup: weekly pg_dump of the whole database, encrypted, kept 90 days
+#    as a workflow artifact. Needs the SUPABASE_DB_URL and
+#    BACKUP_PASSPHRASE repository secrets.
+#
+# GitHub emails the repository owner when a job fails.
+
+name: ops
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 13 */3 * *" # keep-alive, every third day
+    - cron: "41 14 * * *" # daily live check
+    - cron: "23 10 * * 0" # weekly backup, Sundays
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        type: choice
+        options: [deploy-check, keep-alive, backup]
+        default: backup
+
+permissions:
+  contents: read
+
+env:
+  SITE: https://creditdash.co
+
+jobs:
+  deploy-check:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.schedule == '41 14 * * *' ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'deploy-check')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Wait for the live site to serve this commit
+        if: github.event_name == 'push'
+        run: |
+          for i in $(seq 1 40); do
+            live=$(curl -fsS "$SITE/api/version?t=$(date +%s)" | jq -r .sha || true)
+            if [ "$live" = "$GITHUB_SHA" ]; then
+              echo "Live after about $((i * 30))s: $live"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::After 20 minutes the live site still serves '${live:-nothing}', not $GITHUB_SHA. Check Cloudflare > Workers > creditdash > Deployments, and Settings > Build for a 'disconnected from your Git account' banner."
+          exit 1
+
+      - name: Pages answer and the live commit is main's
+        if: github.event_name != 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for path in / /wallet; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$SITE$path")
+            echo "$path $code"
+            [ "$code" = 200 ] || { echo "::error::$path returned $code"; exit 1; }
+          done
+          main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          live=$(curl -fsS "$SITE/api/version?t=$(date +%s)" | jq -r .sha)
+          echo "main $main, live $live"
+          [ "$live" = "$main" ] || { echo "::error::Live site serves $live but main is $main. A push did not deploy."; exit 1; }
+
+  keep-alive:
+    if: >-
+      github.event.schedule == '17 13 */3 * *' ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'keep-alive')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: One read against Supabase
+        run: |
+          # The two public values the app itself ships with. RLS answers an
+          # anonymous read with no rows, which still counts as activity.
+          set -a; . ./.env.production; set +a
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/profiles?select=user_id&limit=1" \
+            -H "apikey: $NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+          echo "Supabase answered $code"
+          case "$code" in
+            200|401) ;;
+            *) echo "::error::Supabase answered $code. If the project is paused, restore it in the Supabase dashboard."; exit 1 ;;
+          esac
+
+  backup:
+    if: >-
+      github.event.schedule == '23 10 * * 0' ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'backup')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check the secrets are set
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$SUPABASE_DB_URL" ] || { echo "::error::Add the SUPABASE_DB_URL repository secret (Supabase > Connect > Session pooler URI, with the database password). See CLAUDE.md, Backups."; exit 1; }
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "::error::Add the BACKUP_PASSPHRASE repository secret. The repository is public, so dumps are only uploaded encrypted."; exit 1; }
+
+      - name: Install the Postgres 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump the database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          file="creditdash-$(date -u +%Y-%m-%d).dump"
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --no-privileges -f "$file"
+          size=$(stat -c %s "$file")
+          echo "$file is $size bytes"
+          # An empty or schema-less dump is a failure, not a backup.
+          [ "$size" -gt 20000 ] || { echo "::error::Dump is only $size bytes"; exit 1; }
+          /usr/lib/postgresql/17/bin/pg_restore --list "$file" | grep -q "TABLE DATA public user_cards" \
+            || { echo "::error::Dump has no user_cards data"; exit 1; }
+          echo "FILE=$file" >> "$GITHUB_ENV"
+
+      # The repository is public, and any signed-in GitHub user can download
+      # a public repository's artifacts. Only the encrypted file leaves the
+      # runner. Decrypt with: gpg -d -o x.dump x.dump.gpg
+      - name: Encrypt the dump
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 -o "$FILE.gpg" "$FILE"
+          shred -u "$FILE"
+          echo "FILE=$FILE.gpg" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.FILE }}
+          path: ${{ env.FILE }}
+          retention-days: 90
+          compression-level: 0

@@ -46,6 +46,15 @@ const nextConfig: NextConfig = {
 
   poweredByHeader: false,
 
+  /**
+   * The commit this build came from, served by /api/version so the
+   * deploy-check workflow can tell whether a push actually went live.
+   * Workers Builds sets WORKERS_CI_COMMIT_SHA; local builds say "local".
+   */
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: process.env.WORKERS_CI_COMMIT_SHA ?? "local",
+  },
+
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

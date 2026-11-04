@@ -125,6 +125,32 @@ Phase 5 in more detail, since later phases build on these:
   list only showing successes. The fix was re-granting the Cloudflare
   GitHub app access to the repo. Cloudflare posts nothing back to GitHub,
   so commit checks cannot be used to tell.
+- **Ops workflow** (`.github/workflows/ops.yml`, 4 November 2026). GitHub
+  emails the owner when a job fails.
+  - *Deploy check:* after every push to main it waits up to 20 minutes for
+    `/api/version` to report the pushed commit (`NEXT_PUBLIC_BUILD_SHA`,
+    from Workers Builds' `WORKERS_CI_COMMIT_SHA`, set in `next.config.ts`).
+    Daily it checks `/` and `/wallet` answer 200 and the live commit is
+    main's. A failure usually means the Git connection broke (below).
+  - *Keep-alive:* every third day, one anonymous read using the public
+    values in `.env.production`, because Supabase Free pauses a project
+    after a quiet week.
+  - *Backup:* Sundays, `pg_dump -Fc` (Postgres 17 client) of the whole
+    database, **encrypted with gpg before upload, because the repository is
+    public** and anyone signed in to GitHub can download a public repo's
+    artifacts. Kept 90 days under Actions > ops > the run's artifacts.
+    Needs two repository secrets: `SUPABASE_DB_URL` (Supabase > Connect >
+    Session pooler URI with the database password; it bypasses RLS, so it
+    lives nowhere else) and `BACKUP_PASSPHRASE` (keep a copy outside
+    GitHub, or the dumps cannot be opened). Run it by hand from Actions >
+    ops > Run workflow > backup.
+  - *Restore test*, into a throwaway local Postgres, never into either
+    Supabase project:
+    `gpg -d -o db.dump creditdash-YYYY-MM-DD.dump.gpg`, then
+    `docker run -d --name restore -e POSTGRES_PASSWORD=x -p 5433:5432 postgres:17`,
+    then `pg_restore -d postgresql://postgres:x@localhost:5433/postgres --no-owner db.dump`
+    (errors about Supabase's own roles and schemas are expected) and
+    `select count(*) from public.user_cards;`.
 - **Cloudflare now recommends vinext** over OpenNext for new Next.js apps.
   This project stays on OpenNext, which it is built and tested against;
   switching would be its own decision, not a side effect of another change.
