@@ -227,6 +227,17 @@ adapter.
 - **`cacheComponents` is off** in `next.config.ts`. It hangs the Workers
   runtime. The comment there explains why; do not turn it back on without
   re-testing `npm run preview`.
+- **Prerendered pages are served from a static cache**
+  (`open-next.config.ts`: the static-assets incremental cache plus
+  `enableCacheInterception`). OpenNext's default cache does nothing, so
+  until 4 November 2026 every visit rendered its page again, at 25 to 114ms
+  of CPU against the free plan's 10ms, and Cloudflare stopped some of them
+  with a 503 (`exceededCpu` in Workers Logs). Keep every page static:
+  reading `searchParams`, `cookies()` or `headers()` in a page makes it
+  render per request again (`/signin` reads `?error=` in the browser for
+  this reason). The cache is read-only, so `revalidate`, `revalidatePath`
+  or `"use cache"` need R2 or KV first. Check with `curl -I` under
+  `npm run preview`: every page should say `x-opennext-cache: HIT`.
 - **Next 16 has breaking changes** from earlier versions. Check
   `node_modules/next/dist/docs/` before reaching for a remembered API.
 - **Verify a dependency exists** in `package.json` before importing it.

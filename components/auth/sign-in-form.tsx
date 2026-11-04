@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import {
   CheckCircleIcon,
@@ -35,13 +35,24 @@ function explain(code: string | undefined): string | null {
   return "Sign-in did not finish. Open the email link in the same browser you asked for it from, or send a new one.";
 }
 
-export function SignInForm({ error: initialError }: { error?: string }) {
+// The callback route sends failures back with `?error=`. It is read here in
+// the browser, not by the page, so /signin stays prerendered and is served
+// from the static cache rather than rendered per request (open-next.config.ts).
+const noSubscribe = () => () => {};
+const errorFromUrl = () => new URLSearchParams(window.location.search).get("error") ?? undefined;
+const noErrorOnServer = () => undefined;
+
+export function SignInForm() {
   const account = useAccount();
   const isLoading = useIsLoading();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState<"google" | "email" | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(explain(initialError));
+  const urlError = useSyncExternalStore(noSubscribe, errorFromUrl, noErrorOnServer);
+  // undefined until a button is pressed; after that, the latest outcome
+  // replaces whatever the URL said.
+  const [actionError, setError] = useState<string | null | undefined>(undefined);
+  const error = actionError === undefined ? explain(urlError) : actionError;
 
   // The Supabase client is loaded on demand. Fetch it now, in the
   // background, so pressing a button sends you on without a wait.

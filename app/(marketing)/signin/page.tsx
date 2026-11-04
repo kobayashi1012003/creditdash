@@ -8,11 +8,10 @@ export const metadata: Metadata = {
 
 /**
  * Google, an emailed link, or carrying on as the demo user. The callback
- * route sends failures back here with `?error=`, which the form explains.
+ * route sends failures back here with `?error=`, which the form reads and
+ * explains in the browser, so this page stays static.
  */
-export default async function SignInPage({ searchParams }: PageProps<"/signin">) {
-  const { error } = await searchParams;
-
+export default function SignInPage() {
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col px-4 py-16 sm:px-6 lg:py-24">
       <h1 className="font-display text-[34px] leading-tight sm:text-[40px]">
@@ -24,7 +23,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
         saved to an account.
       </p>
 
-      <SignInForm error={typeof error === "string" ? error : undefined} />
+      <SignInForm />
 
       <p className="mt-8 text-[13px] leading-relaxed text-muted">
         We will never ask for a card number, an expiry date, a CVV or a bank
