@@ -502,6 +502,9 @@ function FilterMenu({
   );
 }
 
+/** The wallet grid: one column on a phone, two from sm, three from xl. */
+const WALLET_CARD_SIZES = "(max-width: 640px) 92vw, (max-width: 1280px) 45vw, 320px";
+
 function WalletCard({
   entry,
   editing,
@@ -560,7 +563,7 @@ function WalletCard({
             aria-label={`Move ${label}`}
             className="cursor-grab touch-none rounded-card active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
           >
-            <CardFace card={card} priority={priority} dimmed={marked} />
+            <CardFace card={card} priority={priority} dimmed={marked} sizes={WALLET_CARD_SIZES} />
             <span className="pointer-events-none absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-pill bg-bg/85 text-ink backdrop-blur-sm">
               <DotsSixVerticalIcon size={16} weight="bold" />
             </span>
@@ -572,7 +575,7 @@ function WalletCard({
             className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
             aria-label={`Open ${label}`}
           >
-            <CardFace card={card} dimmed={dimmed} interactive priority={priority} />
+            <CardFace card={card} dimmed={dimmed} interactive priority={priority} sizes={WALLET_CARD_SIZES} />
           </button>
         )}
       </div>
@@ -714,7 +717,7 @@ function EmptyWallet({ onAdd }: { onAdd: () => void }) {
               onClick={() => addCard(card.id)}
               className="group block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
             >
-              <CardFace card={card} interactive />
+              <CardFace card={card} interactive sizes="(max-width: 768px) 30vw, 200px" />
               <span className="mt-2.5 line-clamp-2 text-[13px] leading-snug font-medium sm:text-[15px]">
                 {card.name}
               </span>

@@ -53,6 +53,7 @@ export function CardPicker({
                 card={card}
                 dimmed={winnerId !== null && !isWinner}
                 priority
+                sizes="(max-width: 768px) 30vw, 200px"
               />
               <p
                 className={cn(

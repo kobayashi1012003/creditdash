@@ -26,7 +26,7 @@ export function WalletPreview() {
           .slice(0, 2);
         return (
           <li key={card.id}>
-            <CardFace card={card} />
+            <CardFace card={card} sizes="(max-width: 768px) 45vw, 320px" />
             <p className="mt-3 font-medium leading-snug">{card.name}</p>
             <p className="text-[13px] text-muted">${card.annualFee} a year</p>
             <div className="mt-2 flex flex-wrap gap-1.5">

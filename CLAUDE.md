@@ -861,6 +861,15 @@ live site); CSS paints it into the skeleton's first slot. The real `<img>`
 then lands in the same box. Any change to the
 skeleton's first slot must keep its size identical to the real card.
 
+**`CardFace` requires `sizes`**, the width it is really drawn at, measured
+(Wallet grid `WALLET_CARD_SIZES`, drawer 280px, Tracker switcher 48px, add
+sheet 64px). One blanket value used to send the 960 cut to 48px thumbnails
+and the 1536px original to phones; the loader now never goes past the
+largest cut. **`public/_headers`** gives static files what `next.config.ts`
+cannot, because Cloudflare serves them before the Worker runs: a year's
+immutable cache on `/_next/static/*`, a day plus a week's revalidation on
+card art and icons, and the security headers. Check with `curl -I`.
+
 `CardFace`'s `priority` means `loading="eager"` plus `fetchPriority="high"`,
 not Next's deprecated `priority` prop, and not `preload`, which Next advises
 against when the largest image depends on the viewport and the data.

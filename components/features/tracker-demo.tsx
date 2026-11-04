@@ -153,7 +153,7 @@ export function TrackerDemo() {
             )}
           >
             <span className="w-11 shrink-0">
-              <CardFace card={card} />
+              <CardFace card={card} sizes="44px" />
             </span>
             <span className={cn("text-[13px]", i === 0 ? "font-medium" : "text-muted")}>{card.name}</span>
           </span>

@@ -1,0 +1,26 @@
+# Headers for files Cloudflare serves straight from static assets, before
+# the Worker runs. next.config.ts headers() only reach Worker responses, so
+# without this every hashed chunk and card image went out with max-age=0
+# and none of the security headers (review E6 and S2, 3 November 2026).
+# Check with: curl -I https://creditdash.co/icons/icon-192.png
+
+/*
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+
+# Content-hashed by Next: a changed file gets a new name, so cache forever.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Named by card id, so replacing a card's art keeps the name. A day fresh,
+# then served while it revalidates for a week.
+/cards/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/brand/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

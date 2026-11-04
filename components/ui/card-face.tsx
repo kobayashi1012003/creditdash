@@ -28,6 +28,13 @@ type CardFaceProps = {
    * when which image is largest depends on the viewport and the data.
    */
   priority?: boolean;
+  /**
+   * How wide the card is drawn, as an `<img sizes>` value. Required because
+   * it decides which cut downloads: one blanket value sent the 960px cut to
+   * 48px thumbnails, and the 1536px original to phones (review, 3 November
+   * 2026). Measure the real width when adding a call.
+   */
+  sizes: string;
   className?: string;
 };
 
@@ -36,6 +43,7 @@ export function CardFace({
   interactive = false,
   dimmed = false,
   priority = false,
+  sizes,
   className,
 }: CardFaceProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -130,7 +138,7 @@ export function CardFace({
           fill
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
-          sizes="(max-width: 768px) 90vw, 360px"
+          sizes={sizes}
           onError={() => setImageFailed(true)}
           className="object-cover"
         />
@@ -160,13 +168,14 @@ export function CardFace({
 
 /**
  * Picks the smallest pre-cut width that still covers what the browser asked
- * for, falling back to the original. Next's own optimiser cannot do this on
+ * for, else the largest cut. Next's own optimiser cannot do this on
  * Cloudflare Workers (see scripts/build-card-art-manifest.mjs), so the widths
- * are cut at build time and this only chooses between them.
+ * are cut at build time and this only chooses between them. The original
+ * (up to 1536px, 321 KB) is only used for art too small to have any cut.
  */
 function artLoader(art: CardArt) {
   return ({ width }: { width: number }) => {
-    const fit = art.variants.find((w) => w >= width);
+    const fit = art.variants.find((w) => w >= width) ?? art.variants.at(-1);
     return fit ? `/cards/w/${fit}/${art.src.split("/").pop()!.replace(/\.[^.]+$/, "")}.webp` : art.src;
   };
 }

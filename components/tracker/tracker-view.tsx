@@ -252,7 +252,7 @@ function ChooseCard({
                 onClick={() => onChoose(card.id)}
                 className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
               >
-                <CardFace card={card} interactive priority={i < 2} />
+                <CardFace card={card} interactive priority={i < 2} sizes="(max-width: 768px) 45vw, 240px" />
                 <span className="mt-2.5 block truncate text-[15px] font-medium">
                   {userCard.nickname ?? card.name}
                 </span>
@@ -312,7 +312,7 @@ function CardSwitcher({
               )}
             >
               <span className="w-12 shrink-0">
-                <CardFace card={card} />
+                <CardFace card={card} sizes="48px" />
               </span>
               <span className={cn("max-w-[160px] truncate text-[14px]", on ? "font-medium" : "text-muted")}>
                 {userCard.nickname ?? card.name}

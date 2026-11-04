@@ -161,7 +161,7 @@ export function CardStack({
                         : { duration: 0.5, ease: [0.23, 1, 0.32, 1] },
                   }}
                 >
-                  <CardFace card={card} priority={i === 0} className="shadow-lifted" />
+                  <CardFace card={card} priority={i === 0} sizes="(max-width: 768px) 56vw, 380px" className="shadow-lifted" />
                   {/* Dimmed with a veil of the page colour rather than
                       opacity, which would let the cards below show through. */}
                   <div

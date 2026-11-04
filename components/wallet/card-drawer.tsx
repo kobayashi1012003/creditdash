@@ -66,7 +66,7 @@ export function CardDrawer({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <DrawerHeader className="gap-0 px-5 pt-5 pb-0 text-left">
             <div className="mb-5 max-w-[260px]">
-              <CardFace card={card} />
+              <CardFace card={card} sizes="(max-width: 768px) 92vw, 280px" />
             </div>
             <DrawerTitle className="font-display text-[26px] leading-tight">
               {userCard?.nickname ?? card.name}

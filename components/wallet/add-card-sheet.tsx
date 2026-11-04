@@ -136,7 +136,7 @@ export function AddCardSheet({
                       )}
                     >
                       <span className="w-16 shrink-0">
-                        <CardFace card={card} />
+                        <CardFace card={card} sizes="64px" />
                       </span>
                       {/* Name and issuer wrap rather than truncate: a card the
                           reader cannot fully see is a card they cannot choose. */}

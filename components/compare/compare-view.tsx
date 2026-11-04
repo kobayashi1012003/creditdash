@@ -117,7 +117,7 @@ export function CompareView({ all }: { all: Card[] }) {
                 <th key={card.id} scope="col" className="p-0 pb-5 align-bottom">
                   <div className="px-2">
                     <div className="relative mx-auto max-w-[200px]">
-                      <CardFace card={card} />
+                      <CardFace card={card} sizes="(max-width: 768px) 40vw, 200px" />
                       <button
                         type="button"
                         onClick={() => remove(card.id)}
