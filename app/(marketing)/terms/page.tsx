@@ -7,11 +7,11 @@ export const metadata: Metadata = { title: "Terms" };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms" updated="29 October 2026">
+    <LegalPage title="Terms" updated="4 November 2026">
       <p>
         These terms cover your use of CreditDash. Using it means you accept
-        them. They are short on purpose; if something here is unclear, it is
-        a fault in the wording, not a trap.
+        them. They are short on purpose; if anything here is unclear, ask at
+        hello@creditdash.co.
       </p>
 
       <h2>What CreditDash is</h2>
@@ -99,7 +99,8 @@ export default function TermsPage() {
         </li>
         <li>
           <strong>Deleting your account</strong> cancels Premium immediately,
-          without a refund for the rest of that month.
+          without a refund for the rest of the month or year you paid for,
+          unless the law where you live says otherwise.
         </li>
       </ul>
 

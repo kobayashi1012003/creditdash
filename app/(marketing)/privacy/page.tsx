@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Privacy" };
  */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy" updated="29 October 2026">
+    <LegalPage title="Privacy" updated="4 November 2026">
       <p>
         CreditDash is built to need as little about you as possible. This page
         says what it holds, where, who else is involved, and what you can do
@@ -19,8 +19,16 @@ export default function PrivacyPage() {
 
       <h2>What you enter</h2>
       <ul>
-        <li>Which cards you own, any nickname you give them, and when each was opened.</li>
+        <li>
+          Which cards you own, any nickname you give them, when each was
+          opened, and the day its anniversary falls on.
+        </li>
         <li>How much of each card credit you have marked as used.</li>
+        <li>
+          How you arrange each card&apos;s credits in the Tracker (their order,
+          which are hidden, their colours) and which credits you set to
+          auto-fill.
+        </li>
         <li>Your points balances, and what you think a point is worth.</li>
         <li>Your plan, your theme, and whether you left the calculator panel open.</li>
       </ul>
@@ -82,8 +90,10 @@ export default function PrivacyPage() {
           <strong>Cloudflare</strong> hosts the site. Like any website,
           loading a page sends the server your IP address, your browser type
           and the address of the page. Cloudflare uses this to deliver and
-          protect the site, and short-lived request logs are kept to find and
-          fix errors.
+          protect the site. Short-lived logs of requests, and of errors in
+          the payment and account-deletion steps, are kept to find and fix
+          problems; an error from Stripe can include your Stripe customer
+          reference.
         </li>
         <li>
           <strong>Supabase</strong> runs sign-in and stores signed-in
@@ -92,7 +102,8 @@ export default function PrivacyPage() {
         <li>
           <strong>Google</strong>, only if you choose Continue with Google.
           Google confirms who you are and shares your email address, name and
-          profile picture with CreditDash&apos;s sign-in. CreditDash only uses
+          profile picture with CreditDash&apos;s sign-in. Supabase keeps what
+          Google sends with your account record; CreditDash itself only uses
           the email address.
         </li>
         <li>
@@ -113,9 +124,14 @@ export default function PrivacyPage() {
         CreditDash runs no analytics, tracking pixels or advertising scripts,
         and fonts are served from the same site. When you sign in, it sets
         cookies that keep you signed in; they are strictly necessary, and
-        signing out removes them. Your theme and panel preferences are kept in
-        your browser&apos;s local storage. Cloudflare may set a strictly
-        necessary security cookie to protect the site from abuse.
+        signing out removes them. Your browser&apos;s own storage also keeps a
+        few things for this device only: your theme, which calculators and
+        panels you left open, which card the Tracker shows, whether you closed
+        the demo banner, which card to draw first so the Wallet appears
+        quickly, whether you declined to copy a browser wallet into your
+        account, and, if you have not signed in, your wallet itself.
+        Cloudflare may set a strictly necessary security cookie to protect
+        the site from abuse.
       </p>
 
       <h2>Advertising</h2>
@@ -130,8 +146,9 @@ export default function PrivacyPage() {
         payment details on Stripe&apos;s own checkout page; they go to Stripe
         directly and never reach CreditDash. CreditDash gives Stripe your
         email address and an account reference so the payment belongs to the
-        right account, and keeps only what Stripe reports back: whether your
-        subscription is active, and when it renews or ends. Stripe handles
+        right account, and keeps only your Stripe customer reference and what
+        Stripe reports back: whether your subscription is active, and when it
+        renews or ends. Stripe handles
         your payment details under its own privacy policy, and keeps payment
         records that the law requires it to keep.
       </p>
