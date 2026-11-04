@@ -25,6 +25,17 @@ export async function POST(request: NextRequest) {
     const profile = await profileOf(db, user.id);
     if (profile.plan === "premium") throw new BillingError("already_premium", 409);
 
+    // The price first: with live keys but no price carrying the lookup key
+    // (the likeliest go-live slip), every click would otherwise create a
+    // Stripe customer and then fail.
+    const body = (await request.json().catch(() => ({}))) as { interval?: unknown };
+    const key = body.interval === "year" ? PREMIUM_YEARLY_LOOKUP_KEY : PREMIUM_LOOKUP_KEY;
+    const prices = await stripe<{ data: { id: string }[] }>(
+      `prices?active=true&lookup_keys[]=${encodeURIComponent(key)}`,
+    );
+    const price = prices.data[0]?.id;
+    if (!price) throw new BillingError("no_price", 503);
+
     let customer = profile.stripe_customer_id;
     if (!customer) {
       // The idempotency key makes a double click create one customer, not
@@ -41,14 +52,6 @@ export async function POST(request: NextRequest) {
         .is("stripe_customer_id", null);
       if (error) throw new BillingError("db_failed", 500);
     }
-
-    const body = (await request.json().catch(() => ({}))) as { interval?: unknown };
-    const key = body.interval === "year" ? PREMIUM_YEARLY_LOOKUP_KEY : PREMIUM_LOOKUP_KEY;
-    const prices = await stripe<{ data: { id: string }[] }>(
-      `prices?active=true&lookup_keys[]=${encodeURIComponent(key)}`,
-    );
-    const price = prices.data[0]?.id;
-    if (!price) throw new BillingError("no_price", 503);
 
     // Sign-in follows the page's own origin, and so does this.
     const origin = new URL(request.url).origin;
