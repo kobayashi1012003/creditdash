@@ -610,6 +610,29 @@ read-only `/admin` page tracks when each card was last checked.
   Platinum's MQD head start amount was not stated on its page and is left
   out.
 
+## Valuations, perks and anniversary points (5 November 2026)
+
+- **Default valuations assume a 1 cent baseline** (owner): no default is
+  above 1 cent; programs usually worth less (Hilton 0.5, Marriott 0.8,
+  IHG and others) keep their lower figure, because valuing Hilton points
+  at 1 cent would rank a Hilton card above the Amex Gold for groceries.
+  The 30 October values live on in `schema.ts` (`OCT_30_DEFAULTS`) only so
+  the v2 migration still recognises inherited copies.
+- **`anniversaryBonus`** on a card is points that post by themselves each
+  anniversary (Venture X: 10,000 miles). Not a credit: the Tracker shows
+  it as received and adds it to the fee bar; Is this card worth it?
+  counts it in full; the drawer mentions it. Valued at the user's
+  valuation of the card's program.
+- **Is this card worth it? lists only cards with a fee** and treats perks
+  by kind (`benefitsOf` in `card-worth.tsx`): protections are left out
+  (still in the drawer); free nights and companion certificates with a
+  `count` are counted per one used at a worth prefilled from `pointsCap`
+  times the user's valuation (or typed, with no cap); other counted perks
+  (elite night credits, Sky Club visits, United Club passes) are a "used
+  of" stepper with no dollar value, and what is left shows in the verdict
+  as "Unused: 11 elite nights"; status and uncounted lounges are listed as
+  included. No perk takes a free-typed dollar figure any more.
+
 ## Tracker customisation, auto-fill, anniversary days (3 November 2026)
 
 - **Customize** (`components/tracker/customize-drawer.tsx`, opened from

@@ -75,6 +75,30 @@ describe("the catalog itself", () => {
     }
   });
 
+  test("counted perks count something, and only free nights carry a points cap", () => {
+    for (const c of CARDS) {
+      for (const p of c.perks ?? []) {
+        if (p.count) {
+          assert.ok(Number.isInteger(p.count.perYear) && p.count.perYear > 0, p.id);
+          assert.ok(p.count.unit[0] && p.count.unit[1], p.id);
+        }
+        if (p.pointsCap !== undefined) {
+          assert.equal(p.kind, "free-night", p.id);
+          assert.ok(p.count, `${p.id} has a cap but no count`);
+        }
+        // Free nights and companion fares are valued per one used, so they
+        // need a count, or the calculator would list them as included.
+        if (p.kind === "free-night" || p.kind === "companion") assert.ok(p.count, p.id);
+      }
+    }
+  });
+
+  test("Venture X's anniversary miles are a field, not fine print", () => {
+    const vx = CARDS.find((c) => c.id === "venture-x")!;
+    assert.deepEqual(vx.anniversaryBonus, { points: 10000, unit: "miles" });
+    assert.ok(!(vx.finePrint ?? []).some((l) => /anniversary/i.test(l) && /10,000/.test(l)));
+  });
+
   test("a boost is always above the rate it boosts", () => {
     for (const c of CARDS) {
       for (const r of c.earnRates) {

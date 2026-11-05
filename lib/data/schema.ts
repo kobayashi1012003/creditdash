@@ -227,15 +227,51 @@ const PRE_V3_DEFAULTS: Record<string, number> = {
 };
 
 /**
- * Keeps only the values a person actually chose. Anything equal to the old
+ * The defaults from 30 October to 5 November 2026, before the 1 cent
+ * baseline. A version 2 browser last opened in that window holds these as
+ * copies, so they must still count as inherited, not chosen.
+ */
+const OCT_30_DEFAULTS: Record<string, number> = {
+  "amex-mr": 2.0,
+  "capital-one": 1.8,
+  "chase-ur": 2.0,
+  "citi-ty": 1.8,
+  "wells-fargo": 1.6,
+  bilt: 2.1,
+  aeroplan: 1.5,
+  "alaska-atmos": 1.5,
+  aadvantage: 1.4,
+  ana: 1.4,
+  lifemiles: 1.5,
+  avios: 1.4,
+  "asia-miles": 1.3,
+  delta: 1.1,
+  emirates: 1.1,
+  etihad: 1.1,
+  "flying-blue": 1.3,
+  frontier: 1.1,
+  jetblue: 1.3,
+  qantas: 1.2,
+  krisflyer: 1.3,
+  southwest: 1.3,
+  turkish: 1.1,
+  united: 1.3,
+  "virgin-atlantic": 1.4,
+  accor: 2.0,
+  hyatt: 1.7,
+};
+
+/**
+ * Keeps only the values a person actually chose. Anything equal to an old
  * or the current default is taken to be inherited and dropped, so it follows
  * CreditDash's default from now on. Someone who deliberately typed exactly
- * the old default loses that choice; there is no way to tell them apart.
+ * an old default loses that choice; there is no way to tell them apart.
  */
 function migrateValuationsV2toV3(valuations: Valuation[]): Valuation[] {
   return valuations.filter(
     (v) =>
       v.centsPerPoint !== PRE_V3_DEFAULTS[v.program] &&
+      v.centsPerPoint !== OCT_30_DEFAULTS[v.program] &&
       v.centsPerPoint !== DEFAULT_CPP[v.program],
   );
 }

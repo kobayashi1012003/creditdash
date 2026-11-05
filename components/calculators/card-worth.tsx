@@ -43,17 +43,39 @@ const UNIT: Record<CreditPeriod, [string, string]> = {
   annual: ["year", "years"],
 };
 
+type Unit = [one: string, many: string];
+
 type Benefit =
   | { kind: "periodic"; id: string; name: string; credit: CardCredit; count: number }
   | { kind: "annual"; id: string; name: string; credit: CardCredit }
-  | { kind: "perk"; id: string; name: string; notes?: string };
+  /** Posts by itself (anniversary miles): always counted, nothing to enter. */
+  | { kind: "bonus"; id: string; name: string; notes: string; dollars: number }
+  /** A certificate with a cash worth: how many used, times what one is worth. */
+  | {
+      kind: "valued";
+      id: string;
+      name: string;
+      notes?: string;
+      perYear: number;
+      unit: Unit;
+      /** One's worth prefilled from its points cap, or null to ask. */
+      prefill: number | null;
+    }
+  /** Counted but never dollars (elite nights, lounge visits). */
+  | { kind: "usage"; id: string; name: string; notes?: string; perYear: number; unit: Unit }
+  /** Comes with the card, not counted (status, unlimited lounges). */
+  | { kind: "included"; id: string; name: string; notes?: string };
 
 /**
- * Everything the catalog knows a card gives back. Credits carry a cash
- * value; perks (lounges, status, free nights, protection) do not, so they
- * are worth what the user says.
+ * Everything the catalog knows a card gives back, and how each counts
+ * (owner, 5 November 2026). Credits and anniversary points carry cash
+ * value. Free nights and companion fares count as many as will be used,
+ * at a worth prefilled from the points cap where there is one. Status,
+ * elite nights and lounges are never a dollar figure: counted ones show
+ * how many would go unused, the rest are listed as included. Protections
+ * and insurance are left out, since they are not why anyone keeps a card.
  */
-function benefitsOf(card: Card): Benefit[] {
+function benefitsOf(card: Card, cpp: number): Benefit[] {
   // Ended credits drop out, and a limited-time credit only counts the
   // periods that open before it ends.
   const credits: Benefit[] = liveCredits(card.credits).map((credit) =>
@@ -69,16 +91,55 @@ function benefitsOf(card: Card): Benefit[] {
             : PERIOD_COUNT[credit.period],
         },
   );
-  const perks: Benefit[] = (card.perks ?? []).map((p) => ({
-    kind: "perk",
-    id: p.id,
-    name: p.name,
-    notes: p.notes,
-  }));
-  return [...credits, ...perks];
+  const bonus: Benefit[] = card.anniversaryBonus
+    ? [
+        {
+          kind: "bonus",
+          id: `${card.id}-anniversary-bonus`,
+          name: `${card.anniversaryBonus.points.toLocaleString("en-US")} anniversary ${card.anniversaryBonus.unit}`,
+          notes: "Posts on its own every card anniversary, so it always counts.",
+          dollars: pointsToDollars(card.anniversaryBonus.points, cpp),
+        },
+      ]
+    : [];
+  const perks: Benefit[] = (card.perks ?? [])
+    .filter((p) => p.kind !== "protection")
+    .map((p): Benefit => {
+      if (p.count && (p.kind === "free-night" || p.kind === "companion")) {
+        return {
+          kind: "valued",
+          id: p.id,
+          name: p.name,
+          notes: p.notes,
+          perYear: p.count.perYear,
+          unit: p.count.unit,
+          prefill: p.pointsCap ? Math.round(pointsToDollars(p.pointsCap, cpp)) : null,
+        };
+      }
+      if (p.count) {
+        return { kind: "usage", id: p.id, name: p.name, notes: p.notes, perYear: p.count.perYear, unit: p.count.unit };
+      }
+      return { kind: "included", id: p.id, name: p.name, notes: p.notes };
+    });
+  return [...credits, ...bonus, ...perks];
 }
 
-function toUse(b: Benefit, value: number): BenefitUse {
+/** Counted perks that would go unused: "11 elite nights". */
+function unusedCounts(benefits: Benefit[], values: Record<string, number>): string[] {
+  return benefits.flatMap((b) => {
+    if (b.kind !== "usage" && b.kind !== "valued") return [];
+    const left = b.perYear - Math.min(values[b.id] ?? 0, b.perYear);
+    if (left <= 0) return [];
+    return [`${formatCount(left)} ${left === 1 ? b.unit[0] : b.unit[1]}`];
+  });
+}
+
+/** One certificate's worth: what the user typed, else the prefill. */
+function eachOf(b: Extract<Benefit, { kind: "valued" }>, each: Record<string, number>): number {
+  return each[b.id] ?? b.prefill ?? 0;
+}
+
+function toUse(b: Benefit, value: number, each: Record<string, number>): BenefitUse | null {
   switch (b.kind) {
     case "periodic":
       return {
@@ -89,32 +150,38 @@ function toUse(b: Benefit, value: number): BenefitUse {
       };
     case "annual":
       return { id: b.id, name: b.name, max: b.credit.amount, used: value };
-    case "perk":
-      return { id: b.id, name: b.name, max: null, used: value };
+    case "bonus":
+      return { id: b.id, name: b.name, max: b.dollars, used: b.dollars };
+    case "valued":
+      // No dollar gap: what is left is named in units by unusedCounts.
+      return { id: b.id, name: b.name, max: null, used: Math.min(value, b.perYear) * eachOf(b, each) };
+    case "usage":
+    case "included":
+      return null;
   }
 }
 
+/** Only cards with a fee: "is it worth it?" has no question to answer at $0. */
+const hasFee = (c: Card) => c.annualFee > 0;
+
 function defaultCard(wallet: Card[]): string {
-  return (
-    wallet.find((c) => c.annualFee > 0)?.id ??
-    wallet[0]?.id ??
-    CARDS.find((c) => c.annualFee > 0)?.id ??
-    CARDS[0].id
-  );
+  return wallet.find(hasFee)?.id ?? CARDS.find(hasFee)!.id;
 }
 
 /** Will the benefits someone would actually use cover the annual fee? */
 export function CardWorthCalculator({ cards }: { cards: Card[] }) {
   const [cardId, setCardId] = useState(() => defaultCard(cards));
-  const card = getCard(cardId) ?? CARDS[0];
+  const found = getCard(cardId);
+  const card = found && hasFee(found) ? found : getCard(defaultCard(cards))!;
 
   return (
     <div className="@container">
       <div className="max-w-md">
         <CardSelect
           label="Card"
-          hint="Any card in the catalog, yours or not."
+          hint="Any card with an annual fee, yours or not."
           wallet={cards}
+          include={hasFee}
           value={card.id}
           onChange={setCardId}
         />
@@ -130,8 +197,11 @@ export function CardWorthCalculator({ cards }: { cards: Card[] }) {
 }
 
 function CardWorthBody({ card }: { card: Card }) {
-  const benefits = benefitsOf(card);
+  const { cpp } = useValuation(card.program);
+  const benefits = benefitsOf(card, cpp);
   const [values, setValues] = useState<Record<string, number>>({});
+  // What one free night or companion fare is worth, where the user changed it.
+  const [each, setEach] = useState<Record<string, number>>({});
   const [withRewards, setWithRewards] = useState(false);
   const [filled, setFilled] = useState(false);
   const rewardsId = useId();
@@ -141,16 +211,18 @@ function CardWorthBody({ card }: { card: Card }) {
   const usage = useCreditUsage();
 
   const spendInputs = useSpendInputs(card.id);
-  const { cpp } = useValuation(card.program);
   // The spend calculator has no timeframe, so its amounts count as a year.
   const spend = spendWorth(card, toSpend(spendInputs), "year", cpp);
   const rewardsPerYear = pointsToDollars(spend.pointsPerYear, cpp);
 
   const result = cardWorth(
     card.annualFee,
-    benefits.map((b) => toUse(b, values[b.id] ?? 0)),
+    benefits.flatMap((b) => toUse(b, values[b.id] ?? 0, each) ?? []),
     withRewards ? rewardsPerYear : 0,
   );
+  const unused = unusedCounts(benefits, values);
+  const counted = benefits.filter((b) => b.kind !== "included");
+  const included = benefits.filter((b) => b.kind === "included");
 
   function set(id: string, value: number) {
     setValues((v) => ({ ...v, [id]: Math.max(0, value) }));
@@ -161,7 +233,7 @@ function CardWorthBody({ card }: { card: Card }) {
     if (!owned) return;
     const next: Record<string, number> = {};
     for (const b of benefits) {
-      if (b.kind === "perk") continue;
+      if (b.kind !== "periodic" && b.kind !== "annual") continue;
       const used = usedInRecentYear(b.credit, owned.userCard, usage);
       next[b.id] =
         b.kind === "periodic" ? Math.round((used / b.credit.amount) * 10) / 10 : used;
@@ -177,7 +249,7 @@ function CardWorthBody({ card }: { card: Card }) {
     // sticky element only sticks within its own parent.
     <div className="mt-5 grid gap-4 @2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @2xl:grid-rows-[auto_auto_1fr] @2xl:gap-x-8">
       <div className="sticky top-0 z-10 -mx-1 bg-surface px-1 pb-1 @2xl:top-4 @2xl:col-start-2 @2xl:row-start-1 @2xl:mx-0 @2xl:self-start @2xl:px-0">
-        <WorthSummary result={result} />
+        <WorthSummary result={result} unused={unused} />
       </div>
 
       <div className="space-y-3 @2xl:col-start-2 @2xl:row-start-2">
@@ -210,7 +282,7 @@ function CardWorthBody({ card }: { card: Card }) {
       </div>
 
       <div className="min-w-0 @2xl:col-start-1 @2xl:row-span-3 @2xl:row-start-1">
-        {owned && benefits.some((b) => b.kind !== "perk") && (
+        {owned && benefits.some((b) => b.kind === "periodic" || b.kind === "annual") && (
           <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
             <Button variant="outline" size="sm" onClick={fillFromTracker}>
               <ArrowsClockwiseIcon size={15} />
@@ -230,23 +302,46 @@ function CardWorthBody({ card }: { card: Card }) {
             from spending can count toward it.
           </p>
         ) : (
-          <ul className="divide-y divide-line">
-            {benefits.map((b) => (
-              <BenefitRow
-                key={b.id}
-                benefit={b}
-                value={values[b.id] ?? 0}
-                onValue={(v) => set(b.id, v)}
-              />
-            ))}
-          </ul>
+          <>
+            <ul className="divide-y divide-line">
+              {counted.map((b) => (
+                <BenefitRow
+                  key={b.id}
+                  benefit={b}
+                  value={values[b.id] ?? 0}
+                  onValue={(v) => set(b.id, v)}
+                  each={b.kind === "valued" ? eachOf(b, each) : 0}
+                  onEach={(v) => setEach((e) => ({ ...e, [b.id]: Math.max(0, v) }))}
+                />
+              ))}
+            </ul>
+            {included.length > 0 && (
+              <div className="mt-5 border-t border-line pt-4">
+                <p className="text-[13px] font-medium">Also included, not counted in dollars</p>
+                <ul className="mt-2 space-y-1.5">
+                  {included.map((b) => (
+                    <li key={b.id} className="text-[13px] leading-snug">
+                      {b.name}
+                      {b.notes && <span className="text-muted">. {b.notes}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function WorthSummary({ result }: { result: ReturnType<typeof cardWorth> }) {
+function WorthSummary({
+  result,
+  unused,
+}: {
+  result: ReturnType<typeof cardWorth>;
+  unused: string[];
+}) {
   if (result.verdict === "no-fee") {
     return (
       <Verdict title="No annual fee">
@@ -273,6 +368,15 @@ function WorthSummary({ result }: { result: ReturnType<typeof cardWorth> }) {
           {percent(result.covered ?? 0)} of fee covered
         </span>
       </p>
+      {/* Perks paid for in the fee but left on the table. Elite nights and
+          lounge visits have no dollar figure, so the fee sum cannot show
+          them; naming them is how an unused perk counts against the card. */}
+      {unused.length > 0 && (
+        <p className="mt-2 text-[13px] leading-snug">
+          <span className="text-muted">Unused: </span>
+          {unused.join(", ")}
+        </p>
+      )}
     </Verdict>
   );
 }
@@ -334,28 +438,71 @@ function BenefitRow({
   benefit,
   value,
   onValue,
+  each,
+  onEach,
 }: {
   benefit: Benefit;
   value: number;
   onValue: (v: number) => void;
+  /** One certificate's worth, for a "valued" benefit. */
+  each: number;
+  onEach: (v: number) => void;
 }) {
-  if (benefit.kind === "perk") {
+  if (benefit.kind === "included") return null;
+
+  if (benefit.kind === "bonus") {
     return (
-      <li className="grid grid-cols-[minmax(0,1fr)_7.5rem] items-start gap-3 py-3.5 first:pt-0 last:pb-0">
+      <li className="flex items-start justify-between gap-3 py-3.5 first:pt-0 last:pb-0">
         <div className="min-w-0">
           <p className="text-[14px] font-medium leading-snug">{benefit.name}</p>
-          {benefit.notes && (
-            <p className="mt-0.5 text-[12px] leading-snug text-muted">{benefit.notes}</p>
+          <p className="mt-0.5 text-[12px] leading-snug text-muted">{benefit.notes}</p>
+        </div>
+        <span className="shrink-0 pt-0.5 text-[14px] tabular-nums">{money(benefit.dollars)}</span>
+      </li>
+    );
+  }
+
+  if (benefit.kind === "valued" || benefit.kind === "usage") {
+    const used = Math.min(value, benefit.perYear);
+    return (
+      <li className="py-3.5 first:pt-0 last:pb-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[14px] font-medium leading-snug">{benefit.name}</p>
+            {benefit.notes && (
+              <p className="mt-0.5 text-[12px] leading-snug text-muted">{benefit.notes}</p>
+            )}
+          </div>
+          {benefit.kind === "valued" ? (
+            <span className="shrink-0 pt-0.5 text-[14px] tabular-nums">{money(used * each)}</span>
+          ) : (
+            <span className="shrink-0 pt-0.5 text-[12px] text-muted">No dollar value</span>
           )}
         </div>
-        <NumberField
-          kind="money"
-          label="What it's worth to you"
-          labelHidden={`What ${benefit.name} is worth to you a year`}
-          value={value || null}
-          onValue={(v) => onValue(v ?? 0)}
-          inputClassName="text-right"
+        <CountStepper
+          name={benefit.name}
+          unit={benefit.unit}
+          count={benefit.perYear}
+          value={value}
+          onValue={onValue}
         />
+        {benefit.kind === "valued" && (
+          <div className="mt-2.5 grid max-w-[16rem] grid-cols-[minmax(0,1fr)_7.5rem] items-center gap-3">
+            <p className="text-[12px] leading-snug text-muted">
+              {benefit.prefill === null
+                ? `What one ${benefit.unit[0]} is worth to you`
+                : `One ${benefit.unit[0]}, at most`}
+            </p>
+            <NumberField
+              kind="money"
+              label={`Worth of one ${benefit.unit[0]}`}
+              labelHidden={`What one ${benefit.unit[0]} from ${benefit.name} is worth`}
+              value={each || null}
+              onValue={(v) => onEach(v ?? 0)}
+              inputClassName="text-right"
+            />
+          </div>
+        )}
       </li>
     );
   }
@@ -406,9 +553,9 @@ function BenefitRow({
           {money(Math.round(Math.min(value, benefit.count) * credit.amount * 100) / 100)}
         </span>
       </div>
-      <PeriodStepper
+      <CountStepper
         name={benefit.name}
-        period={credit.period}
+        unit={UNIT[credit.period]}
         count={benefit.count}
         value={value}
         onValue={onValue}
@@ -417,25 +564,29 @@ function BenefitRow({
   );
 }
 
-/** Periods used, from none to all, with the three answers most people give. */
-function PeriodStepper({
+/**
+ * How many used, from none to all, with the answers most people give.
+ * Periods of a credit, or a perk's nights, visits or certificates.
+ */
+function CountStepper({
   name,
-  period,
+  unit,
   count,
   value,
   onValue,
 }: {
   name: string;
-  period: CreditPeriod;
+  unit: Unit;
   count: number;
   value: number;
   onValue: (v: number) => void;
 }) {
-  const [one, many] = UNIT[period];
+  const [one, many] = unit;
   const shown = Math.min(value, count);
+  // "Half" of one certificate is "None" again, so it only shows from two.
   const quick = [
     { label: "None", to: 0 },
-    { label: "Half", to: Math.floor(count / 2) },
+    ...(count >= 2 ? [{ label: "Half", to: Math.floor(count / 2) }] : []),
     { label: "All", to: count },
   ];
 

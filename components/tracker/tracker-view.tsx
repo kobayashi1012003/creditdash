@@ -335,10 +335,15 @@ function CardCredits({
   usage: CreditUsage;
 }) {
   const [customizing, setCustomizing] = useState(false);
+  const valuations = useValuations();
   const { shown, hidden } = arrangeCredits(liveCredits(card.credits), userCard.prefs);
   const available = shown.reduce((s, c) => s + creditState(c, userCard, usage).available, 0);
   const used = shown.reduce((s, c) => s + creditState(c, userCard, usage).usedTotal, 0);
   const autofill = userCard.prefs?.autofill ?? {};
+  // Points that post by themselves each anniversary count toward the fee
+  // from the start of the card year, with nothing to tick.
+  const bonus = card.anniversaryBonus;
+  const bonusDollars = bonus ? pointsValue(bonus.points, valuations[card.program] ?? 0) : 0;
 
   if (card.credits.length === 0) {
     return (
@@ -368,10 +373,27 @@ function CardCredits({
         </div>
       }
     >
-      <FeeBar annualFee={card.annualFee} creditsUsed={used} />
+      <FeeBar annualFee={card.annualFee} creditsUsed={used + bonusDollars} />
 
       {card.credits.some((c) => c.resetBasis === "anniversary") && (
         <AnniversaryField userCard={userCard} cardName={userCard.nickname ?? card.name} />
+      )}
+
+      {bonus && (
+        <div className="mt-5 flex items-start justify-between gap-4 rounded-inner border border-line px-3.5 py-3">
+          <div className="min-w-0">
+            <p className="text-[15px]">
+              {pts(bonus.points)} anniversary {bonus.unit}
+            </p>
+            <p className="text-[13px] leading-snug text-muted">
+              Post on their own every {monthName(userCard.anniversaryMonth)}{" "}
+              {userCard.anniversaryDay ?? 1}. Nothing to use, and counted toward the fee.
+            </p>
+          </div>
+          <p className="shrink-0 text-[13px] tabular-nums text-muted">
+            about {money(bonusDollars)}
+          </p>
+        </div>
       )}
 
       <ul className="mt-6 space-y-6">
@@ -477,7 +499,7 @@ function FeeBar({
       <div className="flex items-baseline justify-between gap-4">
         <p className="text-sm">
           {covered ? (
-            <>Credits have covered the {usd(annualFee)} fee.</>
+            <>The {usd(annualFee)} fee is earned back.</>
           ) : (
             <>
               <span className="font-medium">{money(remaining)}</span>

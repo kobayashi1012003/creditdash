@@ -113,6 +113,19 @@ export type CardPerk = {
   name: string;
   kind: PerkKind;
   notes?: string;
+  /**
+   * A perk that comes as a number of things a year: elite night credits,
+   * lounge visits, a free night, a companion fare. "Is this card worth it?"
+   * asks how many will be used rather than a dollar figure, and names what
+   * would go unused ("11 elite nights unused").
+   */
+  count?: { perYear: number; unit: [one: string, many: string] };
+  /**
+   * For a free night: the most it can be redeemed for, in points of the
+   * card's own program, so one night's value is prefilled at the user's
+   * valuation. Absent where there is no cap; the user then enters a value.
+   */
+  pointsCap?: number;
 };
 
 export type Card = {
@@ -137,6 +150,13 @@ export type Card = {
   loungeAccess: string | null;
   /** Benefits with no cash value. See CardPerk. */
   perks?: CardPerk[];
+  /**
+   * Points or miles that post by themselves every card anniversary (the
+   * Venture X's 10,000 miles). Nothing to spend or tick, so not a credit:
+   * the Tracker shows it as received, and every fee sum counts it at the
+   * user's valuation of the card's program.
+   */
+  anniversaryBonus?: { points: number; unit: "points" | "miles" };
   /**
    * Details that are easy to miss and change what the card is worth:
    * enrollment, spend thresholds, recent and announced changes. One

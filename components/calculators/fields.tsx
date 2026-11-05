@@ -151,6 +151,7 @@ export function CardSelect({
   onChange,
   allowNone,
   noneLabel = "None",
+  include = () => true,
 }: {
   label: string;
   hint?: ReactNode;
@@ -159,10 +160,13 @@ export function CardSelect({
   onChange: (cardId: string) => void;
   allowNone?: boolean;
   noneLabel?: string;
+  /** Which cards to offer, from the wallet and the catalog alike. */
+  include?: (card: Card) => boolean;
 }) {
   const id = useId();
+  const mine = wallet.filter(include);
   const owned = new Set(wallet.map((c) => c.id));
-  const rest = CARDS.filter((c) => !owned.has(c.id));
+  const rest = CARDS.filter((c) => !owned.has(c.id) && include(c));
   return (
     <div>
       <FieldLabel htmlFor={id} hint={hint}>
@@ -175,16 +179,16 @@ export function CardSelect({
         className={SELECT_CLASS}
       >
         {allowNone && <option value="">{noneLabel}</option>}
-        {wallet.length > 0 && (
+        {mine.length > 0 && (
           <optgroup label="In your wallet">
-            {wallet.map((c) => (
+            {mine.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </optgroup>
         )}
-        <optgroup label={wallet.length > 0 ? "Other cards" : "All cards"}>
+        <optgroup label={mine.length > 0 ? "Other cards" : "All cards"}>
           {rest.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}

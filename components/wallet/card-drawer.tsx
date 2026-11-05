@@ -16,7 +16,7 @@ import { EarnChip } from "@/components/ui/earn-chip";
 import { CreditConditions } from "@/components/ui/credit-conditions";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
-import { longDate, monthName, usd, usdExact } from "@/lib/format";
+import { longDate, monthName, pts, usd, usdExact } from "@/lib/format";
 import { cardAnnualCreditValue, liveCredits } from "@/lib/credits";
 import { useIsDesktop } from "@/lib/use-media-query";
 import { TRACKER_CARD_KEY, useStoredValue } from "@/lib/use-stored-value";
@@ -178,6 +178,12 @@ export function CardDrawer({
                     </li>
                   ))}
                 </ul>
+              )}
+              {card.anniversaryBonus && (
+                <p className="mt-3 text-[13px] text-muted">
+                  Plus {pts(card.anniversaryBonus.points)} {card.anniversaryBonus.unit} every card
+                  anniversary, posted automatically.
+                </p>
               )}
             </section>
 

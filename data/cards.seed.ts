@@ -206,11 +206,11 @@ export const CARDS: Card[] = [
     credits: [
       { id: "vx-travel", name: "Travel credit", amount: 300, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Capital One Travel bookings only. Expires at the next anniversary" },
     ],
+    anniversaryBonus: { points: 10000, unit: "miles" },
     perks: [
       { id: "venture-x-lounge", name: "Lounge access", kind: "lounge", notes: "Capital One Lounge and Priority Pass" },
     ],
     finePrint: [
-      "10,000 bonus miles post every account anniversary.",
       "Since 1 February 2026, authorized users pay $125 a year each for lounge access.",
       "Free lounge guests now need $75,000 of spend in a calendar year; otherwise $45 per adult.",
       "Priority Pass guests cost $35 each, and Priority Pass covers lounges only, not restaurants.",
@@ -423,7 +423,7 @@ export const CARDS: Card[] = [
       { id: "hilton-resort", name: "Hilton credit", amount: 50, period: "quarterly", resetBasis: "calendar", category: "hotels", notes: "Purchases made directly with a Hilton property, room or on-site dining" },
     ],
     perks: [
-      { id: "surpass-free-night", name: "Free Night Reward", kind: "free-night", notes: "After $15,000 of spend in a calendar year, not given each year" },
+      { id: "surpass-free-night", name: "Free Night Reward", kind: "free-night", notes: "After $15,000 of spend in a calendar year, not given each year", count: { perYear: 1, unit: ["free night", "free nights"] } },
       { id: "surpass-status", name: "Hilton Gold status", kind: "status", notes: "Diamond after $40,000 of spend in a calendar year. National Emerald Club too" },
       { id: "surpass-protection", name: "Purchase and car rental protection", kind: "protection", notes: "Baggage, car rental, purchase and extended warranty cover" },
     ],
@@ -460,7 +460,7 @@ export const CARDS: Card[] = [
       { id: "united-jsx", name: "JSX", amount: 100, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Flights booked direct with JSX" },
     ],
     perks: [
-      { id: "united-explorer-lounge", name: "Lounge access", kind: "lounge", notes: "Two United Club passes a year" },
+      { id: "united-explorer-lounge", name: "United Club passes", kind: "lounge", count: { perYear: 2, unit: ["United Club pass", "United Club passes"] } },
     ],
     finePrint: [
       "The annual fee is $0 in the first year, then $150.",
@@ -494,7 +494,7 @@ export const CARDS: Card[] = [
       { id: "aspire-clear", name: "CLEAR+", amount: 219, period: "annual", resetBasis: "calendar", category: "flights" },
     ],
     perks: [
-      { id: "aspire-free-night", name: "Free Night Reward", kind: "free-night", notes: "One each card membership year, plus one more at $30,000 and again at $60,000 of spend in a calendar year" },
+      { id: "aspire-free-night", name: "Free Night Reward", kind: "free-night", notes: "One each card membership year, plus one more at $30,000 and again at $60,000 of spend in a calendar year", count: { perYear: 1, unit: ["free night", "free nights"] } },
       { id: "aspire-diamond", name: "Hilton Diamond status", kind: "status", notes: "Also National Car Rental Emerald Club Executive" },
       { id: "aspire-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
     ],
@@ -551,8 +551,9 @@ export const CARDS: Card[] = [
     ],
     credits: [],
     perks: [
-      { id: "bevy-free-night", name: "Free Night Award", kind: "free-night", notes: "After $15,000 of spend in a calendar year, at hotels up to 50,000 points a night" },
-      { id: "bevy-status", name: "Marriott Gold Elite status", kind: "status", notes: "Plus 15 Elite Night Credits each year and 1,000 bonus points a stay" },
+      { id: "bevy-free-night", name: "Free Night Award", kind: "free-night", notes: "After $15,000 of spend in a calendar year, at hotels up to 50,000 points a night", count: { perYear: 1, unit: ["free night", "free nights"] }, pointsCap: 50000 },
+      { id: "bevy-status", name: "Marriott Gold Elite status", kind: "status", notes: "Plus 1,000 bonus points a stay" },
+      { id: "bevy-elite-nights", name: "Elite Night Credits", kind: "status", notes: "Count toward Marriott status, not toward stays", count: { perYear: 15, unit: ["elite night", "elite nights"] } },
       { id: "bevy-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, baggage, car rental, purchase and extended warranty cover" },
     ],
     finePrint: [
@@ -582,9 +583,10 @@ export const CARDS: Card[] = [
       { id: "brilliant-dining", name: "Dining credit", amount: 25, period: "monthly", resetBasis: "calendar", category: "dining", notes: "Restaurants worldwide. Lapses at the end of each month" },
     ],
     perks: [
-      { id: "brilliant-free-night", name: "Free Night Award", kind: "free-night", notes: "Each year after your card renews, at hotels up to 85,000 points a night" },
+      { id: "brilliant-free-night", name: "Free Night Award", kind: "free-night", notes: "Each year after your card renews, at hotels up to 85,000 points a night", count: { perYear: 1, unit: ["free night", "free nights"] }, pointsCap: 85000 },
       { id: "brilliant-lounge", name: "Priority Pass", kind: "lounge", notes: "Enroll first. Two guests free" },
-      { id: "brilliant-status", name: "Marriott Platinum Elite status", kind: "status", notes: "Plus 25 Elite Night Credits each year" },
+      { id: "brilliant-status", name: "Marriott Platinum Elite status", kind: "status" },
+      { id: "brilliant-elite-nights", name: "Elite Night Credits", kind: "status", notes: "Count toward Marriott status, not toward stays", count: { perYear: 25, unit: ["elite night", "elite nights"] } },
       { id: "brilliant-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
     ],
     finePrint: [
@@ -616,8 +618,8 @@ export const CARDS: Card[] = [
       { id: "reserve-stays", name: "Delta Stays credit", amount: 200, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid hotels booked through Delta Stays" },
     ],
     perks: [
-      { id: "reserve-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip" },
-      { id: "reserve-lounge", name: "Delta Sky Club", kind: "lounge", notes: "15 visits a year when flying Delta, plus Centurion and Escape lounges" },
+      { id: "reserve-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip", count: { perYear: 1, unit: ["companion certificate", "companion certificates"] } },
+      { id: "reserve-lounge", name: "Delta Sky Club", kind: "lounge", notes: "When flying Delta, plus Centurion and Escape lounges", count: { perYear: 15, unit: ["Sky Club visit", "Sky Club visits"] } },
       { id: "reserve-bags", name: "Free checked bags", kind: "bags", notes: "First and second bag on Delta, with Zone 5 boarding" },
       { id: "reserve-status", name: "Medallion head start", kind: "status", notes: "$2,500 in Medallion Qualification Dollars each year, plus 1 for every $10 spent. Hertz President's Circle too" },
       { id: "reserve-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, trip cancellation, cell phone, baggage, car rental, return, purchase and extended warranty cover" },
@@ -654,7 +656,7 @@ export const CARDS: Card[] = [
       { id: "dplat-stays", name: "Delta Stays credit", amount: 150, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid hotels booked through Delta Stays" },
     ],
     perks: [
-      { id: "dplat-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip" },
+      { id: "dplat-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip", count: { perYear: 1, unit: ["companion certificate", "companion certificates"] } },
       { id: "dplat-bags", name: "Free checked bags", kind: "bags", notes: "First and second bag on Delta, with priority boarding" },
       { id: "dplat-status", name: "Medallion head start", kind: "status", notes: "Medallion Qualification Dollars each year, plus 1 for every $20 spent. Hertz Five Star too" },
       { id: "dplat-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, cell phone, baggage, car rental, purchase and extended warranty cover" },
