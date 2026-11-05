@@ -141,12 +141,14 @@ export const CARDS: Card[] = [
     ],
     perks: [
       { id: "csr-lounge", name: "Lounge access", kind: "lounge", notes: "Sapphire Lounge, Priority Pass and Air Canada Maple Leaf" },
+      { id: "csr-ihg", name: "IHG Platinum Elite status", kind: "status", notes: "Included through 31 December 2027" },
     ],
     finePrint: [
       "Purchases covered by the travel credit or The Edit credit earn no points.",
       "Lyft earns 5x through September 2027, and Peloton equipment over $150 earns 10x through 2027.",
       "Apple TV and Apple Music are included free; activate by 22 June 2027.",
-      "$75,000 of spend in a calendar year unlocks Hyatt and IHG status and a $500 Southwest credit.",
+      "$75,000 of spend in a calendar year unlocks Hyatt Explorist, IHG Diamond, Southwest A-List and a $500 Southwest credit.",
+      "DashPass is free for 12 months when activated by 31 December 2029.",
       "Priority Pass needs the physical card or digital Priority Pass card; a phone wallet card is refused.",
     ],
   },
@@ -209,8 +211,10 @@ export const CARDS: Card[] = [
     anniversaryBonus: { points: 10000, unit: "miles" },
     perks: [
       { id: "venture-x-lounge", name: "Lounge access", kind: "lounge", notes: "Capital One Lounge and Priority Pass" },
+      { id: "venture-x-hertz", name: "Hertz Gold Plus Rewards upgrade", kind: "status", notes: "Enroll first" },
     ],
     finePrint: [
+      "Capital One Entertainment purchases earn 5x.",
       "Since 1 February 2026, authorized users pay $125 a year each for lounge access.",
       "Free lounge guests now need $75,000 of spend in a calendar year; otherwise $45 per adult.",
       "Priority Pass guests cost $35 each, and Priority Pass covers lounges only, not restaurants.",
@@ -241,6 +245,8 @@ export const CARDS: Card[] = [
     finePrint: [
       "Global Entry or TSA PreCheck is covered up to $120 every four years.",
       "New cardholders get a $300 credit for Capital One Travel stays in the first year only.",
+      "Capital One Entertainment purchases earn 5x.",
+      "Every Lifestyle Collection stay comes with a $50 experience credit.",
     ],
   },
   {
@@ -261,9 +267,6 @@ export const CARDS: Card[] = [
       { category: "other", multiplier: 1.25, cap: null },
     ],
     credits: [],
-    perks: [
-      { id: "ventureone-hertz", name: "Hertz Five Star status", kind: "status" },
-    ],
   },
   {
     id: "strata-premier",
@@ -387,7 +390,8 @@ export const CARDS: Card[] = [
     program: "amex-mr",
     faceStyle: { base: "#2F6FAF", shade: "#245688", foil: "#EAF2FA", finish: "matte" },
     issuerUrl: "https://www.americanexpress.com/us/credit-cards/business/business-credit-cards/american-express-blue-business-plus-credit-card-amex/",
-    lastVerified: "2026-10-28",
+    sourceUrl: "https://www.americanexpress.com/en-us/credit-cards/apply/terms/business/prospect/bluebusinessplus-credit-card/45094-9-0?key=tncBody&rwdFlag=rwd",
+    lastVerified: "2026-11-05",
     foreignTransactionFee: 2.7,
     loungeAccess: null,
     earnRates: [
@@ -396,7 +400,7 @@ export const CARDS: Card[] = [
     credits: [],
     finePrint: [
       "A 2.7% fee applies to purchases abroad, so it is a poor choice when travelling.",
-      "Checked with third-party sources only; the Amex page could not be read.",
+      "Amex Travel bookings earn 2x without counting toward the $50,000.",
     ],
   },
   {
@@ -442,7 +446,8 @@ export const CARDS: Card[] = [
     program: "united",
     faceStyle: { base: "#1A3E6E", shade: "#122C4F", foil: "#DCE6F2", finish: "matte" },
     issuerUrl: "https://creditcards.chase.com/travel-credit-cards/united/united-explorer",
-    lastVerified: "2026-10-28",
+    lastVerified: "2026-11-05",
+    sourceUrl: "https://creditcards.chase.com/travel-credit-cards/united/united-explorer",
     foreignTransactionFee: 0,
     loungeAccess: "Two United Club passes a year",
     earnRates: [
@@ -455,7 +460,7 @@ export const CARDS: Card[] = [
       { id: "united-tb-10k", name: "United TravelBank cash", amount: 100, period: "annual", resetBasis: "calendar", category: "flights", spendToUnlock: 10000, notes: "Paid into United TravelBank" },
       { id: "united-hotels", name: "United Hotels", amount: 100, period: "annual", resetBasis: "anniversary", category: "hotels", notes: "$50 on each of the first two prepaid United Hotels stays" },
       { id: "united-rideshare", name: "Rideshare", amount: 5, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Opt in every calendar year" },
-      { id: "united-instacart", name: "Instacart", amount: 10, period: "monthly", resetBasis: "calendar", category: "groceries", notes: "Orders of $10 or more. Needs the Instacart+ trial activated" },
+      { id: "united-instacart", name: "Instacart", amount: 10, period: "monthly", resetBasis: "calendar", category: "groceries", notes: "One order of $10 or more a month, while an Instacart+ membership is active", endsOn: "2027-12-31" },
       { id: "united-avis", name: "Avis or Budget", amount: 50, period: "annual", resetBasis: "anniversary", notes: "$25 on each of the first two rentals of two days or more" },
       { id: "united-jsx", name: "JSX", amount: 100, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Flights booked direct with JSX" },
     ],
@@ -501,6 +506,7 @@ export const CARDS: Card[] = [
     finePrint: [
       "Two-night stays at Waldorf Astoria or Conrad booked through the card's own Hilton page come with up to $100 to spend at the hotel.",
       "Restaurants inside a hotel can code as the hotel, not as dining.",
+      "Car rentals booked direct with major rental companies earn 7x.",
     ],
   },
   {
