@@ -62,10 +62,6 @@ cloudflare-env.d.ts
 # Codex CLI is not used on this project
 .codex/
 
-# CardAPI responses and reports. Its terms forbid redistributing the data,
-# and this repository is public, so none of it is ever committed.
-/.cardapi/
-
 # Card art widths, cut from public/cards/ at every build
 /public/cards/w/
 
