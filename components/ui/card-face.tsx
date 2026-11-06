@@ -132,7 +132,7 @@ export function CardFace({
       {imageSrc ? (
         <Image
           src={imageSrc}
-          alt={`${card.issuer} ${card.name}`}
+          alt={cardLabel(card)}
           loader={loader}
           unoptimized={!loader}
           fill
@@ -167,6 +167,32 @@ export function CardFace({
 }
 
 /**
+ * The card's accessible name. Names like "Amex Gold" or "Bilt Blue" already
+ * say who issues them, so prefixing the issuer would read "American Express
+ * Amex Gold". Other names ("Sapphire Reserve") get the issuer in front.
+ */
+const ISSUER_WORDS = [
+  "amex",
+  "american express",
+  "chase",
+  "capital one",
+  "citi",
+  "bilt",
+  "delta",
+  "hilton",
+  "marriott",
+  "united",
+];
+
+export function cardLabel(card: Pick<Card, "issuer" | "name">): string {
+  const name = card.name.toLowerCase();
+  const named = [card.issuer.toLowerCase(), ...ISSUER_WORDS].some(
+    (w) => name === w || name.startsWith(`${w} `),
+  );
+  return named ? card.name : `${card.issuer} ${card.name}`;
+}
+
+/**
  * Picks the smallest pre-cut width that still covers what the browser asked
  * for, else the largest cut. Next's own optimiser cannot do this on
  * Cloudflare Workers (see scripts/build-card-art-manifest.mjs), so the widths
@@ -187,8 +213,13 @@ function artLoader(art: CardArt) {
 function GeneratedFace({ card }: { card: Card }) {
   const { base, shade, foil, finish } = card.faceStyle;
 
+  // One image to assistive tech, named like the art's alt. The printed
+  // issuer, network and name are hidden so they never leak into the name of
+  // a button that wraps the face; such buttons carry their own aria-label.
   return (
     <div
+      role="img"
+      aria-label={cardLabel(card)}
       className="absolute inset-0 flex flex-col justify-between p-[7%]"
       style={{
         background: `linear-gradient(152deg, ${base} 0%, ${shade} 62%, ${base} 100%)`,
@@ -207,7 +238,7 @@ function GeneratedFace({ card }: { card: Card }) {
         />
       )}
 
-      <div className="relative flex items-start justify-between gap-3">
+      <div aria-hidden className="relative flex items-start justify-between gap-3">
         <span
           className="truncate text-[clamp(0.6rem,2.6cqw,0.8rem)] font-medium tracking-wide @max-[200px]:hidden"
           style={{ color: foil, opacity: 0.85 }}
@@ -217,7 +248,7 @@ function GeneratedFace({ card }: { card: Card }) {
         <NetworkMark network={card.network} foil={foil} />
       </div>
 
-      <div className="relative">
+      <div aria-hidden className="relative">
         <Chip foil={foil} />
         <p
           // Below ~200px the face cannot hold its own name legibly, and the

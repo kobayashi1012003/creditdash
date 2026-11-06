@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { Sidebar } from "@/components/shell/sidebar";
 import { TabBar } from "@/components/shell/tab-bar";
 import { SkipLink } from "@/components/shell/skip-link";
 import { StorageNotice } from "@/components/shell/storage-notice";
 import { DemoBanner } from "@/components/shell/demo-banner";
 import { AutoFillRunner } from "@/components/shell/autofill-runner";
+
+/** The app's pages are one person's wallet (or the demo): nothing to index. */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * The signed-in shell. Sidebar on desktop, tab bar on mobile, with the

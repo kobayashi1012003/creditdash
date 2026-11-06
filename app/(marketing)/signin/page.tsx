@@ -2,8 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SignInForm } from "@/components/auth/sign-in-form";
 
+const DESCRIPTION =
+  "Sign in to CreditDash with Google or an emailed link, or try the demo without an account.";
+
 export const metadata: Metadata = {
   title: "Sign in",
+  description: DESCRIPTION,
+  alternates: { canonical: "/signin" },
+  openGraph: {
+    type: "website",
+    siteName: "CreditDash",
+    locale: "en_US",
+    title: "Sign in | CreditDash",
+    description: DESCRIPTION,
+    url: "/signin",
+    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
+  },
 };
 
 /**

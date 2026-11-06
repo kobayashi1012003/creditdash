@@ -5,7 +5,7 @@ import {
   type UserCard,
   type Valuation,
 } from "@/data/types";
-import { parseLocalDate } from "@/lib/credits/autofill";
+import { localDate, parseLocalDate } from "@/lib/credits/autofill";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
 import {
   DEMO_BALANCES,
@@ -120,7 +120,7 @@ export function parseStored(raw: string | null): Persisted | null {
     ? v.userCards.filter(isUserCard).map(cleanUserCard)
     : base.userCards;
 
-  let creditUsage = isUsage(v.creditUsage) ? v.creditUsage : base.creditUsage;
+  let creditUsage = isUsage(v.creditUsage) ? cleanUsage(v.creditUsage) : base.creditUsage;
 
   if (v.version < 2) {
     creditUsage = migrateUsageV1toV2(creditUsage, userCards);
@@ -279,12 +279,32 @@ function migrateValuationsV2toV3(valuations: Valuation[]): Valuation[] {
 function isUserCard(x: unknown): x is UserCard {
   if (typeof x !== "object" || x === null) return false;
   const c = x as Partial<UserCard>;
-  return typeof c.cardId === "string" && typeof c.sortOrder === "number";
+  return (
+    isId(c.cardId) &&
+    typeof c.sortOrder === "number" &&
+    Number.isFinite(c.sortOrder) &&
+    c.sortOrder >= 0
+  );
 }
 
-/** Keeps a stored card's optional fields only when they are well formed. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Keeps a stored card's fields within what the database allows, repairing
+ * rather than dropping the card: a bad nickname goes, a bad date or month
+ * falls back, so one odd value never costs someone a card.
+ */
 export function cleanUserCard(c: UserCard): UserCard {
   const out: UserCard = { ...c };
+  if (typeof c.openedOn !== "string" || !ISO_DATE.test(c.openedOn)) {
+    out.openedOn = localDate(new Date());
+  }
+  const month = c.anniversaryMonth;
+  if (!(typeof month === "number" && Number.isInteger(month) && month >= 1 && month <= 12)) {
+    out.anniversaryMonth = Number(out.openedOn.slice(5, 7)) || 1;
+  }
+  if (typeof c.nickname !== "string" || c.nickname.trim() === "") delete out.nickname;
+  else out.nickname = c.nickname.slice(0, 40);
   const day = c.anniversaryDay;
   if (!(typeof day === "number" && Number.isInteger(day) && day >= 1 && day <= 31)) {
     delete out.anniversaryDay;
@@ -365,6 +385,20 @@ function isValuation(x: unknown): x is Valuation {
     val.centsPerPoint > 0 &&
     val.centsPerPoint < 100
   );
+}
+
+/** Drops any amount the database would refuse (NaN, Infinity, negative). */
+function cleanUsage(usage: CreditUsage): CreditUsage {
+  const out: CreditUsage = {};
+  for (const [creditId, row] of Object.entries(usage)) {
+    if (!isId(creditId)) continue;
+    const clean: Record<string, number> = {};
+    for (const [key, n] of Object.entries(row)) {
+      if (key.length >= 1 && key.length <= 32 && Number.isFinite(n) && n >= 0) clean[key] = n;
+    }
+    out[creditId] = clean;
+  }
+  return out;
 }
 
 function isUsage(x: unknown): x is CreditUsage {

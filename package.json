@@ -19,7 +19,8 @@
     "pretypecheck": "node scripts/build-card-art-manifest.mjs",
     "test": "node --test \"lib/**/*.test.ts\"",
     "icons": "node scripts/build-icons.mjs",
-    "test:rls": "node --env-file=.env.local scripts/rls-test.mjs"
+    "test:rls": "node --env-file=.env.local scripts/rls-test.mjs",
+    "og-image": "node scripts/build-og-image.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -39,8 +40,6 @@
     "next-themes": "^0.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "recharts": "^3.10.1",
-    "shadcn": "^4.23.0",
     "tailwind-merge": "^3.7.0",
     "tw-animate-css": "^1.4.0"
   },
@@ -52,6 +51,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "shadcn": "^4.23.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5",

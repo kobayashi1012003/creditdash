@@ -64,7 +64,7 @@ export function ValuationTag({
         type="button"
         onClick={() => setEditing(true)}
         aria-label={`Change what a ${PROGRAM_LABELS[program]} point is worth to you`}
-        className="inline-flex h-7 items-center gap-1 rounded-control px-1.5 text-[13px] text-muted underline decoration-line underline-offset-4 transition-[color,text-decoration-color,transform] duration-[var(--cd-dur-hover)] ease-out hover:text-ink hover:decoration-current active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="relative inline-flex h-7 items-center gap-1 rounded-control px-1.5 after:absolute after:-inset-x-1 after:-inset-y-1.5 after:content-[''] text-[13px] text-muted underline decoration-line underline-offset-4 transition-[color,text-decoration-color,transform] duration-[var(--cd-dur-hover)] ease-out hover:text-ink hover:decoration-current active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <PencilSimpleIcon size={13} aria-hidden />
         Change

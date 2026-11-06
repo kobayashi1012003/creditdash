@@ -49,3 +49,15 @@ describe("parseCents", () => {
     }
   });
 });
+
+test("parsePoints refuses balances past a trillion", () => {
+  assert.equal(parsePoints("1000000000000"), 1_000_000_000_000);
+  assert.equal(parsePoints("2000000m"), null);
+  assert.equal(parsePoints("9".repeat(400)), null);
+});
+
+test("parseCents refuses values the database cannot hold", () => {
+  assert.equal(parseCents("99.9"), 99.9);
+  assert.equal(parseCents("100"), null);
+  assert.equal(parseCents("1e3"), null);
+});

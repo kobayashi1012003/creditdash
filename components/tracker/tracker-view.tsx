@@ -555,6 +555,7 @@ function FeeBar({
           style={{ transform: `scaleX(${Math.max(0.02, ratio)})` }}
         />
       </div>
+      <p className="mt-2 text-[12px] text-muted">Estimates, not financial advice.</p>
     </div>
   );
 }

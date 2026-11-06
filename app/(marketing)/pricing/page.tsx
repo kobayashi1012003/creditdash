@@ -6,9 +6,22 @@ import { DashboardButton } from "@/components/landing/session-buttons";
 import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 
+const DESCRIPTION =
+  `Free for one card, with full tracking. Premium is $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year for unlimited cards and auto-fill.`;
+
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Free for one card, with full tracking. Premium is $${PREMIUM_PRICE_MONTHLY} a month or $${PREMIUM_PRICE_YEARLY} a year for unlimited cards and auto-fill.`,
+  description: DESCRIPTION,
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    type: "website",
+    siteName: "CreditDash",
+    locale: "en_US",
+    title: "Pricing | CreditDash",
+    description: DESCRIPTION,
+    url: "/pricing",
+    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
+  },
 };
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
@@ -69,9 +82,53 @@ function Cell({ value }: { value: boolean | string }) {
   return <>{value}</>;
 }
 
+/**
+ * schema.org description for search results, prices from lib/plan.ts.
+ * Inline JSON is allowed by the CSP's script-src 'unsafe-inline' (and is
+ * not executed anyway); `<` is escaped so no string can close the tag.
+ * The same block is on the home page; keep the two in step.
+ */
+const JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "CreditDash",
+  url: "https://creditdash.co/",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  description: DESCRIPTION,
+  offers: [
+    { "@type": "Offer", name: "Free", price: 0, priceCurrency: "USD" },
+    {
+      "@type": "Offer",
+      name: "Premium, monthly",
+      price: PREMIUM_PRICE_MONTHLY,
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: PREMIUM_PRICE_MONTHLY,
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" },
+      },
+    },
+    {
+      "@type": "Offer",
+      name: "Premium, yearly",
+      price: PREMIUM_PRICE_YEARLY,
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: PREMIUM_PRICE_YEARLY,
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "ANN" },
+      },
+    },
+  ],
+}).replace(/</g, "\\u003c");
+
 export default function PricingPage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
       <section className={cn(SECTION, "pt-14 pb-10 lg:pt-20")}>
         <h1 className="max-w-[16ch] font-display text-[40px] leading-[1.02] tracking-[-0.04em] sm:text-[56px]">
           Free, or Premium. <span className="text-muted">No ads on either.</span>

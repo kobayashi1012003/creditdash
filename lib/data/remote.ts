@@ -26,6 +26,21 @@ export type Remote = {
 /** A write the database refused, worded for the person who made it. */
 export class SyncError extends Error {}
 
+const NOT_SAVED = "That change did not save to your account. Check your connection and try again.";
+
+/** The database row of a card in this account, or a SyncError: never a blank id. */
+function rowId(r: Remote, cardId: string): string {
+  const id = r.rowIds.get(cardId);
+  if (!id) throw new SyncError(NOT_SAVED);
+  return id;
+}
+
+/** An update that changed no row did not save, even without an error. */
+function checkUpdated(res: { error: { message: string; hint?: string | null } | null; data: unknown[] | null }) {
+  check(res.error);
+  if (!res.data || res.data.length === 0) throw new SyncError(NOT_SAVED);
+}
+
 function check(error: { message: string; hint?: string | null } | null) {
   if (!error) return;
   if (error.hint === "card_limit") {
@@ -34,16 +49,13 @@ function check(error: { message: string; hint?: string | null } | null) {
         `Remove ${FREE_CARD_LIMIT === 1 ? "the one you have" : "one"} first, or move to Premium.`,
     );
   }
-  throw new SyncError(
-    "That change did not save to your account. Check your connection and try again.",
-  );
+  throw new SyncError(NOT_SAVED);
 }
 
 export async function loadAccount(db: SupabaseClient, userId: string) {
   const [profile, cards, usage, balances, valuations, subs] = await Promise.all([
-    // "*" rather than naming premium_gift, so a database that has not had
-    // that migration yet still loads the account.
-    db.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    // Only what the app uses. Every migration naming these has run.
+    db.from("profiles").select("plan, premium_gift, is_admin").eq("user_id", userId).maybeSingle(),
     db
       .from("user_cards")
       // "*" so a database without the anniversary_day and credit_prefs
@@ -177,10 +189,11 @@ export async function saveOrder(r: Remote, before: UserCard[], after: UserCard[]
       r.db
         .from("user_cards")
         .update({ sort_order: c.sortOrder })
-        .eq("id", r.rowIds.get(c.cardId) ?? ""),
+        .eq("id", rowId(r, c.cardId))
+        .select("id"),
     ),
   );
-  for (const res of results) check(res.error);
+  for (const res of results) checkUpdated(res);
 }
 
 export async function setAnniversary(
@@ -190,27 +203,33 @@ export async function setAnniversary(
   month: number,
   day: number,
 ) {
-  const { error } = await r.db
-    .from("user_cards")
-    .update({ opened_on: openedOn, anniversary_month: month, anniversary_day: day })
-    .eq("id", r.rowIds.get(cardId) ?? "");
-  check(error);
+  checkUpdated(
+    await r.db
+      .from("user_cards")
+      .update({ opened_on: openedOn, anniversary_month: month, anniversary_day: day })
+      .eq("id", rowId(r, cardId))
+      .select("id"),
+  );
 }
 
 export async function setPrefs(r: Remote, cardId: string, prefs: TrackerPrefs) {
-  const { error } = await r.db
-    .from("user_cards")
-    .update({ credit_prefs: prefs })
-    .eq("id", r.rowIds.get(cardId) ?? "");
-  check(error);
+  checkUpdated(
+    await r.db
+      .from("user_cards")
+      .update({ credit_prefs: prefs })
+      .eq("id", rowId(r, cardId))
+      .select("id"),
+  );
 }
 
 export async function setNickname(r: Remote, cardId: string, nickname: string | undefined) {
-  const { error } = await r.db
-    .from("user_cards")
-    .update({ nickname: nickname ?? null })
-    .eq("id", r.rowIds.get(cardId) ?? "");
-  check(error);
+  checkUpdated(
+    await r.db
+      .from("user_cards")
+      .update({ nickname: nickname ?? null })
+      .eq("id", rowId(r, cardId))
+      .select("id"),
+  );
 }
 
 /** The card a credit belongs to, among the cards this user holds. */
@@ -229,7 +248,7 @@ export async function setCreditUsed(
 ) {
   const owner = cardForCredit(cards, creditId);
   const userCardId = owner && r.rowIds.get(owner.cardId);
-  if (!userCardId) return;
+  if (!userCardId) throw new SyncError(NOT_SAVED);
 
   const { error } =
     amount <= 0

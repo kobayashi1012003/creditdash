@@ -6,14 +6,31 @@ import { demoBannerScript } from "@/lib/demo-banner";
 import { CARD_ART } from "@/data/card-art.generated";
 import "./globals.css";
 
+const SITE_DESCRIPTION =
+  "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.";
+
 export const metadata: Metadata = {
   // The canonical address, so absolute URLs in metadata (share previews,
   // the manifest) name the real domain whichever host served the page.
   // Nothing at runtime depends on it: sign-in uses the page's own origin.
   metadataBase: new URL("https://creditdash.co"),
-  title: "CreditDash",
-  description:
-    "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.",
+  // Pages set a short title ("Pricing"); the template adds the name. The
+  // home page opts out with `absolute`.
+  title: { default: "CreditDash", template: "%s | CreditDash" },
+  description: SITE_DESCRIPTION,
+  applicationName: "CreditDash",
+  // The share image is app/opengraph-image.png (`npm run og-image`); Next
+  // adds its tags here. A page that sets its own openGraph replaces this
+  // object rather than merging, so the public pages repeat siteName, type
+  // and the image. Twitter falls back to each page's openGraph.
+  openGraph: {
+    type: "website",
+    siteName: "CreditDash",
+    locale: "en_US",
+    title: "CreditDash",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: { card: "summary_large_image" },
   // iOS ignores most of the manifest and reads these instead when the app
   // is added to the home screen.
   appleWebApp: {

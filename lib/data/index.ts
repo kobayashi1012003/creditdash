@@ -155,12 +155,6 @@ export function useTrackedPrograms(): Program[] {
   return useMemo(() => balances.map((b) => b.program), [balances]);
 }
 
-/** Catalog cards not already in the wallet, optionally filtered by a query. */
-export function useAddableCards(query = ""): Card[] {
-  const owned = new Set(useData().userCards.map((c) => c.cardId));
-  return searchCatalog(query, owned);
-}
-
 /** Catalog cards matching a name or issuer, leaving out the given ids. */
 export function searchCatalog(query: string, exclude: ReadonlySet<string>): Card[] {
   const q = query.trim().toLowerCase();
@@ -238,7 +232,14 @@ export async function removeCard(cardId: string): Promise<void> {
     }),
     async (r, before, after) => {
       await remote.removeCard(r, cardId);
-      await remote.saveOrder(r, before.userCards, after.userCards);
+      // The card is gone from the database now, so a failed renumber must
+      // not roll the screen back to showing it. A gap in sort_order is
+      // closed on the next load anyway (loadAccount renumbers on read).
+      try {
+        await remote.saveOrder(r, before.userCards, after.userCards);
+      } catch {
+        // Order only; nothing the user would lose.
+      }
     },
   );
 }
@@ -454,7 +455,9 @@ export async function setPointBalance(
 ): Promise<void> {
   await mutate(
     (s) => {
-      const updatedAt = new Date().toISOString().slice(0, 10);
+      // The local day, as addCard records it: in the evening in the US
+      // toISOString is already tomorrow.
+      const updatedAt = localDate(new Date());
       const existing = s.pointBalances.find((b) => b.program === program);
       const pointBalances = existing
         ? s.pointBalances.map((b) =>
@@ -723,7 +726,15 @@ export function walletToCsv(entries: WalletEntry[]): string {
       userCard.openedOn,
     ]),
   ];
-  return rows
-    .map((r) => r.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(","))
-    .join("\n");
+  return rows.map((r) => r.map(csvCell).join(",")).join("\n");
+}
+
+/**
+ * One quoted CSV cell. A cell a spreadsheet would read as a formula (it
+ * starts with = + - @, a tab or a return) gets a leading apostrophe, so a
+ * nickname is always shown as text, never run.
+ */
+export function csvCell(value: string): string {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${safe.replaceAll('"', '""')}"`;
 }

@@ -188,7 +188,12 @@ export function CheckmarkRow({
                 : null),
             }}
             className={cn(
-              "relative grid touch-pan-y place-items-center overflow-hidden rounded-inner border select-none",
+              // No overflow-hidden here: it would clip the hit layer below.
+              // The partial fill clips itself instead. The hit layer adds
+              // 3px a side, half the 6px gap, so a 32px slot takes a 38px
+              // tap without reaching its neighbour (WCAG 2.5.8).
+              "relative grid touch-pan-y place-items-center rounded-inner border select-none",
+              "after:absolute after:-inset-[3px] after:content-['']",
               fluid ? "aspect-square w-full min-w-0" : caption && count < 12 ? "h-8 w-full" : "size-8",
               "transition-[background-color,border-color,transform,color]",
               "duration-[var(--cd-dur-press)] ease-out",
@@ -204,16 +209,21 @@ export function CheckmarkRow({
             {full && <CheckIcon size={15} weight="bold" className="relative" />}
             {partial && (
               // Filled from the bottom by the share used, so $6 of $10
-              // reads as a box a little over half full.
+              // reads as a box a little over half full. The wrapper clips
+              // the fill to the slot's inner corner.
               <span
                 aria-hidden
-                className="absolute inset-0 opacity-55 transition-transform duration-[var(--cd-dur-hover)] ease-out"
-                style={{
-                  backgroundColor: tint,
-                  transform: `scaleY(${Math.min(1, value / amount)})`,
-                  transformOrigin: "bottom",
-                }}
-              />
+                className="absolute inset-0 overflow-hidden rounded-[calc(var(--cd-radius-inner)-1px)]"
+              >
+                <span
+                  className="absolute inset-0 opacity-55 transition-transform duration-[var(--cd-dur-hover)] ease-out"
+                  style={{
+                    backgroundColor: tint,
+                    transform: `scaleY(${Math.min(1, value / amount)})`,
+                    transformOrigin: "bottom",
+                  }}
+                />
+              </span>
             )}
           </button>
         );

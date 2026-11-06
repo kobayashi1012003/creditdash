@@ -2,9 +2,22 @@ import type { Metadata } from "next";
 import { DashboardButton } from "@/components/landing/session-buttons";
 import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 
+const DESCRIPTION =
+  "Who makes CreditDash, why it exists, and how it is paid for without ads.";
+
 export const metadata: Metadata = {
   title: "About",
-  description: "Who makes CreditDash, and why.",
+  description: DESCRIPTION,
+  alternates: { canonical: "/about" },
+  openGraph: {
+    type: "website",
+    siteName: "CreditDash",
+    locale: "en_US",
+    title: "About | CreditDash",
+    description: DESCRIPTION,
+    url: "/about",
+    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
+  },
 };
 
 /** A short first version; the owner will expand it. */

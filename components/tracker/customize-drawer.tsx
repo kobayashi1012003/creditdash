@@ -265,7 +265,7 @@ function CreditPrefRow({
           </p>
 
           {/* Colour: the category's own, or one of the palette. */}
-          <div role="radiogroup" aria-label={`Colour for ${credit.name}`} className="mt-2.5 flex flex-wrap gap-1.5">
+          <div role="radiogroup" aria-label={`Colour for ${credit.name}`} className="mt-2.5 flex flex-wrap gap-1.5 pointer-coarse:gap-3">
             <Swatch label="Category colour" ink={tint} selected={color === null} onSelect={() => onColor(null)} auto />
             {TRACKER_COLORS.map((c) => (
               <Swatch
@@ -337,7 +337,9 @@ function Swatch({
       title={label}
       onClick={onSelect}
       className={cn(
-        "grid size-6 place-items-center rounded-pill border transition-[transform,border-color] duration-[var(--cd-dur-press)] ease-out active:scale-[0.9]",
+        // The hit layer reaches half the gap a side: 30px with a mouse, 36px
+        // on touch, where the gap widens (WCAG 2.5.8).
+        "relative grid size-6 place-items-center rounded-pill border after:absolute after:-inset-[3px] after:rounded-pill after:content-[''] pointer-coarse:after:-inset-1.5 transition-[transform,border-color] duration-[var(--cd-dur-press)] ease-out active:scale-[0.9]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
         selected ? "border-ink" : "border-transparent hover:border-muted",
       )}

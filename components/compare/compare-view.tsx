@@ -122,7 +122,7 @@ export function CompareView({ all }: { all: Card[] }) {
                         type="button"
                         onClick={() => remove(card.id)}
                         aria-label={`Remove ${card.name}`}
-                        className="absolute -top-2 -right-2 grid size-7 place-items-center rounded-pill border border-line bg-surface text-muted transition-[color,border-color,transform] duration-[var(--cd-dur-press)] ease-out hover:border-muted hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        className="absolute -top-2 -right-2 grid size-7 place-items-center rounded-pill after:absolute after:-inset-1.5 after:rounded-pill after:content-[''] border border-line bg-surface text-muted transition-[color,border-color,transform] duration-[var(--cd-dur-press)] ease-out hover:border-muted hover:text-ink active:scale-[0.94] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                       >
                         <XIcon size={14} weight="bold" />
                       </button>

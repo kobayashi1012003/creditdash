@@ -31,9 +31,25 @@ let client: Promise<SupabaseClient | null> | null = null;
 export function supabase(): Promise<SupabaseClient | null> {
   if (!SUPABASE_CONFIGURED) return Promise.resolve(null);
   client ??= import("@supabase/ssr").then(({ createBrowserClient }) =>
-    createBrowserClient(url!, key!),
+    createBrowserClient(url!, key!, { global: { fetch: timedFetch } }),
   );
   return client;
+}
+
+/** Long enough for a slow phone, short enough that nobody waits on a skeleton. */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+/**
+ * fetch with a deadline. A request that never answers would otherwise leave
+ * the app on its loading skeleton for good; timing out lets the store show
+ * its "could not be loaded" notice instead. A caller's own signal still
+ * cancels it too.
+ */
+function timedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal =
+    init?.signal && "any" in AbortSignal ? AbortSignal.any([init.signal, timeout]) : (init?.signal ?? timeout);
+  return fetch(input, { ...init, signal });
 }
 
 /**

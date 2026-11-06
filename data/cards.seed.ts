@@ -745,7 +745,7 @@ export function getCard(id: string): Card | undefined {
 export const DEMO_WALLET: UserCard[] = [
   { cardId: "amex-gold", openedOn: "2023-03-14", anniversaryMonth: 3, sortOrder: 0 },
   { cardId: "csr", openedOn: "2021-11-02", anniversaryMonth: 11, sortOrder: 1 },
-  { cardId: "venture-x", nickname: "Travel card", openedOn: "2024-06-21", anniversaryMonth: 6, sortOrder: 2 },
+  { cardId: "venture-x", openedOn: "2024-06-21", anniversaryMonth: 6, sortOrder: 2 },
   { cardId: "bilt", openedOn: "2025-01-09", anniversaryMonth: 1, sortOrder: 3 },
 ];
 

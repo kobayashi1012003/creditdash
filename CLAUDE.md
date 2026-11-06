@@ -245,7 +245,7 @@ Apply these on every screen.
 
 ## Stack
 
-Next.js 16 App Router, TypeScript, Tailwind v4, Motion, Recharts, Phosphor
+Next.js 16 App Router, TypeScript, Tailwind v4, Motion, Phosphor
 icons, next-themes. Deployed to Cloudflare Workers through the OpenNext
 adapter.
 
@@ -281,6 +281,7 @@ adapter.
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run icons` | Regenerate every app icon from the one drawing |
+| `npm run og-image` | Regenerate the link-preview image, `app/opengraph-image.png` (commit the output) |
 | `npm run test:rls` | Row Level Security test against the real Supabase project (needs `SUPABASE_SECRET_KEY` in `.env.local`) |
 
 A change is not verified until `npm run preview` serves it. The dev server and

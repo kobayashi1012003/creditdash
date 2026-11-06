@@ -21,13 +21,18 @@ export function parsePoints(text: string): number | null {
   if (!match || !/\d/.test(match[1])) return null;
   const scale = match[2] === "k" ? 1_000 : match[2] === "m" ? 1_000_000 : 1;
   const n = Number(match[1]) * scale;
-  return Number.isFinite(n) ? Math.round(n) : null;
+  // A trillion points is past any real balance, and keeps well inside the
+  // database's bigint and JavaScript's safe integers.
+  return Number.isFinite(n) && n <= MAX_POINTS ? Math.round(n) : null;
 }
+
+export const MAX_POINTS = 1_000_000_000_000;
 
 /** "2.1", "2.1¢", "2,1" is not accepted. Cents per point. */
 export function parseCents(text: string): number | null {
   const cleaned = text.replace(/[\s¢c]/gi, "");
   if (!/^\d*\.?\d*$/.test(cleaned) || !/\d/.test(cleaned)) return null;
   const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
+  // The database holds valuations under 100 cents a point.
+  return Number.isFinite(n) && n < 100 ? n : null;
 }

@@ -238,7 +238,14 @@ export function CardDrawer({
                 </>
               ) : null}
               . Benefits change often, so confirm anything that matters with{" "}
-              {card.issuer} before you rely on it.
+              {card.issuer} before you rely on it.{" "}
+              <a
+                href={`mailto:hello@creditdash.co?subject=${encodeURIComponent(`Mistake on ${card.name}`)}`}
+                className={LINK}
+              >
+                Report a mistake
+              </a>
+              .
             </p>
           </div>
         </div>

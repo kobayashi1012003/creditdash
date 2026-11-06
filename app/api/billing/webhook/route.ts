@@ -16,8 +16,15 @@ import { errorResponse, syncCustomer } from "@/lib/billing/server";
  * runtime Secret on the Worker. Test mode and live mode have different
  * endpoints and different secrets.
  */
+/** Stripe's plan events are a few kilobytes; anything far larger is not one. */
+const MAX_BODY = 256 * 1024;
+
 export async function POST(request: NextRequest) {
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY) {
+    return Response.json({ error: "too_large" }, { status: 413 });
+  }
   const body = await request.text();
+  if (body.length > MAX_BODY) return Response.json({ error: "too_large" }, { status: 413 });
   const ok = await verifyWebhook(
     body,
     request.headers.get("stripe-signature"),

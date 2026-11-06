@@ -7,19 +7,77 @@ import { Button } from "@/components/ui/button";
 import { AccountButton, DashboardButton } from "@/components/landing/session-buttons";
 import { PlanPanels } from "@/components/landing/plan-panels";
 import { getCardsById } from "@/lib/catalog";
-import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
+const DESCRIPTION =
+  "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.";
+
 export const metadata: Metadata = {
-  title: "CreditDash",
-  description:
-    "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.",
+  title: { absolute: "CreditDash" },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  // Replaces the root openGraph rather than merging, so it repeats
+  // siteName and type, and names the share image (app/opengraph-image.png),
+  // which Next only adds by itself where a page sets no openGraph.
+  openGraph: {
+    type: "website",
+    siteName: "CreditDash",
+    locale: "en_US",
+    title: "CreditDash",
+    description: DESCRIPTION,
+    url: "/",
+    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
+  },
 };
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
 /** Section headings: the claim in ink, the consequence in muted. */
 const H2 = "font-display text-[30px] leading-[1.08] tracking-[-0.03em] sm:text-[40px] lg:text-[44px]";
+
+/**
+ * schema.org description for search results, prices from lib/plan.ts.
+ * Inline JSON is allowed by the CSP's script-src 'unsafe-inline' (and is
+ * not executed anyway); `<` is escaped so no string can close the tag.
+ * The same block is on the pricing page; keep the two in step.
+ */
+const JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "CreditDash",
+  url: "https://creditdash.co/",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  description: DESCRIPTION,
+  offers: [
+    { "@type": "Offer", name: "Free", price: 0, priceCurrency: "USD" },
+    {
+      "@type": "Offer",
+      name: "Premium, monthly",
+      price: PREMIUM_PRICE_MONTHLY,
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: PREMIUM_PRICE_MONTHLY,
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" },
+      },
+    },
+    {
+      "@type": "Offer",
+      name: "Premium, yearly",
+      price: PREMIUM_PRICE_YEARLY,
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: PREMIUM_PRICE_YEARLY,
+        priceCurrency: "USD",
+        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "ANN" },
+      },
+    },
+  ],
+}).replace(/</g, "\\u003c");
 
 export default function LandingPage() {
   const demoCards = getCardsById(["amex-gold", "csr", "venture-x", "blue-business-plus"]);
@@ -27,6 +85,7 @@ export default function LandingPage() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
       {/* Hero. The working picker, not a picture of one. */}
       <section className={cn(SECTION, "pt-10 pb-14 lg:pt-16 lg:pb-20")}>
         {/* CardStack places two grid items: its stage beside the headline,
@@ -107,6 +166,16 @@ export default function LandingPage() {
               plus what your points are worth at your own valuation, against
               the fee. A card that is not paying for itself shows it long
               before the renewal lands.
+            </p>
+            <p className="mt-4 text-[15px] text-muted">
+              The calculator that does this sum is one of three on the{" "}
+              <Link
+                href="/features"
+                className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              >
+                features page
+              </Link>
+              .
             </p>
           </div>
           {gold && <FeeChart fee={gold.annualFee} name={gold.name} />}

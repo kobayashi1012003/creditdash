@@ -22,8 +22,11 @@ export default function TrackerPage() {
           The grid must stretch, not start-align: a sticky element can only
           travel inside its containing block, so a wrapper collapsed to the
           panel's own height leaves it nothing to stick within and it scrolls
-          away with the page. */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+          away with the page.
+
+          Below lg the panel's floating button sits over the page's foot,
+          so the grid leaves room for it under the last line. */}
+      <div className="grid gap-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:grid-cols-[minmax(0,1fr)_auto] lg:pb-0">
         <TrackerView />
         <div className="contents lg:block lg:h-full">
           <CalculatorPanel />
