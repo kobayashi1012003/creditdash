@@ -191,6 +191,20 @@ for accessibility on mobile; the small drop is real network latency.
 
 - **The owner has UI tweaks saved for the end of the build.** Ask for them
   before calling the project finished; do not guess at them.
+- **Waiting on the owner (6 November 2026), to pick up later:**
+  - *Decisions:* the Free plan's one-card limit (`FREE_CARD_LIMIT` plus
+    the trigger migration); a CAPTCHA on email sign-in (a third-party
+    script, so CSP and the privacy page change too); British or American
+    spelling across visible text; the gifted Premium line in
+    `plan-section.tsx`; a border on selected category chips in dark mode.
+  - *Dashboard work:* a Cloudflare rate-limit rule on `/api/*`; clearing
+    sandbox `stripe_customer_id` values and their `subscriptions` rows in
+    Supabase; branding Supabase's sign-in email templates; one backup
+    restore test (steps under "Ops workflow").
+  - *Larger work:* less JavaScript before the Wallet hydrates (lazy-load
+    the edit grid, drawer and sheets); auto-fill reading the account
+    afresh before it runs; tests for `schema.ts`, `creditState`,
+    `resetPhrase` and the store's rollback; JSON export and import.
 - **Next, in the owner's order:** the Google Identity Services sign-in
   below; then the owner's saved UI tweaks. Further Phase 8 terms links
   (Chase, Capital One, Citi, Bilt) are checked the same way when they
