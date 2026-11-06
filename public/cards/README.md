@@ -26,7 +26,7 @@ served as they are, without the cut copies.
 
 ## Licensing
 
-The art in this folder is used with the owner's confirmed permission. For
+The art in this folder is used with the owner's confirmed permission. On 6 November 2026 the owner supplied 41 more images (a folder by bank, from cardart.cc) and confirmed permission to use them on the live site. For
 anything added later: art from cardart.cc is licensed for personal,
 non-commercial use, and Premium is a paid plan, so get the creator's
 permission and credit them before shipping their work, or keep using the

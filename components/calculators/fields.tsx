@@ -164,7 +164,7 @@ export function CardSelect({
   include?: (card: Card) => boolean;
 }) {
   const id = useId();
-  const mine = wallet.filter(include);
+  const mine = wallet.filter((c) => !c.pending && include(c));
   const owned = new Set(wallet.map((c) => c.id));
   const rest = CARDS.filter((c) => !owned.has(c.id) && include(c));
   return (

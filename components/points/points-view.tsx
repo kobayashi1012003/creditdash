@@ -52,6 +52,8 @@ export function PointsView() {
   const earnedBy = useMemo(() => {
     const map = new Map<Program, string[]>();
     for (const { card } of wallet) {
+      // A card added before its data has no confirmed programme yet.
+      if (card.pending) continue;
       map.set(card.program, [...(map.get(card.program) ?? []), card.name]);
     }
     return map;

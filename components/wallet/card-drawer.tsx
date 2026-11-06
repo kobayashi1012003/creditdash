@@ -1,27 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowSquareOutIcon, CaretDownIcon, ListChecksIcon } from "@phosphor-icons/react";
+import { Dialog } from "@base-ui/react/dialog";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  ArmchairIcon,
+  ArrowSquareOutIcon,
+  BedIcon,
+  CaretDownIcon,
+  CrownSimpleIcon,
+  ListChecksIcon,
+  ShieldCheckIcon,
+  SparkleIcon,
+  SuitcaseRollingIcon,
+  UsersIcon,
+  XIcon,
+  type IconProps,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { CardFace } from "@/components/ui/card-face";
-import { EarnChip } from "@/components/ui/earn-chip";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { CreditConditions } from "@/components/ui/credit-conditions";
-import type { Card, CardCredit, UserCard } from "@/data/types";
+import type { Card, CardCredit, CardPerk, EarnRate, UserCard } from "@/data/types";
 import { BENEFIT_HISTORY } from "@/data/benefit-history";
 import { PROGRAM_LABELS } from "@/data/types";
+import { CATEGORIES, CATEGORY_LABELS, categoryStyle, type Category } from "@/lib/categories";
 import { longDate, monthName, pts, usd, usdExact } from "@/lib/format";
 import { annualValue, cardAnnualCreditValue, liveCredits, resetPhrase } from "@/lib/credits";
-import { useIsDesktop } from "@/lib/use-media-query";
+import { cn } from "@/lib/cn";
 import { TRACKER_CARD_KEY, useStoredValue } from "@/lib/use-stored-value";
-
 
 /** Whole dollars unless there are cents ($12.95 a month is $155.40 a year). */
 function money(amount: number): string {
@@ -29,10 +35,18 @@ function money(amount: number): string {
   return Number.isInteger(cents) ? usd(cents) : usdExact(cents);
 }
 
+/** Spend categories in the app's own order, "everything else" last. */
+const order = (c: Category | undefined) => (c ? CATEGORIES.indexOf(c) : CATEGORIES.length);
+
 /**
- * Everything about one card. A panel on the right at desktop width, a bottom
- * sheet on a phone, both from the same Base UI drawer so swipe-to-dismiss
- * behaves the same way it entered.
+ * Everything about one card, as a large centred page over the Wallet
+ * (owner, 6 November 2026; it was a side drawer). The card and its facts
+ * lead; below them every earn rate, credit and perk, each list in the
+ * app's category order so Dining always sits where Dining sat last time.
+ *
+ * A modal because it is a read that the Wallet behind it should not move
+ * under; focus moves in on open and back to the card on close (Base UI).
+ * Near full screen on a phone, a centred page from `lg`.
  */
 export function CardDrawer({
   card,
@@ -45,243 +59,359 @@ export function CardDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const isDesktop = useIsDesktop();
   const [, setTrackerCard] = useStoredValue(TRACKER_CARD_KEY);
 
-  if (!card) return null;
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Backdrop
+          className={cn(
+            // band is dark in both themes, so the scrim dims in dark mode too.
+            "fixed inset-0 z-50 bg-band/55",
+            "transition-opacity duration-[var(--cd-dur-panel)] ease-out",
+            "data-starting-style:opacity-0 data-ending-style:opacity-0",
+          )}
+        />
+        <Dialog.Popup
+          className={cn(
+            "fixed inset-2 z-50 flex flex-col overflow-hidden rounded-widget border border-line bg-surface text-ink shadow-lifted sm:inset-5",
+            // From lg a centred page. Position and the entrance scale share
+            // one transform, set through two variables, so the scale does
+            // not throw away the centring.
+            "lg:inset-auto lg:top-1/2 lg:left-1/2 lg:max-h-[min(880px,calc(100dvh-64px))] lg:w-[min(1000px,calc(100vw-96px))]",
+            "[--dlg-t:0px] lg:[--dlg-t:-50%] [--dlg-s:1]",
+            "[transform:translate(var(--dlg-t),var(--dlg-t))_scale(var(--dlg-s))]",
+            "transition-[opacity,transform] duration-[var(--cd-dur-panel)] ease-[var(--cd-ease-drawer)]",
+            "data-starting-style:opacity-0 data-starting-style:[--dlg-s:0.96]",
+            "data-ending-style:opacity-0 data-ending-style:[--dlg-s:0.96]",
+            "focus-visible:outline-none",
+          )}
+        >
+          {card && (
+            <>
+              <Dialog.Close
+                aria-label="Close card details"
+                className={cn(
+                  "absolute top-3 right-3 z-10 grid size-10 place-items-center rounded-pill border border-line bg-surface/90 text-muted backdrop-blur-sm",
+                  "transition-[color,border-color,transform] duration-[var(--cd-dur-press)] ease-out hover:border-muted hover:text-ink active:scale-[0.97]",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                )}
+              >
+                <XIcon size={18} />
+              </Dialog.Close>
 
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-color:var(--cd-border)_transparent] [scrollbar-width:thin]">
+                <Details card={card} userCard={userCard} onTracker={() => setTrackerCard(card.id)} />
+              </div>
+            </>
+          )}
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function Details({
+  card,
+  userCard,
+  onTracker,
+}: {
+  card: Card;
+  userCard?: UserCard;
+  onTracker: () => void;
+}) {
   const perks = card.perks ?? [];
   const hasLoungePerk = perks.some((p) => p.kind === "lounge");
-
   const annualCreditValue = cardAnnualCreditValue(card);
-  const credits = liveCredits(card.credits);
+  const credits = [...liveCredits(card.credits)].sort((a, b) => order(a.category) - order(b.category));
+  const rates = [...card.earnRates].sort((a, b) => order(a.category) - order(b.category));
 
   return (
-    <Drawer
-      open={open}
-      onOpenChange={onOpenChange}
-      swipeDirection={isDesktop ? "right" : "down"}
-      showSwipeHandle={!isDesktop}
-    >
-      <DrawerContent className="data-[swipe-direction=right]:sm:[--drawer-content-width:30rem]">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <DrawerHeader className="gap-0 px-5 pt-5 pb-0 text-left">
-            <div className="mb-5 max-w-[260px]">
-              <CardFace card={card} sizes="(max-width: 768px) 92vw, 280px" />
-            </div>
-            <DrawerTitle className="font-display text-[26px] leading-tight">
-              {userCard?.nickname ?? card.name}
-            </DrawerTitle>
-            <DrawerDescription className="mt-1 text-[15px] text-muted">
-              {card.issuer}
-              {userCard?.nickname ? ` · ${card.name}` : ""}
-            </DrawerDescription>
-            {userCard && (
+    <>
+      {/* The card and its facts. Asymmetric: the face is the anchor, the
+          name and numbers sit beside it. */}
+      <header className="grid gap-6 border-b border-line px-5 pt-6 pb-7 sm:px-8 sm:pt-8 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:items-end md:gap-9">
+        <div className="max-w-[300px] pr-12 md:pr-0">
+          <CardFace card={card} priority sizes="(max-width: 768px) 80vw, 300px" />
+        </div>
+        <div className="min-w-0 md:pr-10">
+          <Dialog.Title className="font-display text-[30px] leading-[1.05] tracking-[-0.03em] text-balance sm:text-[36px]">
+            {userCard?.nickname ?? card.name}
+          </Dialog.Title>
+          <Dialog.Description className="mt-1.5 text-[15px] text-muted">
+            {card.issuer}
+            {userCard?.nickname ? `, ${card.name}` : ""}
+          </Dialog.Description>
+
+          {card.pending ? null : (
+            <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 text-[15px] sm:grid-cols-4">
+              <Fact label="Annual fee" value={card.annualFee === 0 ? "None" : usd(card.annualFee)} />
+              <Fact label="Earns" value={PROGRAM_LABELS[card.program]} />
+              <Fact
+                label="Abroad"
+                value={card.foreignTransactionFee === 0 ? "No foreign fee" : `${card.foreignTransactionFee}% fee`}
+              />
+              {userCard ? (
+                <Fact
+                  label="Anniversary"
+                  value={`${monthName(userCard.anniversaryMonth)} ${userCard.anniversaryDay ?? 1}`}
+                />
+              ) : annualCreditValue > 0 ? (
+                <Fact label="Credits" value={`${usd(annualCreditValue)} a year`} />
+              ) : null}
+            </dl>
+          )}
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {userCard && !card.pending && (
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-3 self-start"
                 nativeButton={false}
-                render={<Link href="/tracker" onClick={() => setTrackerCard(card.id)} />}
+                render={<Link href="/tracker" onClick={onTracker} />}
               >
                 <ListChecksIcon size={15} />
                 Open tracker
               </Button>
             )}
-          </DrawerHeader>
+            <Button
+              variant="ghost"
+              size="sm"
+              nativeButton={false}
+              render={<a href={card.issuerUrl} target="_blank" rel="noreferrer noopener" />}
+            >
+              {card.issuer}&apos;s page
+              <ArrowSquareOutIcon size={15} />
+            </Button>
+          </div>
+        </div>
+      </header>
 
-          <div className="space-y-7 px-5 py-6">
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
-              <Fact label="Annual fee" value={card.annualFee === 0 ? "None" : usd(card.annualFee)} />
-              <Fact label="Points program" value={PROGRAM_LABELS[card.program]} />
-              <Fact
-                label="Foreign transactions"
-                value={card.foreignTransactionFee === 0 ? "No fee" : `${card.foreignTransactionFee}%`}
-              />
-              {userCard && (
-                <Fact
-                  label="Anniversary"
-                  value={`${monthName(userCard.anniversaryMonth)}${userCard.anniversaryDay ? ` ${userCard.anniversaryDay}` : ""}`}
-                />
-              )}
-              {card.loungeAccess && !hasLoungePerk && (
-                <Fact label="Lounges" value={card.loungeAccess} className="col-span-2" />
-              )}
-            </dl>
+      {card.pending ? (
+        <section className="px-5 py-10 sm:px-8">
+          <h3 className="text-[17px] font-medium">Details coming soon</h3>
+          <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted">
+            This card&apos;s earn rates, credits and fee are not in CreditDash yet.
+            It stays in your wallet, and everything here fills in once they are
+            added, with nothing for you to redo.
+          </p>
+        </section>
+      ) : (
+        <div className="space-y-10 px-5 py-8 sm:px-8 sm:py-9">
+          <Section title="How it earns" aside={PROGRAM_LABELS[card.program]}>
+            <ul className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+              {rates.map((rate) => (
+                <EarnRow key={rate.category} rate={rate} />
+              ))}
+            </ul>
+            {card.anniversaryBonus && (
+              <p className="mt-4 text-[13px] text-muted">
+                Plus {pts(card.anniversaryBonus.points)} {card.anniversaryBonus.unit} every card
+                anniversary, posted automatically.
+              </p>
+            )}
+          </Section>
 
-            <section>
-              <h3 className="mb-3 text-sm font-medium">Earn rates</h3>
-              <ul className="space-y-2">
-                {card.earnRates.map((rate) => (
-                  <li
-                    key={rate.category}
-                    className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-line pb-2 last:border-0 last:pb-0"
-                  >
-                    {rate.boost ? (
-                      // The best rate leads, with where it applies; the
-                      // anywhere rate is the subtext (owner, 2 November 2026).
-                      <>
-                        <EarnChip category={rate.category} multiplier={rate.boost.multiplier} />
-                        <span className="w-full text-[13px] leading-relaxed">
-                          {rate.boost.where.charAt(0).toUpperCase() + rate.boost.where.slice(1)}
-                          {rate.notes ? `. ${rate.notes}.` : "."}{" "}
-                          <span className="text-muted">{rate.multiplier}x elsewhere.</span>
-                        </span>
-                      </>
-                    ) : (
-                      <EarnChip category={rate.category} multiplier={rate.multiplier} />
-                    )}
-                    {rate.boost ? null : (
-                      <span className="text-[13px] text-muted">
-                        {rate.notes ?? (rate.cap ? `Up to ${usd(rate.cap)} a year` : "No cap")}
-                      </span>
-                    )}
+          <Section
+            title="Credits"
+            aside={annualCreditValue > 0 ? `${usd(annualCreditValue)} a year` : undefined}
+          >
+            {credits.length === 0 ? (
+              <p className="border-t border-line pt-4 text-[15px] text-muted">
+                This card has no credits to track.
+              </p>
+            ) : (
+              <ul className="grid gap-x-10 lg:grid-cols-2">
+                {credits.map((credit) => (
+                  <CreditItem key={credit.id} credit={credit} card={card} userCard={userCard} />
+                ))}
+              </ul>
+            )}
+          </Section>
+
+          {(perks.length > 0 || (card.loungeAccess && !hasLoungePerk)) && (
+            <Section title="Perks">
+              <ul className="grid gap-x-10 lg:grid-cols-2">
+                {perks.map((perk) => (
+                  <PerkItem key={perk.id} perk={perk} />
+                ))}
+                {card.loungeAccess && !hasLoungePerk && (
+                  <PerkItem perk={{ id: "lounge", name: card.loungeAccess, kind: "lounge" }} />
+                )}
+              </ul>
+            </Section>
+          )}
+
+          {card.finePrint && card.finePrint.length > 0 && (
+            <Section title="Worth knowing">
+              <ul className="grid gap-x-10 text-[14px] leading-relaxed text-muted lg:grid-cols-2">
+                {card.finePrint.map((line) => (
+                  <li key={line} className="border-t border-line py-3">
+                    {line}
                   </li>
                 ))}
               </ul>
-            </section>
+            </Section>
+          )}
+        </div>
+      )}
 
-            <section>
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <h3 className="text-sm font-medium">Credits</h3>
-                {annualCreditValue > 0 && (
-                  <p className="text-[13px] text-muted">
-                    {usd(annualCreditValue)} a year
-                  </p>
-                )}
-              </div>
-              {credits.length === 0 ? (
-                <p className="text-sm text-muted">
-                  This card has no credits to track.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {credits.map((credit) => (
-                    <li
-                      key={credit.id}
-                      className="flex items-baseline justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm">
-                          {credit.name} <CreditConditions credit={credit} className="ml-1" />
-                        </p>
-                        <p className="text-[13px] text-muted">
-                          {money(credit.amount)}{" "}
-                          {userCard || credit.resetBasis === "calendar"
-                            ? resetPhrase(credit, userCard ?? { anniversaryMonth: 1 })
-                            : `${PER[credit.period]}, resets from your card anniversary`}
-                        </p>
-                        {credit.notes && (
-                          <p className="mt-0.5 text-[13px] text-muted">{credit.notes}</p>
-                        )}
-                        <BenefitDetails credit={credit} card={card} />
-                      </div>
-                      {/* The year's total leads; the amount per period is the
-                          subtext (owner, 5 November 2026). */}
-                      <span className="shrink-0 text-sm tabular-nums">
-                        {money(annualValue(credit))}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {card.anniversaryBonus && (
-                <p className="mt-3 text-[13px] text-muted">
-                  Plus {pts(card.anniversaryBonus.points)} {card.anniversaryBonus.unit} every card
-                  anniversary, posted automatically.
-                </p>
-              )}
-            </section>
-
-            {perks.length > 0 && (
-              <section>
-                <h3 className="mb-3 text-sm font-medium">Perks</h3>
-                <ul className="space-y-2">
-                  {perks.map((perk) => (
-                    <li key={perk.id} className="border-b border-line pb-2 last:border-0 last:pb-0">
-                      <p className="text-sm">{perk.name}</p>
-                      {perk.notes && (
-                        <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{perk.notes}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {card.finePrint && card.finePrint.length > 0 && (
-              <section>
-                <h3 className="mb-3 text-sm font-medium">Worth knowing</h3>
-                <ul className="space-y-2 text-[13px] leading-relaxed text-muted">
-                  {card.finePrint.map((line) => (
-                    <li key={line} className="border-b border-line pb-2 last:border-0 last:pb-0">
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            <p className="text-[13px] leading-relaxed text-muted">
-              Last checked {longDate(card.lastVerified)}
-              {card.sourceUrl ? (
-                <>
-                  {" "}against{" "}
-                  <a
-                    href={card.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="rounded-control text-ink underline decoration-line underline-offset-4 transition-[text-decoration-color] duration-[var(--cd-dur-hover)] ease-out hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                  >
-                    {card.issuer}&apos;s benefit terms
-                  </a>
-                </>
-              ) : null}
-              . Benefits change often, so confirm anything that matters with{" "}
-              {card.issuer} before you rely on it.{" "}
-              <a
-                href={`mailto:hello@creditdash.co?subject=${encodeURIComponent(`Mistake on ${card.name}`)}`}
-                className={LINK}
-              >
-                Report a mistake
+      <footer className="border-t border-line px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8">
+        <p className="max-w-[80ch] text-[13px] leading-relaxed text-muted">
+          {card.pending ? "Added" : "Last checked"} {longDate(card.lastVerified)}
+          {card.sourceUrl ? (
+            <>
+              {" "}against{" "}
+              <a href={card.sourceUrl} target="_blank" rel="noreferrer noopener" className={LINK}>
+                {card.issuer}&apos;s benefit terms
               </a>
-              .
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 border-t border-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <Button
-            variant="outline"
-            className="flex-1"
-            nativeButton={false}
-            render={
-              <a href={card.issuerUrl} target="_blank" rel="noreferrer noopener" />
-            }
+            </>
+          ) : null}
+          . Benefits change often, so confirm anything that matters with {card.issuer} before
+          you rely on it.{" "}
+          <a
+            href={`mailto:hello@creditdash.co?subject=${encodeURIComponent(`Mistake on ${card.name}`)}`}
+            className={LINK}
           >
-            Open {card.issuer}
-            <ArrowSquareOutIcon size={16} />
-          </Button>
-          <DrawerClose render={<Button variant="ghost">Close</Button>} />
-        </div>
-      </DrawerContent>
-    </Drawer>
+            Report a mistake
+          </a>
+          .
+        </p>
+      </footer>
+    </>
   );
 }
 
-function Fact({
-  label,
-  value,
-  className,
+function Section({
+  title,
+  aside,
+  children,
 }: {
-  label: string;
-  value: string;
-  className?: string;
+  title: string;
+  aside?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className={className}>
+    <section>
+      <div className="mb-1 flex items-baseline justify-between gap-4">
+        <h3 className="text-[17px] font-medium tracking-[-0.01em]">{title}</h3>
+        {aside && <p className="text-[13px] text-muted">{aside}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** The category's own pastel tile, so a rate is found by colour before it is read. */
+function CategoryTile({ category, size = "lg" }: { category: Category; size?: "lg" | "sm" }) {
+  return (
+    <span
+      aria-hidden
+      style={categoryStyle(category)}
+      className={cn(
+        "grid shrink-0 place-items-center rounded-inner",
+        size === "lg" ? "size-11" : "size-9",
+        category === "other" && "border border-line",
+      )}
+    >
+      <CategoryIcon category={category} size={size === "lg" ? 22 : 18} />
+    </span>
+  );
+}
+
+/**
+ * One earn rate: the best rate large, then where it applies, the anywhere
+ * rate under a boost (owner, 2 November 2026), and any cap or condition.
+ */
+function EarnRow({ rate }: { rate: EarnRate }) {
+  const best = rate.boost ? Math.max(rate.multiplier, rate.boost.multiplier) : rate.multiplier;
+  const detail = rate.boost
+    ? [
+        `${rate.boost.where.charAt(0).toUpperCase()}${rate.boost.where.slice(1)}.`,
+        rate.notes ? `${rate.notes}.` : null,
+        `${rate.multiplier}x elsewhere.`,
+      ]
+    : [rate.notes ? `${rate.notes}.` : rate.cap ? `Up to ${usd(rate.cap)} a year.` : "No cap."];
+
+  return (
+    <li className="flex gap-4 border-t border-line py-4">
+      <CategoryTile category={rate.category} />
+      <div className="min-w-0">
+        <p className="flex items-baseline gap-2">
+          <span className="font-display text-[28px] leading-none tracking-[-0.03em] tabular-nums">
+            {best}x
+          </span>
+          <span className="text-[15px] font-medium">{CATEGORY_LABELS[rate.category]}</span>
+        </p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{detail.filter(Boolean).join(" ")}</p>
+      </div>
+    </li>
+  );
+}
+
+function CreditItem({
+  credit,
+  card,
+  userCard,
+}: {
+  credit: CardCredit;
+  card: Card;
+  userCard?: UserCard;
+}) {
+  return (
+    <li className="flex gap-4 border-t border-line py-4">
+      <CategoryTile category={credit.category ?? "other"} size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-[15px] font-medium">{credit.name}</p>
+          {/* The year's total leads; the amount per period is under it
+              (owner, 5 November 2026). */}
+          <span className="shrink-0 text-[15px] tabular-nums">{money(annualValue(credit))}</span>
+        </div>
+        <CreditConditions credit={credit} className="mt-1" />
+        <p className="mt-1 text-[13px] text-muted">
+          {money(credit.amount)}{" "}
+          {userCard || credit.resetBasis === "calendar"
+            ? resetPhrase(credit, userCard ?? { anniversaryMonth: 1 })
+            : `${PER[credit.period]}, resets from your card anniversary`}
+        </p>
+        {credit.notes && <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{credit.notes}</p>}
+        <BenefitDetails credit={credit} card={card} />
+      </div>
+    </li>
+  );
+}
+
+const PERK_ICONS: Record<CardPerk["kind"], React.ComponentType<IconProps>> = {
+  lounge: ArmchairIcon,
+  status: CrownSimpleIcon,
+  "free-night": BedIcon,
+  companion: UsersIcon,
+  bags: SuitcaseRollingIcon,
+  protection: ShieldCheckIcon,
+  other: SparkleIcon,
+};
+
+function PerkItem({ perk }: { perk: CardPerk }) {
+  const Icon = PERK_ICONS[perk.kind] ?? SparkleIcon;
+  return (
+    <li className="flex gap-4 border-t border-line py-4">
+      <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-inner bg-panel text-ink">
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[15px] font-medium">{perk.name}</p>
+        {perk.notes && <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{perk.notes}</p>}
+      </div>
+    </li>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
       <dt className="text-[13px] text-muted">{label}</dt>
-      <dd className="mt-0.5">{value}</dd>
+      <dd className="mt-0.5 font-medium">{value}</dd>
     </div>
   );
 }

@@ -128,6 +128,18 @@ export function TrackerView() {
         transition={{ duration: 0.22, ease: EASE_OUT }}
         className="space-y-6"
       >
+        {card.pending ? (
+          // Added before its data: nothing to tick or add up yet, so say
+          // that rather than "no credits" or a fee of $0.
+          <Widget title={userCard.nickname ?? card.name}>
+            <p className="max-w-[56ch] text-sm leading-relaxed text-muted">
+              Details for this card are coming soon. Its credits, fee and earn
+              rates will show here once they are added, with nothing for you to
+              redo.
+            </p>
+          </Widget>
+        ) : (
+        <>
         <div className="grid gap-5 @md:grid-cols-2 @3xl:grid-cols-3">
           <Widget title="Credits this year">
             {available === 0 ? (
@@ -215,6 +227,8 @@ export function TrackerView() {
         </div>
 
         <CardCredits card={card} userCard={userCard} usage={usage} />
+        </>
+        )}
       </motion.div>
     </div>
   );

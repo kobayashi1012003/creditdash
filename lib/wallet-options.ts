@@ -30,6 +30,8 @@ export function activeFilterCount(f: WalletFilter): number {
 /** Within a group the choices widen (Amex or Chase); across groups they narrow. */
 export function matchesFilter(card: Card, f: WalletFilter): boolean {
   if (f.issuers.size > 0 && !f.issuers.has(card.issuer)) return false;
+  // Without its data a card cannot be said to match a rate or a fee.
+  if (card.pending && (f.bonus.size > 0 || f.fee !== "any")) return false;
   for (const c of f.bonus) if (multiplierFor(rateFor(card, c)) <= 1) return false;
   if (f.fee === "none" && card.annualFee > 0) return false;
   if (f.fee === "paid" && card.annualFee === 0) return false;

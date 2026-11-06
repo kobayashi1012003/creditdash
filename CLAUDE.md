@@ -667,6 +667,33 @@ read-only `/admin` page tracks when each card was last checked.
   names: Wallet, Tracker, Calculators, Compare. Home page issuer strip
   removed; its Tracker demo has three credits with month captions.
 
+## Card art, coming-soon cards, add sheet, details page (6 November 2026)
+
+- **Art from the owner's folder** (`Downloads/cardart`, by bank): 41
+  images, 1536x969, converted to WebP with transparent corners flattened
+  onto their dominant colour. Replaced 17 existing faces. The purple Delta
+  SkyMiles art is the Delta Reserve (owner). Citi's old "Premier" design is
+  not used: that card is the Strata Premier now.
+- **Coming-soon cards** live in `data/cards.pending.ts` (`pending: true`):
+  art and a name only, 25 of them. `CARDS` stays the cards with data, so
+  ranking, Compare, the calculators and the landing never see them;
+  `ALL_CARDS` (the Wallet's add sheet) and `getCard` do. `rankCards` drops
+  pending cards; the Wallet, Tracker, card details, calculator pickers,
+  Points suggestions and wallet filters each say "Details coming soon" or
+  skip them. To finish one, move it into `CARDS` with real data and drop
+  `pending`. **Never run a CRLF-to-LF pass over `public/cards/`**: the
+  WebPs are binary.
+- **Add sheet**: bank tabs (All, then banks by card count, "Amex" for
+  American Express) with counts, `useRovingFocus` for arrow keys, and a
+  compact search scoped to the tab that offers matches at other banks.
+  `includePending` is set by the Wallet only.
+- **Card details** (`components/wallet/card-drawer.tsx`, still exported as
+  `CardDrawer`) is a centred Base UI dialog: near full screen on phones, up
+  to 1000px wide from `lg`. Card face beside name, facts and actions; then
+  "How it earns" (a ruled grid, 44px category tiles, best rate large,
+  where it applies and caps below), Credits, Perks (icon per kind) and
+  Worth knowing, every list in `CATEGORIES` order.
+
 ## Valuations, perks and anniversary points (5 November 2026)
 
 - **Default valuations assume a 1 cent baseline** (owner): no default is
@@ -911,7 +938,7 @@ paints a blank card for a frame and puts a failed request on the wire for
 every card. Cards without art are still common. `onError` still falls
 back, for a file removed between a build and a request.
 
-**20 cards have real art** (Platinum, Gold, Sapphire Reserve and Preferred,
+**20 cards had real art by 2 November; 45 since 6 November** (see "Card art, coming-soon cards" below) (Platinum, Gold, Sapphire Reserve and Preferred,
 Venture X, Blue Business Plus, and Bilt Blue, Obsidian and Palladium; then
 all four Delta cards, the four Hilton cards, both Marriott cards, Venture
 and VentureOne). On 2 November the owner's newer issuer images replaced

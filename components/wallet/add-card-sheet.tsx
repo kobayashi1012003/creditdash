@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ALL_CARDS, CARDS } from "@/data/cards.seed";
+import { useRovingFocus } from "@/lib/use-roving-focus";
 import { CheckIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -12,8 +14,8 @@ import { usd } from "@/lib/format";
 import { useIsDesktop } from "@/lib/use-media-query";
 
 /**
- * The card catalog, searchable, with several cards picked at once and
- * added in one press. Opens as a right panel on desktop and a bottom sheet
+ * The card catalog, in tabs by bank with a search inside the chosen tab,
+ * with several cards picked at once and added in one press. Opens as a right panel on desktop and a bottom sheet
  * on a phone, matching the card detail drawer so the two feel like the
  * same surface. The Wallet and Compare both use it; they differ only in
  * what is left out, how many may be picked and what confirming does.
@@ -27,6 +29,7 @@ export function AddCardSheet({
   title = "Add cards",
   verb = "Add",
   onConfirm,
+  includePending = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,16 +43,29 @@ export function AddCardSheet({
   /** The confirm button's verb: "Add 2 cards", "Compare 2 cards". */
   verb?: string;
   onConfirm: (cardIds: string[]) => Promise<void> | void;
+  /** Offer cards added before their data. The Wallet does; Compare cannot. */
+  includePending?: boolean;
 }) {
   const isDesktop = useIsDesktop();
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
-  const results = searchCatalog(query, exclude);
+  const [bank, setBank] = useState<string>(ALL);
+  const source = includePending ? ALL_CARDS : CARDS;
+  const banks = banksOf(source);
+  const matches = searchCatalog(query, exclude, source);
+  const results = bank === ALL ? matches : matches.filter((c) => c.issuer === bank);
+  // A search that finds nothing in this bank but something elsewhere says so.
+  const elsewhere = bank !== ALL && results.length === 0 ? matches.length : 0;
   const full = picked.length >= max;
+  const tabs = [ALL, ...banks];
+  const { onKeyDown, itemProps } = useRovingFocus(tabs.length, tabs.indexOf(bank), (i) =>
+    setBank(tabs[i]),
+  );
 
   function close() {
     setQuery("");
+    setBank(ALL);
     setPicked([]);
     onOpenChange(false);
   }
@@ -86,34 +102,88 @@ export function AddCardSheet({
               </span>
             )}
           </div>
-          <div className="relative">
+          {/* Banks as tabs. A row that scrolls sideways on a phone; relative
+              so anything sr-only inside stays inside it. */}
+          <div
+            role="tablist"
+            aria-label="Banks"
+            onKeyDown={onKeyDown}
+            className="relative -mx-5 flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none]"
+          >
+            {tabs.map((b, i) => {
+              const on = b === bank;
+              const count = (b === ALL ? source : source.filter((c) => c.issuer === b)).filter(
+                (c) => !exclude.has(c.id),
+              ).length;
+              return (
+                <button
+                  key={b}
+                  {...itemProps(i)}
+                  type="button"
+                  role="tab"
+                  id={`bank-tab-${i}`}
+                  aria-selected={on}
+                  aria-controls="bank-panel"
+                  onClick={() => setBank(b)}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-control border px-3 py-1.5 text-[13px] font-medium",
+                    "transition-[background-color,border-color,color,transform] duration-[var(--cd-dur-press)] ease-out",
+                    "active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                    on ? "border-ink bg-ink text-surface" : "border-line text-muted hover:border-muted hover:text-ink",
+                  )}
+                >
+                  {b === ALL ? "All" : shortBank(b)}
+                  <span className={cn("tabular-nums", on ? "text-surface/70" : "text-muted/80")}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="relative mt-3">
             <MagnifyingGlassIcon
-              size={16}
-              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-muted"
+              size={15}
+              className="pointer-events-none absolute inset-y-0 left-2.5 my-auto text-muted"
             />
             <Input
-              autoFocus={isDesktop}
+              type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by card or issuer"
+              placeholder={bank === ALL ? "Search cards" : `Search ${shortBank(bank)} cards`}
               aria-label="Search cards"
-              className="h-10 rounded-inner pl-9"
+              className="h-9 rounded-inner pl-8 text-[16px] md:text-[13px]"
             />
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+        <div
+          id="bank-panel"
+          role="tabpanel"
+          aria-labelledby={`bank-tab-${tabs.indexOf(bank)}`}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4"
+        >
           {full && limitNote && (
             <p className="mb-3 rounded-inner bg-panel px-3.5 py-2.5 text-[13px] leading-relaxed text-muted">
               {limitNote}
             </p>
           )}
           {results.length === 0 ? (
-            <p className="py-6 text-sm leading-relaxed text-muted">
-              {query.trim()
-                ? `Nothing matches "${query.trim()}". The catalog covers a small set of cards for now.`
-                : "Every card in the catalog is already here."}
-            </p>
+            <div className="py-6 text-sm leading-relaxed text-muted">
+              <p>
+                {query.trim()
+                  ? `No ${bank === ALL ? "" : `${shortBank(bank)} `}card matches "${query.trim()}".`
+                  : bank === ALL
+                    ? "Every card in the catalog is already here."
+                    : `Every ${shortBank(bank)} card in the catalog is already here.`}
+              </p>
+              {elsewhere > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setBank(ALL)}
+                  className="mt-2 rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                >
+                  {elsewhere === 1 ? "1 match" : `${elsewhere} matches`} at other banks
+                </button>
+              )}
+            </div>
           ) : (
             <ul className="space-y-2">
               {results.map((card) => {
@@ -144,7 +214,11 @@ export function AddCardSheet({
                         <span className="block text-[15px] leading-snug">{card.name}</span>
                         <span className="block text-[13px] text-muted">
                           {card.issuer},{" "}
-                          {card.annualFee === 0 ? "no fee" : `${usd(card.annualFee)} a year`}
+                          {card.pending
+                            ? "details coming soon"
+                            : card.annualFee === 0
+                              ? "no fee"
+                              : `${usd(card.annualFee)} a year`}
                         </span>
                       </span>
                       <Tick on={on} />
@@ -192,4 +266,18 @@ export function Tick({ on }: { on: boolean }) {
       />
     </span>
   );
+}
+
+const ALL = "all";
+
+/** Banks in the list, most cards first, so the big issuers lead the row. */
+function banksOf(cards: readonly { issuer: string }[]): string[] {
+  const counts = new Map<string, number>();
+  for (const c of cards) counts.set(c.issuer, (counts.get(c.issuer) ?? 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([b]) => b);
+}
+
+/** Tab labels people actually say. */
+function shortBank(issuer: string): string {
+  return issuer === "American Express" ? "Amex" : issuer;
 }

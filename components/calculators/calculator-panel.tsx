@@ -24,7 +24,10 @@ const STORAGE_KEY = "creditdash:calc-panel-open";
  * opened it stays open until the tab closes or the user signs out.
  */
 export function CalculatorPanel() {
-  const cards = useWallet().map((e) => e.card);
+  // Cards added before their data have nothing to calculate with.
+  const cards = useWallet()
+    .map((e) => e.card)
+    .filter((c) => !c.pending);
   const isDesktop = useIsDesktop();
   const [open, persist] = useStoredFlag(STORAGE_KEY, false, { session: true });
   const [active, setActive] = useState<string>(CALCULATORS[0].id);

@@ -167,6 +167,11 @@ export type Card = {
    * sentence each.
    */
   finePrint?: string[];
+  /**
+   * Added before its data (data/cards.pending.ts): art and a name only.
+   * Never ranked, compared or counted; screens say "Details coming soon".
+   */
+  pending?: true;
 };
 
 /** Colours a tracked credit can be drawn in, besides its category's. */

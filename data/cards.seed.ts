@@ -1,4 +1,5 @@
 import type { Card, PointBalance, UserCard } from "./types";
+import { PENDING_CARDS } from "./cards.pending.ts";
 
 /**
  * CARD DATA. Most cards checked 28 October 2026; the American Express
@@ -734,8 +735,15 @@ export const CARDS: Card[] = [
   },
 ];
 
+/**
+ * Every card someone can hold: the catalog plus the cards added before
+ * their data (data/cards.pending.ts). Ranking, Compare and the calculators
+ * read `CARDS`; the add sheet and `getCard` read this.
+ */
+export const ALL_CARDS: Card[] = [...CARDS, ...PENDING_CARDS];
+
 export function getCard(id: string): Card | undefined {
-  return CARDS.find((c) => c.id === id);
+  return ALL_CARDS.find((c) => c.id === id);
 }
 
 /**

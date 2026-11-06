@@ -10,7 +10,10 @@ import { useStoredFlag } from "@/lib/use-stored-flag";
 import { cn } from "@/lib/cn";
 
 export function CalculatorsList() {
-  const cards = useWallet().map((e) => e.card);
+  // Cards added before their data have nothing to calculate with.
+  const cards = useWallet()
+    .map((e) => e.card)
+    .filter((c) => !c.pending);
   const isLoading = useIsLoading();
 
   // Without this the cards would default to the catalog for a frame and then

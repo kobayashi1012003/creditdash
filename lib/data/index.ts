@@ -155,10 +155,18 @@ export function useTrackedPrograms(): Program[] {
   return useMemo(() => balances.map((b) => b.program), [balances]);
 }
 
-/** Catalog cards matching a name or issuer, leaving out the given ids. */
-export function searchCatalog(query: string, exclude: ReadonlySet<string>): Card[] {
+/**
+ * Cards matching a name or issuer, leaving out the given ids. Searches the
+ * catalog with data by default; the Wallet's add sheet passes ALL_CARDS so
+ * cards added before their data can be picked too.
+ */
+export function searchCatalog(
+  query: string,
+  exclude: ReadonlySet<string>,
+  cards: readonly Card[] = CARDS,
+): Card[] {
   const q = query.trim().toLowerCase();
-  return CARDS.filter((c) => {
+  return cards.filter((c) => {
     if (exclude.has(c.id)) return false;
     if (!q) return true;
     return (

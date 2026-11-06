@@ -137,6 +137,7 @@ export function WalletView() {
   );
   const sheet = (
     <AddCardSheet
+      includePending
       open={adding}
       onOpenChange={setAdding}
       exclude={owned}
@@ -596,11 +597,18 @@ function WalletCard({
             </Button>
           ) : (
             <p className="shrink-0 text-[13px] text-muted">
-              {card.annualFee === 0 ? "No fee" : `${usd(card.annualFee)} a year`}
+              {card.pending
+                ? null
+                : card.annualFee === 0
+                  ? "No fee"
+                  : `${usd(card.annualFee)} a year`}
             </p>
           )}
         </div>
-        {!editing && (
+        {!editing && card.pending && (
+          <p className="mt-2 text-[13px] text-muted">Details coming soon</p>
+        )}
+        {!editing && !card.pending && (
           <>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {top.rates.map((rate) => (

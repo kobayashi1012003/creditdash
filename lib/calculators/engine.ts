@@ -381,6 +381,8 @@ export function rankCards(
   brand?: Brand | null,
 ): Ranked[] {
   return cards
+    // A card added before its data has no rates to rank on.
+    .filter((card) => !card.pending)
     .map((card) => {
       const rate = rateFor(card, category);
       const multiplier = multiplierFor(rate, brand);
