@@ -12,14 +12,15 @@ export const metadata: Metadata = {
 };
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
-/** Feature headlines: large, the claim in ink, the consequence in muted. */
+/** Feature headlines: the feature's own name, as the dashboard calls it
+ *  (owner, 6 November 2026). */
 const H2 =
   "font-display text-[36px] leading-[1.02] tracking-[-0.04em] sm:text-[48px] lg:text-[56px]";
 const BODY = "mt-5 max-w-[42ch] text-[16px] leading-relaxed text-muted sm:text-[17px]";
 
 /**
- * Three features, in the owner's order, each a large two-tone headline
- * beside the real thing: the Wallet's cards, the Tracker at work (a pointer
+ * The dashboard's features by name, in the owner's order, each beside the
+ * real thing: the Wallet's cards, the Tracker at work (a pointer
  * ticking several months in one slide), and the calculators. Simple on purpose (owner's brief, 2 November 2026,
  * after the Altitude reference).
  */
@@ -41,14 +42,11 @@ export default function FeaturesPage() {
       <section className={cn(SECTION, "pb-24 lg:pb-36")}>
         <div className="grid items-center gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,10fr)_minmax(0,14fr)]">
           <div>
-            <h2 className={H2}>
-              Your wallet, sorted.{" "}
-              <span className="text-muted">Know which card to reach for.</span>
-            </h2>
+            <h2 className={H2}>Wallet</h2>
             <p className={BODY}>
-              Save the cards you carry and see what each one earns. Pick
-              what you are buying, or search the store, and the best card
-              comes to the top.
+              Every card you carry in one place. See what each one earns by
+              category, how much of its credits you have used, and which card
+              to reach for: pick what you are buying, or search the store.
             </p>
           </div>
           <WalletPreview />
@@ -64,15 +62,11 @@ export default function FeaturesPage() {
             </div>
           </div>
           <div className="lg:order-2">
-            <h2 className={H2}>
-              Never lose a credit.{" "}
-              <span className="text-muted">Tick it off, and it remembers.</span>
-            </h2>
+            <h2 className={H2}>Tracker</h2>
             <p className={BODY}>
-              Tick each credit as you use it, or press and slide to tick a run
-              of months at once. CreditDash knows when every one resets and
-              what is about to run out. You type it in yourself, so there is
-              no bank login.
+              Tick each credit as you use it, or hold and slide to tick a run
+              of months at once. It knows when every credit resets and what is
+              about to run out. No bank login.
             </p>
           </div>
         </div>
@@ -82,14 +76,10 @@ export default function FeaturesPage() {
       <section className={cn(SECTION, "pb-24 lg:pb-36")}>
         <div className="grid items-center gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,13fr)]">
           <div>
-            <h2 className={H2}>
-              Do the maths.{" "}
-              <span className="text-muted">Before you pay, book or renew.</span>
-            </h2>
+            <h2 className={H2}>Calculators</h2>
             <p className={BODY}>
-              See whether a card is worth its fee on your own spending,
-              whether to pay with points or cash, and how many points your
-              spending will earn.
+              Is a card worth its fee, points or cash, and what your spending
+              earns.
             </p>
           </div>
           <div className="rounded-widget bg-panel p-5 sm:p-7">
@@ -97,6 +87,17 @@ export default function FeaturesPage() {
           </div>
         </div>
         <p className="mt-6 text-[13px] text-muted">Sample numbers, at CreditDash&apos;s default point values.</p>
+      </section>
+
+      {/* Compare. Short on purpose: the Wallet above already shows the idea. */}
+      <section className={cn(SECTION, "pb-24 lg:pb-36")}>
+        <div className="border-t border-line pt-10 lg:pt-14">
+          <h2 className={H2}>Compare</h2>
+          <p className={BODY}>
+            Up to three cards side by side: fees, earn rates and credits, with
+            the winner in each row marked.
+          </p>
+        </div>
       </section>
 
       <section className="bg-band text-band-ink">

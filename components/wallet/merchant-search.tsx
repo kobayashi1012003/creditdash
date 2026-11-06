@@ -36,7 +36,7 @@ export function MerchantSearch({
   const [typed, setTyped] = useState("");
   const query = chosen ? chosen.name : typed;
   const listId = useId();
-  const results = chosen ? [] : searchMerchants(MERCHANTS, query);
+  const results = chosen ? [] : searchMerchants(MERCHANTS, query, 6);
   const searching = !chosen && query.trim().length >= 2;
 
   function pick(m: Merchant) {

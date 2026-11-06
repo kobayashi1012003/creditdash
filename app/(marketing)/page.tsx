@@ -6,9 +6,8 @@ import { MessyNotes } from "@/components/landing/messy-notes";
 import { Button } from "@/components/ui/button";
 import { AccountButton, DashboardButton } from "@/components/landing/session-buttons";
 import { PlanPanels } from "@/components/landing/plan-panels";
-import { CARDS } from "@/data/cards.seed";
 import { getCardsById } from "@/lib/catalog";
-import { PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
+import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
 import { usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -21,8 +20,6 @@ export const metadata: Metadata = {
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
 /** Section headings: the claim in ink, the consequence in muted. */
 const H2 = "font-display text-[30px] leading-[1.08] tracking-[-0.03em] sm:text-[40px] lg:text-[44px]";
-
-const ISSUERS = [...new Set(CARDS.map((c) => c.issuer))];
 
 export default function LandingPage() {
   const demoCards = getCardsById(["amex-gold", "csr", "venture-x", "blue-business-plus"]);
@@ -55,22 +52,10 @@ export default function LandingPage() {
                 See how it works
               </Button>
             </div>
+            {!PAYMENTS_LIVE && <p className="mt-3 text-[13px] text-muted">{PRELAUNCH_NOTE}</p>}
           </div>
 
           <CardStack cards={demoCards} controlsClassName="-mt-8 sm:-mt-6 lg:col-span-2 lg:-mt-2" />
-        </div>
-      </section>
-
-      {/* What the catalog covers. Names only, no logos: these are issuers
-          the app knows about, not partners. */}
-      <section className={cn(SECTION, "pb-16 lg:pb-24")}>
-        <div className="flex flex-col gap-4 border-y border-line py-6 sm:flex-row sm:items-center sm:gap-10">
-          <p className="shrink-0 text-[13px] text-muted">Cards from</p>
-          <ul className="flex flex-wrap gap-x-9 gap-y-2 text-[17px] font-medium tracking-[-0.02em] text-muted">
-            {ISSUERS.map((name) => (
-              <li key={name}>{name}</li>
-            ))}
-          </ul>
         </div>
       </section>
 
@@ -166,8 +151,7 @@ export default function LandingPage() {
         </h2>
         <PlanPanels className="mt-10" />
         <p className="mt-5 text-[13px] text-muted">
-          Payments are not switched on yet. The demo is the whole app, with
-          a sample wallet.{" "}
+          {!PAYMENTS_LIVE && `${PRELAUNCH_NOTE} `}The demo is the whole app, with a sample wallet.{" "}
           <Link
             href="/pricing"
             className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

@@ -10,6 +10,16 @@
 export type Plan = "free" | "premium";
 
 /**
+ * Whether Premium can be bought yet. False until the live Stripe keys go in
+ * (CLAUDE.md, "Going live with Stripe"); every prelaunch line beside a price
+ * or sign-up button reads this, so going live is this one edit.
+ */
+export const PAYMENTS_LIVE = false;
+
+/** Said beside prices and sign-up buttons while PAYMENTS_LIVE is false. */
+export const PRELAUNCH_NOTE = "Prelaunch: free accounts are open, Premium payments are not switched on yet.";
+
+/**
  * Free is one card with everything else (owner, 2 November 2026). Also in
  * the database's limit trigger; change both.
  */

@@ -1,6 +1,8 @@
 /**
- * The demo banner: shown in the app to anyone without a session, until
- * they close it (owner, 2 November 2026).
+ * The demo banner: shown in the app to anyone without a session (owner,
+ * 2 November 2026). Closing it lasts until the tab is closed, so it is back
+ * on the next visit (owner, 6 November 2026); it used to stay closed for
+ * good, which meant a returning visitor never saw it again.
  *
  * Whether to show it is decided by a tiny script in <head>, before the page
  * paints, which marks <html data-demo>. The banner is in the server HTML
@@ -8,6 +10,7 @@
  * after load.
  */
 
+/** Session storage, so a close lasts for this visit only. */
 export const DEMO_BANNER_KEY = "creditdash:demo-banner";
 
 /** The <head> script. Empty when accounts are not configured. */
@@ -19,15 +22,17 @@ export function demoBannerScript(supabaseUrl: string | undefined): string {
   } catch {
     return "";
   }
-  return `try{if(!/(^|; )sb-${ref}-auth-token/.test(document.cookie)&&localStorage.getItem(${JSON.stringify(
+  return `try{if(!/(^|; )sb-${ref}-auth-token/.test(document.cookie)&&sessionStorage.getItem(${JSON.stringify(
     DEMO_BANNER_KEY,
   )})!=="closed")document.documentElement.dataset.demo=""}catch(e){}`;
 }
 
-/** Closes it for good in this browser. */
+/** Closes it until this tab is closed. */
 export function closeDemoBanner() {
   try {
-    window.localStorage.setItem(DEMO_BANNER_KEY, "closed");
+    window.sessionStorage.setItem(DEMO_BANNER_KEY, "closed");
+    // The old for-good close, from before 6 November 2026.
+    window.localStorage.removeItem(DEMO_BANNER_KEY);
   } catch {
     // Still hidden for this page.
   }

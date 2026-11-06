@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
  * Tells someone using the demo that nothing is saved to an account, and
  * offers a free one. Visible only under <html data-demo>, which the <head>
  * script sets for visitors without a session who have not closed it (see
- * lib/demo-banner.ts). Closing it is remembered in this browser.
+ * lib/demo-banner.ts). Closing it lasts for this visit only.
  */
 export function DemoBanner() {
   return (

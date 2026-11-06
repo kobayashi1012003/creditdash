@@ -92,6 +92,10 @@ export type CardCredit = {
    * come with the card for as long as the card has them.
    */
   endsOn?: string;
+  /** This credit's own terms page, when it differs from the card's sourceUrl. */
+  sourceUrl?: string;
+  /** ISO date this credit was last checked, when later than the card's. */
+  lastVerified?: string;
 };
 
 export type PerkKind =
@@ -181,6 +185,13 @@ export type TrackerPrefs = {
   colors?: Record<string, TrackerColor>;
   /** Premium. See lib/credits/autofill.ts. */
   autofill?: Record<string, AutoFillEntry>;
+  /**
+   * Period keys auto-fill ticked that the user has not confirmed, per credit
+   * id. Shown as "assumed used", apart from usage the user recorded. Kept
+   * apart from `autofill` so switching auto-fill off does not quietly turn
+   * its guesses into confirmed usage.
+   */
+  assumed?: Record<string, string[]>;
 };
 
 /** A card the demo user owns. Mirrors `user_cards`. */

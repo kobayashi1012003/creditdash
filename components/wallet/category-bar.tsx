@@ -57,7 +57,9 @@ export function CategoryBar({
             // Clicking the chosen category again clears it, so the wallet
             // can go back to showing every card at full strength.
             onClick={() => onChange(selected ? null : c)}
-            style={selected ? categoryStyle(c) : undefined}
+            // "Everything else" owns no pastel (its token is the surface), so
+            // selected it takes a grey shade and a darker border instead.
+            style={selected && c !== "other" ? categoryStyle(c) : undefined}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-control border font-medium",
               compact ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-sm",
@@ -67,7 +69,9 @@ export function CategoryBar({
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               "disabled:pointer-events-none disabled:opacity-40",
               selected
-                ? "border-transparent"
+                ? c === "other"
+                  ? "border-muted bg-panel text-ink"
+                  : "border-transparent"
                 : "border-line bg-surface text-muted hover:border-muted hover:text-ink",
             )}
           >

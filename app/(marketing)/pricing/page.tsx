@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckIcon, MinusIcon } from "@phosphor-icons/react/ssr";
 import { PlanPanels } from "@/components/landing/plan-panels";
 import { DashboardButton } from "@/components/landing/session-buttons";
-import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
+import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = {
@@ -78,7 +78,7 @@ export default function PricingPage() {
         </h1>
         <PlanPanels className="mt-10" />
         <p className="mt-5 text-[13px] text-muted">
-          Payments are not switched on yet. The demo is the whole app, with a sample wallet.
+          {!PAYMENTS_LIVE && `${PRELAUNCH_NOTE} `}The demo is the whole app, with a sample wallet.
         </p>
       </section>
 

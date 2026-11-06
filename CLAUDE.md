@@ -195,8 +195,9 @@ for accessibility on mobile; the small drop is real network latency.
   below; then the owner's saved UI tweaks. Further Phase 8 terms links
   (Chase, Capital One, Citi, Bilt) are checked the same way when they
   arrive.
-- **"Payments are not switched on yet"** is written on the home page and
-  on `/pricing`. Remove both lines when the live Stripe keys go in.
+- **Prelaunch lines** (hero, plan panels, pricing, Settings) all read
+  `PAYMENTS_LIVE` in `lib/plan.ts`. Set it to `true` when the live Stripe
+  keys go in.
 - **Email is set up.** Sign-in links go through Resend (custom SMTP in
   Supabase, sender `signin@creditdash.co`; free plan, 100 a day, Supabase
   caps auth email near 30 an hour). DKIM, SPF on `send`, and DMARC
@@ -488,7 +489,7 @@ All dashboard work, no code:
 4. In the Worker's Variables and Secrets (Production), add the live
    secret key as `STRIPE_SECRET_KEY` and that endpoint's signing secret
    as `STRIPE_WEBHOOK_SECRET`.
-5. Remove the "Payments are not switched on yet" lines, then subscribe
+5. Set `PAYMENTS_LIVE = true` in `lib/plan.ts`, then subscribe
    once on the live site and cancel, to prove it.
 
 ## Credit resets
@@ -536,6 +537,12 @@ labelled with any publisher's name). Three modelling rules:
 - **The id `bilt` means Bilt Blue** since the 7 February 2026 relaunch, so
   wallets with the old $0 card keep a card. Obsidian and Palladium are new
   ids. Obsidian assumes dining for its pick-one 3x category.
+
+**A credit's `amount` is per period** (The Edit is `250`, `semiannual`).
+The card drawer leads with the year's total from `annualValue` and puts
+the per-period amount under it ("$250 twice a year"), so new cards need
+nothing extra (owner, 5 November 2026). The Tracker still shows each
+period's amount on its slots.
 
 The answer line and the Compare table state the multiplier only ("earns
 8x on flights"); cents per dollar is held back by the owner's choice,
@@ -609,6 +616,41 @@ read-only `/admin` page tracks when each card was last checked.
   overstates someone above that in total (said in its fine print). Delta
   Platinum's MQD head start amount was not stated on its page and is left
   out.
+
+## Owner's list, 6 November 2026
+
+- **Assumed vs confirmed.** Auto-fill's ticks are stored as assumed in
+  `UserCard.prefs.assumed` (credit id to period keys, in the existing
+  `credit_prefs` jsonb, so no migration), apart from `autofill` so
+  switching auto-fill off does not turn guesses into confirmed usage.
+  `creditState` reads them from the UserCard passed as `anniversary`
+  (`assumed`, `assumedTotal`). Assumed slots are dashed outlines; tapping
+  one, or "Confirm all", confirms (`confirmCredit`); changing one by hand
+  confirms it too. Capped at `MAX_ASSUMED` keys per credit.
+- **Recovered, assumed, available, estimated.** The Tracker's "Credits
+  this year" shows money recovered (confirmed), assumed by auto-fill, and
+  still available as separate figures; the Points widget says its figure
+  is an estimate at the user's valuation, not money recovered.
+- **Reset wording** comes from `resetPhrase` in `lib/credits.ts`, read
+  from the real windows ("$10 a month, resets on the 1st of each month",
+  "twice a year, resets in Jan and Jul"). Never "resets on the calendar
+  year" for a monthly credit.
+- **Per-credit source and history** in the card drawer ("Source and
+  history"): source link (`credit.sourceUrl`, else the card's, else the
+  issuer page), checked date (`credit.lastVerified`, else the card's),
+  conditions, and `data/benefit-history.ts`, the history of our record,
+  started from the seed's git history. **Add an entry there whenever a
+  credit changes.**
+- **Prelaunch.** `PAYMENTS_LIVE` and `PRELAUNCH_NOTE` in `lib/plan.ts`
+  drive every prelaunch line (hero, plan panels, pricing, Settings'
+  upgrade buttons). Going live: set `PAYMENTS_LIVE = true`.
+- **Sidebar box**: demo says changes are not saved to an account; signed
+  in shows the first name from Google (`Account.name`, else the email)
+  and the plan, Premium with a lightning bolt.
+- **Checkmark slots glow while held** (box shadow in the credit's tint,
+  `held` prop for demos). Features page headings are the dashboard's own
+  names: Wallet, Tracker, Calculators, Compare. Home page issuer strip
+  removed; its Tracker demo has three credits with month captions.
 
 ## Valuations, perks and anniversary points (5 November 2026)
 
@@ -684,8 +726,9 @@ read-only `/admin` page tracks when each card was last checked.
 - **Demo banner** (`components/shell/demo-banner.tsx`): in the server HTML
   of every app page, shown by CSS only under `<html data-demo>`, which a
   `<head>` script sets when there is no session cookie and the banner was
-  not closed (`lib/demo-banner.ts`). No layout shift. Closing it is
-  remembered in localStorage.
+  not closed (`lib/demo-banner.ts`). No layout shift. Closing it lasts
+  for the visit only (sessionStorage), so it is back next visit (owner,
+  6 November 2026).
 - **Card faces' corner radius scales with the card** (`--cd-radius-card:
   4.5% / 7.1%`), so a 48px thumbnail has a real card's corner.
 - **The card drawer leads with the best rate** and puts the anywhere rate
@@ -808,8 +851,10 @@ queries, not a `dense` prop, adapt them to the 360px panel).
   the saved order. Sorting by a category ranks on value, like the answer
   line; the answer is chosen from the cards on screen.
 - **Store search** under the categories uses a built-in list,
-  `data/merchants.ts` (about 250 US merchants and kinds of place), searched
-  by `lib/merchants.ts`, which is dependency-free and unit tested. Picking a
+  `data/merchants.ts` (about 620 US merchants and kinds of place since
+  6 November 2026), searched by `lib/merchants.ts`, which is
+  dependency-free and unit tested. When nothing matches as typed, it
+  falls back to near misses (one typo for 4 to 7 characters, two for 8+). Picking a
   store selects its category. Notes must hold for every card in the
   catalog or say "most cards". Issuers go by merchant code, so the list
   says "usually".

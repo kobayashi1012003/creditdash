@@ -8,8 +8,8 @@ import { usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 /**
- * The Tracker at work: a pointer ticks off this year's monthly credits one
- * by one and the running total keeps up. Clicking any slot takes over and
+ * The Tracker at work: a pointer ticks off this year's three monthly
+ * credits one by one and the running total keeps up. Clicking any slot takes over and
  * stops the tour. Sample data, labelled as such on the page.
  */
 
@@ -19,69 +19,27 @@ const MONTHS = [
 ];
 /** The demo's "today" is October, the month the page was written in. */
 const NOW = 9;
-const AMOUNT: number = 10;
-
+/** The Amex Gold's three monthly credits. */
 const ROWS = [
-  { name: "Dining credit", tint: "var(--cd-cat-dining-ink)" },
-  { name: "Uber Cash", tint: "var(--cd-cat-transit-ink)" },
+  { name: "Dining credit", amount: 10, tint: "var(--cd-cat-dining-ink)" },
+  { name: "Uber Cash", amount: 10, tint: "var(--cd-cat-transit-ink)" },
+  { name: "Dunkin' credit", amount: 7, tint: "var(--cd-cat-dining-ink)" },
 ] as const;
 
-const start = (): number[][] => [
-  Array.from({ length: 12 }, (_, i) => (i < 6 ? AMOUNT : 0)),
-  Array.from({ length: 12 }, (_, i) => (i < 5 ? AMOUNT : 0)),
-];
+const start = (): number[][] =>
+  [6, 5, 7].map((through, row) =>
+    Array.from({ length: 12 }, (_, i) => (i < through ? ROWS[row].amount : 0)),
+  );
 
 /** The slots the pointer visits, in order: row, month. */
 const STEPS: [number, number][] = [
-  [0, 6], [1, 5], [1, 6], [0, 7], [1, 7], [0, 8], [1, 8], [0, 9], [1, 9],
+  [0, 6], [1, 5], [1, 6], [0, 7], [2, 7], [1, 7], [0, 8], [2, 8], [1, 8], [0, 9], [2, 9], [1, 9],
 ];
 
 const MOVE_MS = 520;
 const PRESS_MS = 160;
 const REST_MS = 420;
 const HOLD_MS = 2600;
-
-/** The same two credits, remembered by nobody: what lapses on its own. */
-export function ForgottenCredits() {
-  const forgotten = [
-    [0, 1, 3, 6],
-    [0, 2, 5],
-  ].map((months) => Array.from({ length: 12 }, (_, i) => (months.includes(i) ? AMOUNT : 0)));
-  const total = forgotten.flat().reduce((a, b) => a + b, 0);
-  const available = ROWS.length * AMOUNT * (NOW + 1);
-
-  return (
-    <div>
-      <p className="text-[13px] text-muted">Amex Gold, this year</p>
-      <p className="mt-1 text-[40px] leading-none font-medium tracking-[-0.03em]">
-        {usd(total)}
-        <span className="ml-2 text-[15px] font-normal tracking-normal text-muted">
-          of {usd(available)} used. {usd(available - total)} lapsed.
-        </span>
-      </p>
-      <div className="mt-6 space-y-4">
-        {ROWS.map((r, row) => (
-          <div key={r.name}>
-            <div className="mb-2 flex items-baseline justify-between text-[13px]">
-              <span className="font-medium">{r.name}</span>
-              <span className="text-muted">{usd(AMOUNT)} a month</span>
-            </div>
-            <CheckmarkRow
-              period="monthly"
-              used={forgotten[row]}
-              amount={AMOUNT}
-              tint="var(--cd-text-muted)"
-              currentIndex={NOW}
-              slotLabel={(i) => `${r.name}, ${MONTHS[i]}`}
-              fluid
-              className="grid grid-cols-6 gap-1.5 sm:grid-cols-12 sm:gap-1"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function CreditDemo() {
   const reduceMotion = useReducedMotion();
@@ -91,11 +49,11 @@ export function CreditDemo() {
   const panelRef = useRef<HTMLDivElement>(null);
 
   const total = used.flat().reduce((a, b) => a + b, 0);
-  const available = ROWS.length * AMOUNT * (NOW + 1);
+  const available = ROWS.reduce((sum, r) => sum + r.amount * (NOW + 1), 0);
 
   const slotCentre = useCallback((row: number, month: number) => {
     const panel = panelRef.current;
-    const slot = panel?.querySelectorAll(`[data-row="${row}"] button`)[month];
+    const slot = panel?.querySelector(`[data-row="${row}"] [data-slot="${month}"]`);
     if (!panel || !slot) return null;
     const p = panel.getBoundingClientRect();
     const s = slot.getBoundingClientRect();
@@ -128,7 +86,7 @@ export function CreditDemo() {
           await wait(MOVE_MS);
           if (cancelled) return;
           setPointer((p) => (p ? { ...p, pressed: true } : p));
-          setUsed((u) => u.map((r, i) => (i === row ? r.map((v, m) => (m === month ? AMOUNT : v)) : r)));
+          setUsed((u) => u.map((r, i) => (i === row ? r.map((v, m) => (m === month ? ROWS[row].amount : v)) : r)));
           await wait(PRESS_MS);
           setPointer((p) => (p ? { ...p, pressed: false } : p));
           await wait(REST_MS);
@@ -152,7 +110,11 @@ export function CreditDemo() {
     setTouring(false);
     setPointer(null);
     setUsed((u) =>
-      u.map((r, i) => (i === row ? r.map((v, m) => (m === month ? (v >= AMOUNT ? 0 : AMOUNT) : v)) : r)),
+      u.map((r, i) =>
+        i === row
+          ? r.map((v, m) => (m === month ? (v >= ROWS[row].amount ? 0 : ROWS[row].amount) : v))
+          : r,
+      ),
     );
   };
 
@@ -180,18 +142,19 @@ export function CreditDemo() {
           <div key={r.name} data-row={row}>
             <div className="mb-2 flex items-baseline justify-between text-[13px]">
               <span className="font-medium text-ink">{r.name}</span>
-              <span className="text-muted">{usd(AMOUNT)} a month</span>
+              <span className="text-muted">{usd(r.amount)} a month</span>
             </div>
             <CheckmarkRow
               period="monthly"
               used={used[row]}
-              amount={AMOUNT}
+              amount={r.amount}
               tint={r.tint}
               currentIndex={NOW}
               slotLabel={(i) => `${r.name}, ${MONTHS[i]}`}
+              caption={(i) => MONTHS[i].slice(0, 3)}
               onToggle={(m) => toggle(row, m)}
               fluid
-              className="grid grid-cols-6 gap-1.5 sm:grid-cols-12 sm:gap-1"
+              className="grid grid-cols-6 gap-x-1.5 gap-y-2.5 sm:grid-cols-12 sm:gap-x-1"
             />
           </div>
         ))}

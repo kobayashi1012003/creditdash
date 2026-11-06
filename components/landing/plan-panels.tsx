@@ -1,4 +1,4 @@
-import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
+import { PAYMENTS_LIVE, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 
 /**
@@ -23,6 +23,7 @@ export function PlanPanels({ className }: { className?: string }) {
         price={`$${PREMIUM_PRICE_MONTHLY}`}
         per="a month"
         note="Every card in your wallet, tracked, and credits ticked for you."
+        prelaunch
         points={["Unlimited cards", "Auto-fill for credits you always use", "Everything in Free", "Cancel whenever you like"]}
       />
       <PlanPanel
@@ -31,6 +32,7 @@ export function PlanPanels({ className }: { className?: string }) {
         per="a year"
         note={`Two months free, against $${PREMIUM_PRICE_MONTHLY * 12} paid monthly.`}
         featured
+        prelaunch
         points={["Unlimited cards", "Auto-fill for credits you always use", "Everything in Free", "Cancel whenever you like"]}
       />
     </div>
@@ -44,6 +46,7 @@ function PlanPanel({
   note,
   points,
   featured,
+  prelaunch,
 }: {
   name: string;
   price: string;
@@ -51,6 +54,8 @@ function PlanPanel({
   note: string;
   points: string[];
   featured?: boolean;
+  /** Not on sale until payments go live. */
+  prelaunch?: boolean;
 }) {
   return (
     <div
@@ -59,7 +64,14 @@ function PlanPanel({
         featured ? "border-ink bg-surface" : "border-line bg-surface/60",
       )}
     >
-      <h3 className="text-[15px] font-medium">{name}</h3>
+      <h3 className="flex flex-wrap items-center gap-2 text-[15px] font-medium">
+        {name}
+        {prelaunch && !PAYMENTS_LIVE && (
+          <span className="rounded-control bg-butter px-1.5 py-0.5 text-[12px] font-medium text-butter-ink">
+            Opens after launch
+          </span>
+        )}
+      </h3>
       <p className="mt-5 font-display text-[44px] leading-none tracking-[-0.04em]">
         {price}
         {per && <span className="ml-2 text-[15px] font-normal tracking-normal text-muted">{per}</span>}

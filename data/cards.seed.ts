@@ -30,7 +30,7 @@ export const CARDS_ARE_SAMPLE_DATA = true;
 export const CARDS: Card[] = [
   {
     id: "amex-platinum",
-    name: "The Platinum Card",
+    name: "Amex Platinum",
     issuer: "American Express",
     network: "amex",
     annualFee: 895,
@@ -76,7 +76,7 @@ export const CARDS: Card[] = [
   },
   {
     id: "amex-gold",
-    name: "American Express Gold",
+    name: "Amex Gold",
     issuer: "American Express",
     network: "amex",
     annualFee: 325,

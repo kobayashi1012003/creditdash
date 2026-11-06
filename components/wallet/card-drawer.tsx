@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowSquareOutIcon, ListChecksIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon, CaretDownIcon, ListChecksIcon } from "@phosphor-icons/react";
 import {
   Drawer,
   DrawerClose,
@@ -14,19 +14,20 @@ import { Button } from "@/components/ui/button";
 import { CardFace } from "@/components/ui/card-face";
 import { EarnChip } from "@/components/ui/earn-chip";
 import { CreditConditions } from "@/components/ui/credit-conditions";
-import type { Card, UserCard } from "@/data/types";
+import type { Card, CardCredit, UserCard } from "@/data/types";
+import { BENEFIT_HISTORY } from "@/data/benefit-history";
 import { PROGRAM_LABELS } from "@/data/types";
 import { longDate, monthName, pts, usd, usdExact } from "@/lib/format";
-import { cardAnnualCreditValue, liveCredits } from "@/lib/credits";
+import { annualValue, cardAnnualCreditValue, liveCredits, resetPhrase } from "@/lib/credits";
 import { useIsDesktop } from "@/lib/use-media-query";
 import { TRACKER_CARD_KEY, useStoredValue } from "@/lib/use-stored-value";
 
-const PERIOD_LABEL: Record<string, string> = {
-  monthly: "each month",
-  quarterly: "each quarter",
-  semiannual: "twice a year",
-  annual: "each year",
-};
+
+/** Whole dollars unless there are cents ($12.95 a month is $155.40 a year). */
+function money(amount: number): string {
+  const cents = Math.round(amount * 100) / 100;
+  return Number.isInteger(cents) ? usd(cents) : usdExact(cents);
+}
 
 /**
  * Everything about one card. A panel on the right at desktop width, a bottom
@@ -165,15 +166,20 @@ export function CardDrawer({
                           {credit.name} <CreditConditions credit={credit} className="ml-1" />
                         </p>
                         <p className="text-[13px] text-muted">
-                          {PERIOD_LABEL[credit.period]}, resets on the{" "}
-                          {credit.resetBasis === "calendar" ? "calendar year" : "anniversary"}
+                          {money(credit.amount)}{" "}
+                          {userCard || credit.resetBasis === "calendar"
+                            ? resetPhrase(credit, userCard ?? { anniversaryMonth: 1 })
+                            : `${PER[credit.period]}, resets from your card anniversary`}
                         </p>
                         {credit.notes && (
                           <p className="mt-0.5 text-[13px] text-muted">{credit.notes}</p>
                         )}
+                        <BenefitDetails credit={credit} card={card} />
                       </div>
+                      {/* The year's total leads; the amount per period is the
+                          subtext (owner, 5 November 2026). */}
                       <span className="shrink-0 text-sm tabular-nums">
-                        {Number.isInteger(credit.amount) ? usd(credit.amount) : usdExact(credit.amount)}
+                        {money(annualValue(credit))}
                       </span>
                     </li>
                   ))}
@@ -270,5 +276,76 @@ function Fact({
       <dt className="text-[13px] text-muted">{label}</dt>
       <dd className="mt-0.5">{value}</dd>
     </div>
+  );
+}
+
+const PER: Record<CardCredit["period"], string> = {
+  monthly: "a month",
+  quarterly: "a quarter",
+  semiannual: "twice a year",
+  annual: "a year",
+};
+
+const LINK =
+  "rounded-control text-ink underline decoration-line underline-offset-4 transition-[text-decoration-color] duration-[var(--cd-dur-hover)] ease-out hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
+/**
+ * Where a credit's facts come from, when they were last checked, what it
+ * takes to get it, and what has changed in our record of it (owner,
+ * 6 November 2026). Folded by default: most people want the amount, and
+ * this is for when it matters.
+ */
+function BenefitDetails({ credit, card }: { credit: CardCredit; card: Card }) {
+  const source = credit.sourceUrl ?? card.sourceUrl ?? card.issuerUrl;
+  const checked = credit.lastVerified ?? card.lastVerified;
+  const history = BENEFIT_HISTORY[credit.id] ?? [];
+  const conditions = [
+    credit.enroll && `Enroll in your ${card.issuer} account before you use it.`,
+    credit.spendToUnlock && `Paid only after ${usd(credit.spendToUnlock)} of spend on the card in a calendar year.`,
+    credit.endsOn && `Limited time: ends ${longDate(credit.endsOn)} and does not renew.`,
+  ].filter((c): c is string => Boolean(c));
+
+  return (
+    <details className="group mt-1.5 text-[13px]">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-control text-muted transition-colors duration-[var(--cd-dur-hover)] ease-out hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
+        Source and history
+        <CaretDownIcon
+          size={12}
+          aria-hidden
+          className="transition-transform duration-[var(--cd-dur-menu)] ease-out group-open:rotate-180"
+        />
+      </summary>
+      <dl className="mt-2 space-y-2 rounded-inner bg-bg px-3 py-2.5 leading-relaxed">
+        <div>
+          <dt className="text-muted">Source</dt>
+          <dd>
+            <a href={source} target="_blank" rel="noreferrer noopener" className={LINK}>
+              {credit.sourceUrl || card.sourceUrl ? `${card.issuer}'s benefit terms` : `${card.issuer}'s card page`}
+            </a>
+            <span className="text-muted">, checked {longDate(checked)}</span>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted">To get it</dt>
+          {conditions.length === 0 ? (
+            <dd>Nothing to do beyond holding the card{credit.notes ? ", within the terms above" : ""}.</dd>
+          ) : (
+            conditions.map((c) => <dd key={c}>{c}</dd>)
+          )}
+        </div>
+        <div>
+          <dt className="text-muted">Changes to this entry</dt>
+          {history.length === 0 ? (
+            <dd>None since it was first checked.</dd>
+          ) : (
+            [...history].reverse().map((h) => (
+              <dd key={h.date + h.change}>
+                <span className="tabular-nums text-muted">{longDate(h.date)}:</span> {h.change}
+              </dd>
+            ))
+          )}
+        </div>
+      </dl>
+    </details>
   );
 }

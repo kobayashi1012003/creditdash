@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowSquareOutIcon, SparkleIcon } from "@phosphor-icons/react";
-import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY, type BillingInterval, type Plan } from "@/lib/plan";
+import { FREE_CARD_LIMIT, PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY, type BillingInterval, type Plan } from "@/lib/plan";
 import { cn } from "@/lib/cn";
 import {
   ACCOUNTS_ENABLED,
@@ -117,6 +117,7 @@ export function PlanSection({
         <Button variant="outline" className="w-full" onClick={() => go("checkout", "month")} disabled={busy}>
           {busy ? "Opening Stripe" : `$${PREMIUM_PRICE_MONTHLY} a month`}
         </Button>
+        {!PAYMENTS_LIVE && <p className="text-[13px] leading-relaxed text-muted">{PRELAUNCH_NOTE}</p>}
       </div>
     ) : ACCOUNTS_ENABLED ? (
       <Button className="mt-4 w-full" nativeButton={false} render={<Link href="/signin" />}>

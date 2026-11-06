@@ -49,10 +49,12 @@ const STROKES: [number, number, number][] = [
   [2, 1, 1],
 ];
 
-const MOVE_MS = 560;
-const PRESS_MS = 220;
-const STEP_MS = 170;
-const REST_MS = 650;
+// The home page's pace (owner, 6 November 2026): about half a second to
+// travel, a held press long enough to see the glow, then one month at a time.
+const MOVE_MS = 520;
+const PRESS_MS = 650;
+const STEP_MS = 420;
+const REST_MS = 700;
 const HOLD_MS = 2600;
 
 const available = ROWS.reduce((sum, r) => sum + r.amount * (r.period === "monthly" ? 12 : 2), 0);
@@ -62,6 +64,8 @@ export function TrackerDemo() {
   const [used, setUsed] = useState(start);
   const [touring, setTouring] = useState(true);
   const [pointer, setPointer] = useState<{ x: number; y: number; pressed: boolean } | null>(null);
+  /** The slot under the held press, which glows as the real Tracker's does. */
+  const [held, setHeld] = useState<{ row: number; slot: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [gold, csr] = getCardsById(["amex-gold", "csr"]);
 
@@ -104,20 +108,25 @@ export function TrackerDemo() {
           if (cancelled) return;
           // Press and hold, then slide along the row.
           setPointer((p) => (p ? { ...p, pressed: true } : p));
-          fill(row, from);
+          setHeld({ row, slot: from });
           await wait(PRESS_MS);
+          if (cancelled) return;
+          fill(row, from);
           for (let s = from + 1; s <= to && !cancelled; s++) {
             const next = slotCentre(row, s);
             if (next) setPointer({ ...next, pressed: true });
+            setHeld({ row, slot: s });
             await wait(STEP_MS);
             fill(row, s);
           }
+          setHeld(null);
           setPointer((p) => (p ? { ...p, pressed: false } : p));
           await wait(REST_MS);
         }
         await wait(HOLD_MS);
         if (cancelled) return;
         setPointer(null);
+        setHeld(null);
         setUsed(start());
         await wait(900);
       }
@@ -133,6 +142,7 @@ export function TrackerDemo() {
   const toggle = (row: number, slot: number) => {
     setTouring(false);
     setPointer(null);
+    setHeld(null);
     setUsed((u) =>
       u.map((r, i) =>
         i === row ? r.map((v, s) => (s === slot ? (v >= ROWS[row].amount ? 0 : ROWS[row].amount) : v)) : r,
@@ -206,6 +216,7 @@ export function TrackerDemo() {
                 slotLabel={(i) => `${r.name}, ${r.period === "monthly" ? MONTHS[i] : i === 0 ? "Jan to Jun" : "Jul to Dec"}`}
                 caption={(i) => (r.period === "monthly" ? MONTHS[i] : i === 0 ? "Jan to Jun" : "Jul to Dec")}
                 onToggle={(s) => toggle(row, s)}
+                held={held?.row === row ? held.slot : undefined}
                 className={
                   r.period === "monthly"
                     ? "grid grid-cols-[repeat(6,minmax(0,2.5rem))] gap-x-1.5 gap-y-3 @xl:grid-cols-[repeat(12,minmax(0,2.5rem))]"
@@ -224,7 +235,7 @@ export function TrackerDemo() {
           className="pointer-events-none absolute top-0 left-0 z-10 text-ink drop-shadow-[0_2px_3px_rgb(0_0_0/0.25)] transition-transform ease-[var(--cd-ease-in-out)]"
           style={{
             transform: `translate(${pointer.x}px, ${pointer.y}px) scale(${pointer.pressed ? 0.84 : 1})`,
-            transitionDuration: `${pointer.pressed ? STEP_MS : MOVE_MS}ms`,
+            transitionDuration: `${pointer.pressed ? 280 : MOVE_MS}ms`,
           }}
         >
           <CursorIcon size={22} weight="fill" />

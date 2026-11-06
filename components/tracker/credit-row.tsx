@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { LightningIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { CheckIcon, LightningIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import type { CardCredit } from "@/data/types";
-import { creditState, type Anniversary } from "@/lib/credits";
+import { creditState, resetPhrase, type Anniversary } from "@/lib/credits";
 import type { CreditUsage } from "@/lib/data/schema";
-import { setCreditUsed } from "@/lib/data";
+import { confirmCredit, setCreditUsed } from "@/lib/data";
 import { money, usd, usdExact } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { CheckmarkRow } from "@/components/ui/checkmark-row";
@@ -33,13 +33,16 @@ const SLOT_LAYOUT: Record<CardCredit["period"], string> = {
  * because they are typed, not tapped, and typing wants a real input.
  */
 export function CreditRow({
+  cardId,
   credit,
   anniversary,
   usage,
   tint,
   autoFill = false,
 }: {
+  cardId: string;
   credit: CardCredit;
+  /** The UserCard: its anniversary, and its prefs for assumed periods. */
   anniversary: Anniversary;
   usage: CreditUsage;
   /** Filled slots' colour: the user's choice or the category's. */
@@ -49,11 +52,13 @@ export function CreditRow({
 }) {
   const [editing, setEditing] = useState(false);
   const state = creditState(credit, anniversary, usage);
+  const assumedKeys = state.windows.filter((_, i) => state.assumed[i]).map((w) => w.key);
 
-  const resetsOn =
-    credit.resetBasis === "calendar"
-      ? "the calendar year"
-      : "the card anniversary";
+  // A period set by hand is the user's own record, no longer a guess.
+  const set = (key: string, amount: number) => {
+    void setCreditUsed(credit.id, key, amount);
+    if (assumedKeys.includes(key)) void confirmCredit(cardId, credit.id, [key]);
+  };
 
   return (
     <li>
@@ -69,7 +74,7 @@ export function CreditRow({
             )}
           </p>
           <p className="text-[13px] text-muted">
-            {usd(credit.amount)} per period, resets on {resetsOn}
+            {usd(credit.amount)} {resetPhrase(credit, anniversary)}
             {state.expiringSoon && state.currentIndex !== -1 && (
               <>
                 {". "}
@@ -82,7 +87,9 @@ export function CreditRow({
         </div>
         <div className="flex items-baseline gap-3">
           <p className="text-[13px] tabular-nums text-muted">
-            {money(state.usedTotal)} of {usd(state.available)}
+            {money(state.usedTotal - state.assumedTotal)} used
+            {state.assumedTotal > 0 && <>, {money(state.assumedTotal)} assumed</>} of{" "}
+            {usd(state.available)}
           </p>
           <Button
             variant="ghost"
@@ -105,21 +112,22 @@ export function CreditRow({
         <AmountGrid
           credit={credit}
           state={state}
-          onSet={(key, amount) => setCreditUsed(credit.id, key, amount)}
+          onSet={set}
         />
       ) : (
         <CheckmarkRow
+          assumed={(i) => state.assumed[i]}
           period={credit.period}
           used={state.used}
           amount={credit.amount}
           tint={tint}
           currentIndex={state.currentIndex}
           onToggle={(i) =>
-            setCreditUsed(
-              credit.id,
-              state.windows[i].key,
-              state.used[i] >= credit.amount ? 0 : credit.amount,
-            )
+            // Tapping an assumed slot confirms it rather than clearing it:
+            // the likely meaning is "yes, I did use that".
+            state.assumed[i]
+              ? void confirmCredit(cardId, credit.id, [state.windows[i].key])
+              : set(state.windows[i].key, state.used[i] >= credit.amount ? 0 : credit.amount)
           }
           ended={(i) => state.offered[i] === false}
           slotLabel={(i) => state.windows[i]?.label ?? `Period ${i + 1}`}
@@ -129,6 +137,23 @@ export function CreditRow({
           }}
           className={SLOT_LAYOUT[credit.period]}
         />
+      )}
+
+      {assumedKeys.length > 0 && !editing && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
+          <p className="text-muted">
+            Dashed {assumedKeys.length === 1 ? "slot was" : "slots were"} ticked by auto-fill and
+            {assumedKeys.length === 1 ? " is" : " are"} assumed used. Tap one to confirm it.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void confirmCredit(cardId, credit.id, assumedKeys)}
+          >
+            <CheckIcon size={14} weight="bold" />
+            Confirm {assumedKeys.length === 1 ? "it" : `all ${assumedKeys.length}`}
+          </Button>
+        </div>
       )}
     </li>
   );

@@ -13,7 +13,7 @@ import {
   type ResolvedValuation,
 } from "@/lib/valuations";
 import type { Valuations } from "@/lib/calculators/engine";
-import { emptyState, type CreditUsage, type Persisted } from "@/lib/data/schema";
+import { emptyState, MAX_ASSUMED, type CreditUsage, type Persisted } from "@/lib/data/schema";
 import * as remote from "@/lib/data/remote";
 import { supabase, SUPABASE_CONFIGURED } from "@/lib/data/supabase";
 import {
@@ -322,6 +322,33 @@ export async function setTrackerPrefs(
   );
 }
 
+/** Prefs with one credit's assumed keys changed, the entry dropped when empty. */
+function withAssumed(
+  prefs: TrackerPrefs,
+  creditId: string,
+  change: (keys: string[]) => string[],
+): TrackerPrefs {
+  const next = [...new Set(change(prefs.assumed?.[creditId] ?? []))].slice(-MAX_ASSUMED);
+  const assumed = { ...prefs.assumed };
+  if (next.length > 0) assumed[creditId] = next;
+  else delete assumed[creditId];
+  const out: TrackerPrefs = { ...prefs, assumed };
+  if (Object.keys(assumed).length === 0) delete out.assumed;
+  return out;
+}
+
+/**
+ * The user vouches for periods auto-fill ticked: they stop being "assumed".
+ * Also called when the user changes an assumed period by hand, since what
+ * they set is then theirs, not a guess.
+ */
+export async function confirmCredit(cardId: string, creditId: string, keys: string[]): Promise<void> {
+  const card = getSnapshot().userCards.find((c) => c.cardId === cardId);
+  const current = card?.prefs?.assumed?.[creditId] ?? [];
+  if (!keys.some((k) => current.includes(k))) return;
+  await setTrackerPrefs(cardId, (p) => withAssumed(p, creditId, (ks) => ks.filter((k) => !keys.includes(k))));
+}
+
 let autoFilling = false;
 
 /**
@@ -356,6 +383,8 @@ export async function runAutoFill(now = new Date()): Promise<void> {
         const due = autoFillDue(options, entry, now);
         if (due.windows.length === 0) continue;
         let held = true;
+        // What this run ticks is a guess until the user confirms it.
+        const ticked: string[] = [];
         for (const window of due.windows) {
           // A limited-time credit is not ticked for periods after it ends.
           // `through` still moves on past them, so they are not retried.
@@ -367,13 +396,14 @@ export async function runAutoFill(now = new Date()): Promise<void> {
             held = false;
             break;
           }
+          ticked.push(window.key);
         }
         if (!held) continue;
         // Read afresh: the user may have switched it off meanwhile.
         const latest = getSnapshot().userCards.find((c) => c.cardId === userCard.cardId)?.prefs?.autofill?.[creditId];
         if (!latest) continue;
         await setTrackerPrefs(userCard.cardId, (p) => ({
-          ...p,
+          ...withAssumed(p, creditId, (keys) => [...keys, ...ticked]),
           autofill: { ...p.autofill, [creditId]: { ...latest, through: due.through } },
         }));
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { CheckIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { PERIOD_COUNT, type CreditPeriod } from "@/data/types";
@@ -25,6 +25,10 @@ type CheckmarkRowProps = {
   /** Slots fill a grid cell instead of a fixed 32px, so a row can be laid
    *  out as one deliberate line at any width. */
   fluid?: boolean;
+  /** Slots ticked by auto-fill and not confirmed: outlined, not solid. */
+  assumed?: (index: number) => boolean;
+  /** Glow this slot as if pressed and held. Lets a demo show the hold. */
+  held?: number;
   className?: string;
 };
 
@@ -49,6 +53,8 @@ export function CheckmarkRow({
   caption,
   ended,
   fluid = false,
+  assumed,
+  held,
   className,
 }: CheckmarkRowProps) {
   const count = PERIOD_COUNT[period];
@@ -59,6 +65,11 @@ export function CheckmarkRow({
   const drag = useRef<{ start: number; fill: boolean; applied: boolean; seen: Set<number> } | null>(
     null,
   );
+
+  // The slot under a held press: it glows, so it is clear the press has
+  // taken and a slide will carry on to the neighbours.
+  const [head, setHead] = useState<number | null>(null);
+  const glowing = held ?? head;
 
   const isFull = (i: number) => (used[i] ?? 0) >= amount;
 
@@ -79,7 +90,9 @@ export function CheckmarkRow({
     const d = drag.current;
     if (!d) return;
     const i = slotAt(e.clientX, e.clientY);
-    if (i < 0 || d.seen.has(i) || ended?.(i)) return;
+    if (i < 0 || ended?.(i)) return;
+    setHead(i);
+    if (d.seen.has(i)) return;
     applyStart();
     d.seen.add(i);
     if (isFull(i) !== d.fill) onToggle?.(i);
@@ -88,6 +101,7 @@ export function CheckmarkRow({
   function endPress() {
     applyStart();
     drag.current = null;
+    setHead(null);
   }
 
   return (
@@ -100,10 +114,12 @@ export function CheckmarkRow({
       onPointerUp={endPress}
       onPointerCancel={() => {
         drag.current = null;
+        setHead(null);
       }}
     >
       {Array.from({ length: count }, (_, i) => {
         const value = used[i] ?? 0;
+        const isAssumed = value > 0 && (assumed?.(i) ?? false);
         const full = value >= amount;
         const partial = value > 0 && !full;
         const label = slotLabel?.(i) ?? `Period ${i + 1}`;
@@ -126,6 +142,7 @@ export function CheckmarkRow({
                 // Not an active pointer; the slide still works within the row.
               }
               drag.current = { start: i, fill: !full, applied: false, seen: new Set([i]) };
+              setHead(i);
             }}
             onClick={(e) => {
               // Pointer presses are handled above. A click with no pointer
@@ -136,13 +153,40 @@ export function CheckmarkRow({
             aria-pressed={full}
             aria-label={[
               label,
-              isEnded ? "credit has ended" : full ? "used" : partial ? "partly used" : "not used",
+              isEnded
+                ? "credit has ended"
+                : isAssumed
+                  ? "assumed used by auto-fill, not confirmed"
+                  : full
+                    ? "used"
+                    : partial
+                      ? "partly used"
+                      : "not used",
               isCurrent ? "current period" : null,
             ]
               .filter(Boolean)
               .join(", ")}
             title={label}
-            style={full ? { backgroundColor: tint, borderColor: tint } : undefined}
+            style={{
+              ...(full && !isAssumed ? { backgroundColor: tint, borderColor: tint } : null),
+              // Assumed: the credit's colour as a dashed outline and tick on
+              // a faint wash, so it reads as "probably" next to a solid one.
+              ...(full && isAssumed
+                ? {
+                    borderColor: tint,
+                    color: tint,
+                    backgroundColor: `color-mix(in oklab, ${tint} 12%, transparent)`,
+                  }
+                : null),
+              // A soft halo in the credit's own colour. The slot's own
+              // shadow, so overflow-hidden (for the partial fill) cannot
+              // clip it; it replaces the current-period ring while held.
+              ...(glowing === i
+                ? {
+                    boxShadow: `0 0 0 2px var(--cd-surface), 0 0 0 4px color-mix(in oklab, ${tint} 45%, transparent), 0 0 14px 4px color-mix(in oklab, ${tint} 35%, transparent)`,
+                  }
+                : null),
+            }}
             className={cn(
               "relative grid touch-pan-y place-items-center overflow-hidden rounded-inner border select-none",
               fluid ? "aspect-square w-full min-w-0" : caption && count < 12 ? "h-8 w-full" : "size-8",
@@ -151,9 +195,10 @@ export function CheckmarkRow({
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               usable && "active:scale-[0.94] hover:border-muted",
               !usable && "cursor-default",
-              isEnded && "border-dashed opacity-50",
+              (isEnded || isAssumed) && "border-dashed",
+              isEnded && "opacity-50",
               isCurrent && "ring-1 ring-muted ring-offset-2 ring-offset-surface",
-              full ? "text-surface" : "border-line bg-bg",
+              full ? (isAssumed ? "border-2" : "text-surface") : "border-line bg-bg",
             )}
           >
             {full && <CheckIcon size={15} weight="bold" className="relative" />}

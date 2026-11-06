@@ -8,7 +8,7 @@ import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { cardAnnualCreditValue, creditState, liveCredits } from "@/lib/credits";
 import { daysUntilReset } from "@/lib/credits/reset";
-import { longDate, money, monthName, pointsValue, pts, usd } from "@/lib/format";
+import { cents, longDate, money, monthName, pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import {
   setAnniversary,
@@ -80,6 +80,10 @@ export function TrackerView() {
   }));
   const available = states.reduce((s, x) => s + x.state.available, 0);
   const used = states.reduce((s, x) => s + x.state.usedTotal, 0);
+  // Three different kinds of money, kept apart (owner, 6 November 2026):
+  // what was recorded as used, what auto-fill assumed, and what is left.
+  const assumed = states.reduce((s, x) => s + x.state.assumedTotal, 0);
+  const recovered = used - assumed;
 
   // Not just "ends this month": an anniversary credit can be days from
   // resetting in May. What matters is the window closing, whenever that is.
@@ -135,12 +139,25 @@ export function TrackerView() {
                   size={96}
                   label={`${Math.round((used / available) * 100)}%`}
                 />
-                <div className="min-w-0">
-                  <p className="text-2xl leading-none">{money(used)}</p>
-                  <p className="mt-1.5 text-sm leading-snug text-muted">
-                    used of {usd(available)} this card offers
-                  </p>
-                </div>
+                <dl className="min-w-0 space-y-1.5 text-sm leading-snug">
+                  <div>
+                    <dt className="sr-only">Recovered</dt>
+                    <dd className="text-2xl leading-none tabular-nums">{money(recovered)}</dd>
+                    <dd className="mt-1 text-muted">recovered, credits you recorded as used</dd>
+                  </div>
+                  {assumed > 0 && (
+                    <div className="flex gap-1.5">
+                      <dt className="text-muted">Assumed by auto-fill</dt>
+                      <dd className="tabular-nums">{money(assumed)}</dd>
+                    </div>
+                  )}
+                  <div className="flex gap-1.5">
+                    <dt className="text-muted">Still available</dt>
+                    <dd className="tabular-nums">
+                      {money(Math.max(0, available - used))} of {usd(available)}
+                    </dd>
+                  </div>
+                </dl>
               </div>
             )}
           </Widget>
@@ -186,10 +203,11 @@ export function TrackerView() {
             ) : (
               <div>
                 <p className="text-2xl leading-none tabular-nums">
-                  {usd(pointsValue(balance.balance, valuations[card.program] ?? 1))}
+                  about {usd(pointsValue(balance.balance, valuations[card.program] ?? 1))}
                 </p>
                 <p className="mt-1.5 text-sm leading-snug text-muted">
-                  {pts(balance.balance)} {PROGRAM_LABELS[card.program]}
+                  Estimated value of {pts(balance.balance)} {PROGRAM_LABELS[card.program]}, at{" "}
+                  {cents(valuations[card.program] ?? 1)} a point. Not money recovered.
                 </p>
               </div>
             )}
@@ -339,6 +357,7 @@ function CardCredits({
   const { shown, hidden } = arrangeCredits(liveCredits(card.credits), userCard.prefs);
   const available = shown.reduce((s, c) => s + creditState(c, userCard, usage).available, 0);
   const used = shown.reduce((s, c) => s + creditState(c, userCard, usage).usedTotal, 0);
+  const assumed = shown.reduce((s, c) => s + creditState(c, userCard, usage).assumedTotal, 0);
   const autofill = userCard.prefs?.autofill ?? {};
   // Points that post by themselves each anniversary count toward the fee
   // from the start of the card year, with nothing to tick.
@@ -364,7 +383,8 @@ function CardCredits({
       action={
         <div className="flex items-center gap-3">
           <p className="text-sm tabular-nums text-muted max-sm:hidden">
-            {money(used)} of {usd(available)}
+            {money(used - assumed)} used{assumed > 0 && <>, {money(assumed)} assumed</>} of{" "}
+            {usd(available)}
           </p>
           <Button variant="outline" size="sm" onClick={() => setCustomizing(true)}>
             <SlidersHorizontalIcon size={15} />
@@ -400,6 +420,7 @@ function CardCredits({
         {shown.map((credit) => (
           <CreditRow
             key={credit.id}
+            cardId={card.id}
             credit={credit}
             anniversary={userCard}
             usage={usage}

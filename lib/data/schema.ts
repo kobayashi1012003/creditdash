@@ -298,6 +298,12 @@ export function cleanUserCard(c: UserCard): UserCard {
 const isId = (x: unknown): x is string => typeof x === "string" && x.length > 0 && x.length <= 64;
 
 /**
+ * Assumed period keys kept per credit: two years of a monthly credit. Older
+ * ones fall off, which keeps `credit_prefs` well under its 16 KB check.
+ */
+export const MAX_ASSUMED = 24;
+
+/**
  * Tracker preferences from storage or the database, with anything malformed
  * dropped field by field, so one bad value never loses the rest.
  */
@@ -331,6 +337,15 @@ export function cleanPrefs(x: unknown): TrackerPrefs | undefined {
       }
     }
     out.autofill = autofill;
+  }
+  if (typeof p.assumed === "object" && p.assumed !== null && !Array.isArray(p.assumed)) {
+    const assumed: Record<string, string[]> = {};
+    for (const [id, keys] of Object.entries(p.assumed)) {
+      if (!isId(id) || !Array.isArray(keys)) continue;
+      const clean = [...new Set(keys.filter(isId))].slice(-MAX_ASSUMED);
+      if (clean.length > 0) assumed[id] = clean;
+    }
+    if (Object.keys(assumed).length > 0) out.assumed = assumed;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }

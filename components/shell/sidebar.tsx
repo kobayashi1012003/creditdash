@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { NAV } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import { Wordmark } from "@/components/shell/wordmark";
-import { ACCOUNTS_ENABLED, useAccount, useIsLoading } from "@/lib/data";
+import { LightningIcon } from "@phosphor-icons/react";
+import { ACCOUNTS_ENABLED, useAccount, useIsLoading, usePlan } from "@/lib/data";
 
 /**
  * Desktop navigation. Fixed to the left edge, narrow enough that the content
@@ -62,12 +63,12 @@ export function Sidebar() {
 }
 
 /**
- * Where this wallet is saved, said plainly. A demo user should never assume
- * their data is on an account somewhere, and a signed-in one should be able
- * to see which account they are in.
+ * Who is using the app. A demo user is told plainly that nothing goes to an
+ * account; a signed-in one sees their first name (or email) and plan.
  */
 export function DemoBadge({ className }: { className?: string }) {
   const account = useAccount();
+  const plan = usePlan();
   const isLoading = useIsLoading();
   const box = cn("rounded-inner border border-line bg-surface px-3 py-2.5", className);
 
@@ -84,25 +85,32 @@ export function DemoBadge({ className }: { className?: string }) {
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
         )}
       >
-        <p className="truncate text-[13px] font-medium">{account.email ?? "Signed in"}</p>
-        <p className="mt-0.5 text-[12px] leading-snug text-muted">
-          Saved to your account.
+        <p className="truncate text-[13px] font-medium" title={account.email ?? undefined}>
+          {account.name ?? account.email ?? "Signed in"}
         </p>
+        {plan === "premium" ? (
+          <p className="mt-0.5 flex items-center gap-1 text-[12px] leading-snug font-medium text-ink">
+            <LightningIcon size={13} weight="fill" aria-hidden className="text-butter-ink" />
+            Premium
+          </p>
+        ) : (
+          <p className="mt-0.5 text-[12px] leading-snug text-muted">Free plan</p>
+        )}
       </Link>
     );
   }
 
   return (
     <div className={box}>
-      <p className="text-[13px] font-medium">Demo user</p>
+      <p className="text-[13px] font-medium">Demo</p>
       <p className="mt-0.5 text-[12px] leading-snug text-muted">
-        Saved in this browser only.{" "}
+        Changes are not saved to an account.{" "}
         {ACCOUNTS_ENABLED && (
           <Link
             href="/signin"
             className="rounded-inner text-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
-            Sign in
+            Create a free account
           </Link>
         )}
       </p>

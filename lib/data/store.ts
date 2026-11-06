@@ -51,6 +51,9 @@ let mode: "local" | "account" = "local";
 export type Account = {
   userId: string;
   email: string | null;
+  /** First name from the identity provider (Google gives one; the email
+   *  link does not). */
+  name: string | null;
   billing: Billing | null;
   /** Premium given by the owner, not bought; nothing in Stripe to manage. */
   gifted: boolean;
@@ -207,6 +210,14 @@ export function storedLocal(): Persisted | null {
   }
 }
 
+/** The first name a provider put in the user's metadata, if any. */
+function firstName(meta: Record<string, unknown> | undefined): string | null {
+  const full = [meta?.given_name, meta?.full_name, meta?.name].find(
+    (v): v is string => typeof v === "string" && v.trim() !== "",
+  );
+  return full ? full.trim().split(/\s+/)[0] : null;
+}
+
 async function enterAccount(db: SupabaseClient) {
   const { data } = await db.auth.getSession();
   const user = data.session?.user;
@@ -220,7 +231,14 @@ async function enterAccount(db: SupabaseClient) {
   try {
     const { state, rowIds, billing, gifted, isAdmin } = await loadAccount(db, user.id);
     mode = "account";
-    account = { userId: user.id, email: user.email ?? null, billing, gifted, isAdmin };
+    account = {
+      userId: user.id,
+      email: user.email ?? null,
+      name: firstName(user.user_metadata),
+      billing,
+      gifted,
+      isAdmin,
+    };
     remote = { db, userId: user.id, rowIds };
     cache = state;
     offer = computeOffer(user.id, state);
@@ -232,6 +250,7 @@ async function enterAccount(db: SupabaseClient) {
     account = {
       userId: user.id,
       email: user.email ?? null,
+      name: firstName(user.user_metadata),
       billing: null,
       gifted: false,
       isAdmin: false,
