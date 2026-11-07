@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import { CARDS } from "@/data/cards.seed";
-import { reviewCatalog, STALE_AFTER_DAYS } from "@/lib/catalog-review";
+import {
+  HIGH_FEE,
+  HIGH_FEE_STALE_AFTER_DAYS,
+  reviewCatalog,
+  STALE_AFTER_DAYS,
+} from "@/lib/catalog-review";
 import { useAccount, useIsLoading } from "@/lib/data";
 import { longDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -59,7 +64,8 @@ export function CatalogReview() {
         </span>{" "}
         <span className="text-muted">
           {rows.length} cards, {withTerms} checked against the issuer&apos;s own terms page.
-          A card is due {STALE_AFTER_DAYS} days after its last check.
+          A card is due {STALE_AFTER_DAYS} days after its last check, or{" "}
+          {HIGH_FEE_STALE_AFTER_DAYS} with a fee of ${HIGH_FEE} or more.
         </span>
       </p>
 

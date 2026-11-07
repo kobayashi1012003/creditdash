@@ -98,7 +98,7 @@ export const CARDS: Card[] = [
     credits: [
       { id: "gold-dining", name: "Dining credit", amount: 10, period: "monthly", resetBasis: "calendar", category: "dining", enroll: true, notes: "Grubhub, Five Guys, Cheesecake Factory, Buffalo Wild Wings, Wonder" },
       { id: "gold-uber", name: "Uber Cash", amount: 10, period: "monthly", resetBasis: "calendar", category: "transit", notes: "Add the card in the Uber app. Lapses at the end of each month" },
-      { id: "gold-resy-50", name: "Resy credit", amount: 50, period: "semiannual", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Resy restaurants" },
+      { id: "gold-resy-50", name: "Resy credit", amount: 50, period: "semiannual", resetBasis: "calendar", category: "dining", enroll: true, notes: "US restaurants marked eligible on Resy" },
       { id: "gold-dunkin", name: "Dunkin'", amount: 7, period: "monthly", resetBasis: "calendar", category: "dining", enroll: true, notes: "US Dunkin' locations" },
     ],
     perks: [
@@ -132,7 +132,7 @@ export const CARDS: Card[] = [
     ],
     credits: [
       { id: "csr-travel", name: "Travel credit", amount: 300, period: "annual", resetBasis: "anniversary", category: "flights", notes: "Applies automatically to travel purchases" },
-      { id: "csr-edit-h", name: "The Edit hotel credit", amount: 250, period: "semiannual", resetBasis: "calendar", category: "hotels", notes: "Prepaid stays of two nights or more through The Edit" },
+      { id: "csr-edit-500", name: "The Edit hotel credit", amount: 500, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Up to $250 a prepaid stay of two nights or more through The Edit", sourceUrl: "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve", lastVerified: "2026-11-07" },
       { id: "csr-select-hotels", name: "Select hotel brands credit", amount: 250, period: "annual", resetBasis: "calendar", category: "hotels", notes: "Prepaid Chase Travel stays of two nights or more with the participating brands", endsOn: "2026-12-31" },
       { id: "csr-dining", name: "Exclusive Tables dining", amount: 150, period: "semiannual", resetBasis: "calendar", category: "dining", notes: "Only Exclusive Tables restaurants on OpenTable" },
       { id: "csr-stubhub", name: "StubHub", amount: 150, period: "semiannual", resetBasis: "calendar", notes: "StubHub or viagogo, no gift cards", enroll: true, endsOn: "2027-12-31" },
@@ -318,7 +318,7 @@ export const CARDS: Card[] = [
     finePrint: [
       "Rent and mortgage earn up to 1.25x with no fee, depending on how much you spend on the card that month.",
       "Every card earns 4% back in Bilt Cash, which can only be spent inside Bilt, not withdrawn.",
-      "Rent Day, the 1st of each month, doubles points on non-housing purchases through 1 January 2027.",
+      "Rent Day, the 1st of each month, doubles points on non-housing purchases (up to 1,000 bonus points a month) through 1 January 2027.",
       "Issued by Column N.A. since the Bilt Card 2.0 relaunch on 7 February 2026.",
     ],
   },
@@ -347,7 +347,7 @@ export const CARDS: Card[] = [
       "You pick 3x on dining or 3x on groceries; the app assumes dining.",
       "Rent and mortgage earn up to 1.25x with no fee, depending on how much you spend on the card that month.",
       "Every card earns 4% back in Bilt Cash, which can only be spent inside Bilt, not withdrawn.",
-      "Rent Day, the 1st of each month, doubles points on non-housing purchases through 1 January 2027.",
+      "Rent Day, the 1st of each month, doubles points on non-housing purchases (up to 1,000 bonus points a month) through 1 January 2027.",
       "Issued by Column N.A. since the Bilt Card 2.0 relaunch on 7 February 2026.",
     ],
   },
@@ -370,7 +370,7 @@ export const CARDS: Card[] = [
     ],
     credits: [
       { id: "bilt-palladium-hotel", name: "Hotel credit", amount: 200, period: "semiannual", resetBasis: "calendar", category: "hotels", notes: "Hotels booked through Bilt Travel" },
-      { id: "bilt-palladium-cash", name: "Bilt Cash", amount: 200, period: "annual", resetBasis: "calendar", notes: "Spendable inside Bilt only" },
+      { id: "bilt-palladium-cash", name: "Bilt Cash", amount: 200, period: "annual", resetBasis: "calendar", notes: "Spendable inside Bilt only. Expires 12 months after it is earned" },
     ],
     perks: [
       { id: "bilt-palladium-lounge", name: "Lounge access", kind: "lounge", notes: "Priority Pass" },
@@ -378,7 +378,7 @@ export const CARDS: Card[] = [
     finePrint: [
       "Rent and mortgage earn up to 1.25x with no fee, depending on how much you spend on the card that month.",
       "Every card earns 4% back in Bilt Cash, which can only be spent inside Bilt, not withdrawn.",
-      "Rent Day, the 1st of each month, doubles points on non-housing purchases through 1 January 2027.",
+      "Rent Day, the 1st of each month, doubles points on non-housing purchases (up to 1,000 bonus points a month) through 1 January 2027.",
       "Issued by Column N.A. since the Bilt Card 2.0 relaunch on 7 February 2026.",
     ],
   },
@@ -665,7 +665,7 @@ export const CARDS: Card[] = [
     perks: [
       { id: "dplat-companion", name: "Companion Certificate", kind: "companion", notes: "Each year after your card renews, for a Delta round trip", count: { perYear: 1, unit: ["companion certificate", "companion certificates"] } },
       { id: "dplat-bags", name: "Free checked bags", kind: "bags", notes: "First and second bag on Delta, with priority boarding" },
-      { id: "dplat-status", name: "Medallion head start", kind: "status", notes: "Medallion Qualification Dollars each year, plus 1 for every $20 spent. Hertz Five Star too" },
+      { id: "dplat-status", name: "Medallion head start", kind: "status", notes: "A Medallion Qualification Dollars head start each year (Amex's page does not give the amount), plus 1 for every $20 spent. Hertz Five Star too" },
       { id: "dplat-protection", name: "Travel and purchase protection", kind: "protection", notes: "Trip delay, cell phone, baggage, car rental, purchase and extended warranty cover" },
     ],
     finePrint: [
@@ -777,7 +777,7 @@ export const DEMO_USAGE: Record<string, number[]> = {
   // Sapphire Reserve, opened November 2021.
   "csr-travel": [300],
   "csr-dining": [150, 85],
-  "csr-edit-h": [250, 0],
+  "csr-edit-500": [250],
   // Venture X, opened June 2024.
   "vx-travel": [300],
 };

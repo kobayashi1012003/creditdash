@@ -23,10 +23,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/signin?error=${encodeURIComponent(reason)}`);
   }
 
+  // A build without the Supabase values cannot finish sign-in. Say so on
+  // the sign-in page rather than failing with a bare 500.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    return NextResponse.redirect(`${origin}/signin?error=not_configured`);
+  }
+
   const cookieStore = await cookies();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    url,
+    key,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),

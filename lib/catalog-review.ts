@@ -10,6 +10,19 @@ import type { Card } from "@/data/types";
 /** A card unchecked for this long is flagged. Issuers change terms often. */
 export const STALE_AFTER_DAYS = 90;
 
+/**
+ * Cards with a big fee are refreshed most often (Platinum, Sapphire
+ * Reserve, Bilt), and a wrong credit on them costs the most, so they are
+ * due sooner.
+ */
+export const HIGH_FEE = 400;
+export const HIGH_FEE_STALE_AFTER_DAYS = 60;
+
+/** Days after its last check that a card is due again. */
+export function staleAfterDays(card: Pick<Card, "annualFee">): number {
+  return card.annualFee >= HIGH_FEE ? HIGH_FEE_STALE_AFTER_DAYS : STALE_AFTER_DAYS;
+}
+
 export type ReviewRow = {
   card: Card;
   /** Whole days since `lastVerified`, never negative. */
@@ -47,7 +60,7 @@ export function reviewCatalog(cards: Card[], today = new Date()): ReviewRow[] {
       return {
         card,
         daysSince,
-        stale: daysSince >= STALE_AFTER_DAYS || ended.length > 0,
+        stale: daysSince >= staleAfterDays(card) || ended.length > 0,
         source: card.sourceUrl ?? null,
         ended,
       };

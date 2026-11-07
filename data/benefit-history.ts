@@ -59,13 +59,18 @@ export const BENEFIT_HISTORY: Record<string, BenefitChange[]> = {
   "gold-dining": [{ date: "2026-11-01", change: "Marked as needing enrollment." }],
   "gold-resy-50": [
     { date: "2026-10-28", change: "Replaced the earlier Resy entry: $50 twice a year, enrollment needed." },
+    { date: "2026-11-07", change: "Only restaurants marked eligible on Resy count, since 1 August 2026." },
   ],
   "gold-dunkin": [{ date: "2026-10-28", change: CHECKED_ADDED }],
 
   // --- Sapphire Reserve -----------------------------------------------------
-  "csr-edit-h": [
+  "csr-edit-500": [
     { date: "2026-10-28", change: "Added as $500 a year for stays booked through The Edit." },
     { date: "2026-11-02", change: "Changed to $250 twice a year, January to June and July to December." },
+    {
+      date: "2026-11-07",
+      change: "Corrected to one $500 pool a calendar year, up to $250 a stay, as Chase's page states.",
+    },
   ],
   "csr-select-hotels": [{ date: "2026-11-02", change: CHECKED_ADDED }],
   "csr-stubhub": [
@@ -92,7 +97,10 @@ export const BENEFIT_HISTORY: Record<string, BenefitChange[]> = {
   // --- Bilt -----------------------------------------------------------------
   "bilt-obsidian-hotel": [{ date: "2026-10-28", change: CHECKED_ADDED }],
   "bilt-palladium-hotel": [{ date: "2026-10-28", change: CHECKED_ADDED }],
-  "bilt-palladium-cash": [{ date: "2026-10-28", change: CHECKED_ADDED }],
+  "bilt-palladium-cash": [
+    { date: "2026-10-28", change: CHECKED_ADDED },
+    { date: "2026-11-07", change: "Noted that Bilt Cash expires 12 months after it is earned." },
+  ],
 
   // --- Hilton and United ----------------------------------------------------
   "hilton-resort": [

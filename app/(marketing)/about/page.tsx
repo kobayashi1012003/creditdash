@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DashboardButton } from "@/components/landing/session-buttons";
 import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 
@@ -34,13 +35,20 @@ export default function AboutPage() {
           paid for.
         </p>
         <p>
-          It does three things: tells you which card to use, keeps track of
+          It does{" "}
+          <Link href="/features" className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+            three things
+          </Link>
+          : tells you which card to use, keeps track of
           the credits you have left, and shows whether each annual fee is
           paying for itself. You type in the cards you own. It never asks for
           a card number or links to a bank, and it has no ads.
         </p>
         <p>
-          Premium is ${PREMIUM_PRICE_MONTHLY} a month or ${PREMIUM_PRICE_YEARLY} a year. It keeps CreditDash
+          <Link href="/pricing" className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+            Premium
+          </Link>{" "}
+          is ${PREMIUM_PRICE_MONTHLY} a month or ${PREMIUM_PRICE_YEARLY} a year. It keeps CreditDash
           running, and helps pay for tuition.
         </p>
         <p>

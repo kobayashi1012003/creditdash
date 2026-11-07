@@ -22,17 +22,15 @@ const FOOTER = [
       { href: "/features", label: "Features" },
       { href: "/pricing", label: "Pricing" },
       { href: "/about", label: "About" },
-      { href: "/wallet", label: "Wallet" },
-      { href: "/tracker", label: "Tracker" },
-      { href: "/calculators", label: "Calculators" },
-      { href: "/compare", label: "Compare" },
     ],
   },
   {
+    // Public pages only: the app's own screens are noindex, so the footer
+    // sends people (and crawlers) to sign in or the demo, not into them.
     title: "Account",
     links: [
       { href: "/signin", label: "Sign in" },
-      { href: "/settings", label: "Settings" },
+      { href: "/wallet", label: "Try the demo" },
     ],
   },
   {

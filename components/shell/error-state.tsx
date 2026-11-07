@@ -21,9 +21,27 @@ export function ErrorState({
   retry: () => void;
 }) {
   useEffect(() => {
-    // No reporting service yet (no running costs). The console is where a
-    // developer reproducing it will look.
     console.error(error);
+    // One small same-origin report, so the crash reaches Workers Logs
+    // (app/api/client-error). Message, digest and path only; no user id.
+    try {
+      const report = {
+        message: error instanceof Error ? error.message : String(error),
+        digest:
+          error instanceof Error && "digest" in error && typeof error.digest === "string"
+            ? error.digest
+            : undefined,
+        path: window.location.pathname,
+      };
+      void fetch("/api/client-error", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(report),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      // Reporting must never be the thing that fails.
+    }
   }, [error]);
 
   const digest =

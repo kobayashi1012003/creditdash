@@ -29,12 +29,15 @@ function explain(code: string | undefined): string | null {
   if (code === "otp_expired") {
     return "That sign-in link has expired or was already used. Send yourself a new one.";
   }
+  if (code === "not_configured") {
+    return "Sign-in is not set up on this build. Try the demo, or sign in on creditdash.co.";
+  }
   if (code === "access_denied") {
     return "Google sign-in was cancelled. Nothing was changed.";
   }
   // Usually an email link opened somewhere other than the browser that
   // asked for it, such as a mail app's own browser.
-  return "Sign-in did not finish. Open the email link in the same browser you asked for it from, or send a new one.";
+  return "Sign-in did not finish. Type the code from the email instead, or open the link in the browser you requested it from.";
 }
 
 // The callback route sends failures back with `?error=`. It is read here in

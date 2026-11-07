@@ -109,7 +109,9 @@ export default function PrivacyPage() {
           protect the site. Short-lived logs of requests, and of errors in
           the payment and account-deletion steps, are kept to find and fix
           problems; an error from Stripe can include your Stripe customer
-          reference.
+          reference. If a page breaks in your browser, it sends a short
+          report (the error message and the page address, nothing that
+          identifies you) to the same logs.
         </li>
         <li>
           <strong>Supabase</strong> runs sign-in and stores signed-in

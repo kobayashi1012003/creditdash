@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { DashboardButton } from "@/components/landing/session-buttons";
 import { CalculatorDemo } from "@/components/features/calculator-demo";
 import { TrackerDemo } from "@/components/features/tracker-demo";
@@ -118,8 +120,16 @@ export default function FeaturesPage() {
             Start with one card.{" "}
             <span className="text-band-muted">It costs nothing.</span>
           </h2>
-          <div className="mt-9">
+          <div className="mt-9 flex flex-wrap gap-2.5">
             <DashboardButton arrow className="bg-band-ink text-band hover:bg-band-ink/90" />
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/pricing" />}
+              className="border-band-line bg-transparent text-band-ink hover:border-band-muted"
+            >
+              See pricing
+            </Button>
           </div>
         </div>
       </section>

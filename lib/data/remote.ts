@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PointBalance, Program, TrackerPrefs, UserCard } from "@/data/types";
 import { getCard } from "@/data/cards.seed";
 import { cardCount, FREE_CARD_LIMIT } from "@/lib/plan";
+import { localDate } from "@/lib/credits/autofill";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
 import { cleanUserCard, SCHEMA_VERSION, type CreditUsage, type Persisted } from "@/lib/data/schema";
 
@@ -109,7 +110,10 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
     .map((b) => ({
       program: b.program as Program,
       balance: Number(b.balance),
-      updatedAt: String(b.updated_at).slice(0, 10),
+      // The local day, as the store writes it, not the UTC one.
+      updatedAt: Number.isNaN(Date.parse(String(b.updated_at)))
+        ? String(b.updated_at).slice(0, 10)
+        : localDate(new Date(String(b.updated_at))),
     }));
 
   // The table holds the user's own values only, as browser storage now does;

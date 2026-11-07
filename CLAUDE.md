@@ -179,9 +179,9 @@ for accessibility on mobile; the small drop is real network latency.
   live numbers run lower. Below the plan's 90 on that strict test; the
   remaining lever is less JavaScript before hydration (the wallet loads
   about 350 KB), not the images. Desktop live is 98.
-- **Worker bundle: 1.55 MiB gzipped** of the free plan's 3 MiB after
-  Phase 6 added the Supabase client (1.34 MiB in Phase 5). Measure with
-  `npx wrangler deploy --dry-run --outdir <dir>`.
+- **Worker bundle: 1.94 MiB gzipped** of the free plan's 3 MiB (6 November
+  2026; 1.55 MiB after Phase 6 added the Supabase client, 1.34 MiB in
+  Phase 5). Measure with `npx wrangler deploy --dry-run --outdir <dir>`.
 - **Reduced motion verified empirically**, using headless Chrome with
   `--force-prefers-reduced-motion`, which the browser pane cannot do: the
   media query matches, card tilt and sheen are off, transitions drop to
@@ -361,7 +361,10 @@ scripts/           Build-time generators.
 
 **Nothing outside `lib/data/` touches storage.** Pages and components call the
 hooks and functions in `lib/data/index.ts` and know nothing about where the
-data lives.
+data lives. The only exceptions hold per-browser conveniences, never user
+data: `lib/use-stored-value.ts`, `lib/use-stored-flag.ts` and
+`lib/demo-banner.ts`. ESLint enforces this (`no-restricted-globals` and
+`no-restricted-properties` in `eslint.config.mjs`).
 
 - `schema.ts` is the persisted shape, versioned, mirroring the tables in
   `creditdash-plan.md` section 6. It validates whatever it reads rather than
@@ -549,7 +552,7 @@ TPG's (revised 30 October 2026 to sit closer to the consensus; never
 labelled with any publisher's name). Three modelling rules:
 
 - **A credit whose period or amount changes meaningfully gets a new id**
-  (`csr-edit`, `gold-resy-50`, `united-tb-10k`), so usage stored under
+  (`csr-edit`, `csr-edit-500`, `gold-resy-50`, `united-tb-10k`), so usage stored under
   the old rules is never read under the new ones. The old rows are
   orphaned, not misread.
 - **Benefits without a regular period** (per stay, every four years,
@@ -560,7 +563,7 @@ labelled with any publisher's name). Three modelling rules:
   wallets with the old $0 card keep a card. Obsidian and Palladium are new
   ids. Obsidian assumes dining for its pick-one 3x category.
 
-**A credit's `amount` is per period** (The Edit is `250`, `semiannual`).
+**A credit's `amount` is per period** (Gold's Resy credit is `50`, `semiannual`).
 The card drawer leads with the year's total from `annualValue` and puts
 the per-period amount under it ("$250 twice a year"), so new cards need
 nothing extra (owner, 5 November 2026). The Tracker still shows each
@@ -638,6 +641,22 @@ read-only `/admin` page tracks when each card was last checked.
   overstates someone above that in total (said in its fine print). Delta
   Platinum's MQD head start amount was not stated on its page and is left
   out.
+
+## Review leftovers (7 November 2026)
+
+- **The Edit is one $500 pool a calendar year**, up to $250 a stay
+  (Chase's page, checked 7 November). New id `csr-edit-500`; the 2
+  November `csr-edit-h` (two $250 halves) was a misreading and is orphaned.
+- **Cards with a fee of $400 or more are due a recheck at 60 days**
+  (`staleAfterDays` in `lib/catalog-review.ts`), others at 90.
+- **Client errors reach Workers Logs**: the error boundary posts message,
+  digest and path (no user id) to `app/api/client-error`, which logs them.
+  The Privacy page says so. Search Workers Logs for `client-error`.
+- **The marketing footer links public pages only** (Sign in, Try the demo);
+  Features links to Pricing, About to Features and Pricing.
+- Card notes from the review's issuer check: Gold's Resy credit is
+  restaurants marked eligible, Rent Day bonus capped at 1,000 points a
+  month, Palladium's Bilt Cash expires after 12 months.
 
 ## Owner's list, 6 November 2026
 

@@ -302,20 +302,25 @@ function start() {
 
 /* --- the store interface -------------------------------------------------- */
 
+/**
+ * Another tab writing the same key should move this one too, but only while
+ * this tab is reading browser storage. One listener for the whole store,
+ * added with the first subscriber and removed with the last, so a change
+ * is read and announced once, not once per hook on the page.
+ */
+function onStorage(e: StorageEvent) {
+  if (e.key === STORAGE_KEY && mode === "local") {
+    cache = readLocal();
+    emit();
+  }
+}
+
 export function subscribe(listener: Listener) {
+  if (listeners.size === 0) window.addEventListener("storage", onStorage);
   listeners.add(listener);
-  // Another tab writing the same key should move this one too, but only
-  // while this tab is reading browser storage.
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === STORAGE_KEY && mode === "local") {
-      cache = readLocal();
-      emit();
-    }
-  };
-  window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
+    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
   };
 }
 

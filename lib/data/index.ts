@@ -211,8 +211,11 @@ export async function addCard(cardId: string): Promise<void> {
  */
 export async function addCards(cardIds: string[]): Promise<void> {
   for (const id of cardIds) {
+    // Already held: skip it rather than mistake it for the limit.
+    if (getSnapshot().userCards.some((c) => c.cardId === id)) continue;
     const before = getSnapshot().userCards.length;
     await addCard(id);
+    // Nothing added means the plan's limit or a refused write: stop there.
     if (getSnapshot().userCards.length === before) break;
   }
 }

@@ -194,7 +194,7 @@ export default function LandingPage() {
               There is no field for any of these, because the app never needs
               one and would rather not be able to lose them. It also means no
               ads and no feed to sell, which is why Premium costs $
-              {PREMIUM_PRICE_MONTHLY} instead of nothing.
+              {PREMIUM_PRICE_MONTHLY} a month rather than being free.
             </p>
           </div>
           <ul className="self-end border-t border-band-line">

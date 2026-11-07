@@ -4,8 +4,8 @@ import { endedBy, reviewCatalog, STALE_AFTER_DAYS } from "./catalog-review.ts";
 import { CARDS } from "../data/cards.seed.ts";
 import type { Card } from "../data/types.ts";
 
-const card = (id: string, lastVerified: string, sourceUrl?: string) =>
-  ({ id, name: id, lastVerified, sourceUrl }) as Card;
+const card = (id: string, lastVerified: string, sourceUrl?: string, annualFee = 95) =>
+  ({ id, name: id, lastVerified, sourceUrl, annualFee }) as Card;
 
 describe("reviewCatalog", () => {
   const today = new Date(2026, 10, 1); // 1 November 2026
@@ -26,6 +26,15 @@ describe("reviewCatalog", () => {
     const rows = reviewCatalog([card("due", "2026-08-03"), card("fine", "2026-08-04")], today);
     assert.equal(rows.find((r) => r.card.id === "due")?.stale, true);
     assert.equal(rows.find((r) => r.card.id === "fine")?.stale, false);
+  });
+
+  test("a card with a fee of $400 or more is due at 60 days", () => {
+    const rows = reviewCatalog(
+      [card("big", "2026-09-02", undefined, 895), card("small", "2026-09-02", undefined, 95)],
+      today,
+    );
+    assert.equal(rows.find((r) => r.card.id === "big")?.stale, true);
+    assert.equal(rows.find((r) => r.card.id === "small")?.stale, false);
   });
 
   test("a check dated in the future reads as today, not negative", () => {
