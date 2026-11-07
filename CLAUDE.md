@@ -212,6 +212,13 @@ for accessibility on mobile; the small drop is real network latency.
 - **Prelaunch lines** (hero, plan panels, pricing, Settings) all read
   `PAYMENTS_LIVE` in `lib/plan.ts`. Set it to `true` when the live Stripe
   keys go in.
+- **Email sign-in sends a link and a 6-digit code** (7 November 2026).
+  The sign-in page shows a code box after sending; six digits typed or
+  pasted sign in at once (`verifySignInCode`, `verifyOtp` with type
+  `email`), then a full load of `/wallet`. The code exists because a phone
+  mail app often opens the link in another browser, which cannot finish
+  the PKCE exchange. Needs `{{ .Token }}` in Supabase's "Magic link" and
+  "Confirm signup" email templates, and Email OTP Length 6.
 - **Email is set up.** Sign-in links go through Resend (custom SMTP in
   Supabase, sender `signin@creditdash.co`; free plan, 100 a day, Supabase
   caps auth email near 30 an hour). DKIM, SPF on `send`, and DMARC

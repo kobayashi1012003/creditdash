@@ -571,7 +571,12 @@ export async function signInWithGoogle(): Promise<string | null> {
   return error ? "Google sign-in could not start. Try again in a moment." : null;
 }
 
-/** Emails a one-time sign-in link. Returns an error to show, or null. */
+/**
+ * Emails a one-time sign-in link and, in the same email, a 6-digit code
+ * (the template prints `{{ .Token }}`). The link suits a computer; the code
+ * suits a phone, where a mail app often opens the link in a different
+ * browser, which cannot finish the sign-in. Returns an error, or null.
+ */
 export async function sendSignInLink(email: string): Promise<string | null> {
   const db = await supabase();
   if (!db) return "Accounts are not switched on in this build.";
@@ -584,6 +589,24 @@ export async function sendSignInLink(email: string): Promise<string | null> {
     return "Too many links were sent just now. Wait a few minutes, then try again.";
   }
   return "That link could not be sent. Check the address and try again.";
+}
+
+/**
+ * Signs in with the code from the sign-in email. On success the session
+ * cookie is set in this browser, and the caller loads /wallet so the store
+ * starts in account mode exactly as it does after the email link.
+ */
+export async function verifySignInCode(email: string, code: string): Promise<string | null> {
+  const db = await supabase();
+  if (!db) return "Accounts are not switched on in this build.";
+  const token = code.replace(/\D/g, "");
+  if (token.length < 6) return "Type all 6 digits of the code from the email.";
+  const { error } = await db.auth.verifyOtp({ email: email.trim(), token, type: "email" });
+  if (!error) return null;
+  if (error.status === 429) {
+    return "Too many tries just now. Wait a few minutes, then send yourself a new code.";
+  }
+  return "That code is wrong or has expired. Check the latest email, or send a new code.";
 }
 
 export async function signOut(): Promise<void> {

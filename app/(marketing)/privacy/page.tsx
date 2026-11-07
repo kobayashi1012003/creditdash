@@ -26,7 +26,7 @@ export const metadata: Metadata = {
  */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy" updated="4 November 2026">
+    <LegalPage title="Privacy" updated="7 November 2026">
       <p>
         CreditDash is built to need as little about you as possible. This page
         says what it holds, where, who else is involved, and what you can do
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
           the email address.
         </li>
         <li>
-          <strong>Resend</strong>, only if you ask for an emailed sign-in link.
+          <strong>Resend</strong>, only if you ask for an emailed sign-in link or code.
           It receives your email address in order to deliver that one email.
         </li>
         <li>

@@ -11,11 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/cn";
 import {
   ACCOUNTS_ENABLED,
   prepareSignIn,
   sendSignInLink,
   signInWithGoogle,
+  verifySignInCode,
   signOut,
   useAccount,
   useIsLoading,
@@ -46,8 +48,9 @@ export function SignInForm() {
   const account = useAccount();
   const isLoading = useIsLoading();
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"google" | "email" | null>(null);
+  const [busy, setBusy] = useState<"google" | "email" | "code" | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const urlError = useSyncExternalStore(noSubscribe, errorFromUrl, noErrorOnServer);
   // undefined until a button is pressed; after that, the latest outcome
   // replaces whatever the URL said.
@@ -96,22 +99,43 @@ export function SignInForm() {
     const problem = await sendSignInLink(email);
     setBusy(null);
     if (problem) setError(problem);
-    else setSentTo(email.trim());
+    else {
+      setSentTo(email.trim());
+      setCode("");
+    }
+  }
+
+  async function checkCode(value: string) {
+    if (!sentTo || busy) return;
+    setBusy("code");
+    setError(null);
+    const problem = await verifySignInCode(sentTo, value);
+    if (problem) {
+      setError(problem);
+      setBusy(null);
+      return;
+    }
+    // A full load, not router.push: the store decides its mode once, at
+    // start, so only a fresh page starts it in account mode, the way the
+    // email link does, import offer included.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign(`${window.location.origin}/wallet`);
+  }
+
+  function typeCode(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 6);
+    setCode(digits);
+    // Six digits, typed or pasted, is the whole code: sign in at once.
+    if (digits.length === 6) void checkCode(digits);
   }
 
   const disabled = !ACCOUNTS_ENABLED || isLoading || busy !== null;
 
   return (
     <>
-      {error && (
-        <div
-          role="alert"
-          className="mt-8 flex items-start gap-3 rounded-inner bg-butter px-4 py-3 text-butter-ink"
-        >
-          <WarningCircleIcon size={18} weight="fill" className="mt-0.5 shrink-0" />
-          <p className="text-sm leading-relaxed">{error}</p>
-        </div>
-      )}
+      {/* Once a code is on its way, problems show beside the code box
+          instead, where someone typing it is looking. */}
+      {error && !sentTo && <Problem className="mt-8">{error}</Problem>}
 
       <Button
         size="lg"
@@ -130,18 +154,72 @@ export function SignInForm() {
       </div>
 
       {sentTo ? (
-        <div role="status" className="rounded-inner border border-line bg-surface p-5">
-          <p className="flex items-center gap-2 text-[15px] font-medium">
+        <div className="rounded-inner border border-line bg-surface p-5">
+          <p role="status" className="flex items-center gap-2 text-[15px] font-medium">
             <CheckCircleIcon size={18} weight="fill" className="text-[var(--cd-mint-ink)]" />
             Check your inbox
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            A sign-in link is on its way to {sentTo}. Open it in this browser.
-            It works once and expires after an hour.
+            We sent a 6-digit code to {sentTo}. Type it here, or open the
+            link in the same email in this browser. Both work once and expire
+            after an hour.
           </p>
-          <Button variant="ghost" size="sm" className="mt-3" onClick={() => setSentTo(null)}>
-            Use a different address
-          </Button>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void checkCode(code);
+            }}
+            className="mt-4 flex flex-col gap-3"
+          >
+            {error && <Problem>{error}</Problem>}
+            <Label htmlFor="signin-code" className="text-[13px] text-muted">
+              Sign-in code
+            </Label>
+            <Input
+              id="signin-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              autoFocus
+              value={code}
+              onChange={(e) => typeCode(e.target.value)}
+              placeholder="000000"
+              className="h-12 rounded-inner px-3.5 text-center text-[22px] tracking-[0.4em] tabular-nums placeholder:tracking-[0.4em]"
+            />
+            <Button type="submit" size="lg" className="w-full" disabled={busy !== null || code.length < 6}>
+              {busy === "code" ? "Signing in" : "Sign in"}
+            </Button>
+          </form>
+          <div className="mt-3 flex flex-wrap gap-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy !== null}
+              onClick={async () => {
+                setBusy("email");
+                setError(null);
+                const problem = await sendSignInLink(sentTo);
+                setBusy(null);
+                setCode("");
+                if (problem) setError(problem);
+              }}
+            >
+              {busy === "email" ? "Sending" : "Send a new code"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy !== null}
+              onClick={() => {
+                setSentTo(null);
+                setCode("");
+              }}
+            >
+              Use a different address
+            </Button>
+          </div>
         </div>
       ) : (
         <form onSubmit={sendLink} className="flex flex-col gap-3">
@@ -167,7 +245,7 @@ export function SignInForm() {
             disabled={disabled || email.trim() === ""}
           >
             <EnvelopeSimpleIcon size={18} />
-            {busy === "email" ? "Sending link" : "Email me a sign-in link"}
+            {busy === "email" ? "Sending" : "Email me a sign-in code"}
           </Button>
         </form>
       )}
@@ -182,5 +260,17 @@ export function SignInForm() {
         Try the demo without saving
       </Button>
     </>
+  );
+}
+
+function Problem({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      role="alert"
+      className={cn("flex items-start gap-3 rounded-inner bg-butter px-4 py-3 text-butter-ink", className)}
+    >
+      <WarningCircleIcon size={18} weight="fill" className="mt-0.5 shrink-0" />
+      <p className="text-sm leading-relaxed">{children}</p>
+    </div>
   );
 }
