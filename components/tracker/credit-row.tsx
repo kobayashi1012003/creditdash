@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, LightningIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { LightningIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import type { CardCredit } from "@/data/types";
 import { creditState, resetPhrase, type Anniversary } from "@/lib/credits";
 import type { CreditUsage } from "@/lib/data/schema";
@@ -42,7 +42,7 @@ export function CreditRow({
 }: {
   cardId: string;
   credit: CardCredit;
-  /** The UserCard: its anniversary, and its prefs for assumed periods. */
+  /** The UserCard: its anniversary, and its prefs for auto-filled periods. */
   anniversary: Anniversary;
   usage: CreditUsage;
   /** Filled slots' colour: the user's choice or the category's. */
@@ -75,7 +75,11 @@ export function CreditRow({
           </p>
           <p className="text-[13px] text-muted">
             {usd(credit.amount)} {resetPhrase(credit, anniversary)}
-            {state.expiringSoon && state.currentIndex !== -1 && (
+            {/* Only while something is left to use: a period already marked
+                used, by hand or by auto-fill, needs no warning. */}
+            {state.expiringSoon &&
+              state.currentIndex !== -1 &&
+              (state.used[state.currentIndex] ?? 0) < credit.amount && (
               <>
                 {". "}
                 <span className="text-ink">
@@ -87,9 +91,8 @@ export function CreditRow({
         </div>
         <div className="flex items-baseline gap-3">
           <p className="text-[13px] tabular-nums text-muted">
-            {money(state.usedTotal - state.assumedTotal)} used
-            {state.assumedTotal > 0 && <>, {money(state.assumedTotal)} assumed</>} of{" "}
-            {usd(state.available)}
+            {money(state.usedTotal)} of {usd(state.available)}
+            {state.assumedTotal > 0 && <>, including {money(state.assumedTotal)} auto-filled</>}
           </p>
           <Button
             variant="ghost"
@@ -122,12 +125,10 @@ export function CreditRow({
           amount={credit.amount}
           tint={tint}
           currentIndex={state.currentIndex}
+          // An auto-filled box unticks like any other: the easy way to say
+          // "I did not use this one". Its auto-filled mark goes with it.
           onToggle={(i) =>
-            // Tapping an assumed slot confirms it rather than clearing it:
-            // the likely meaning is "yes, I did use that".
-            state.assumed[i]
-              ? void confirmCredit(cardId, credit.id, [state.windows[i].key])
-              : set(state.windows[i].key, state.used[i] >= credit.amount ? 0 : credit.amount)
+            set(state.windows[i].key, state.used[i] >= credit.amount ? 0 : credit.amount)
           }
           ended={(i) => state.offered[i] === false}
           slotLabel={(i) => state.windows[i]?.label ?? `Period ${i + 1}`}
@@ -139,22 +140,6 @@ export function CreditRow({
         />
       )}
 
-      {assumedKeys.length > 0 && !editing && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
-          <p className="text-muted">
-            Dashed {assumedKeys.length === 1 ? "slot was" : "slots were"} ticked by auto-fill and
-            {assumedKeys.length === 1 ? " is" : " are"} assumed used. Tap one to confirm it.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void confirmCredit(cardId, credit.id, assumedKeys)}
-          >
-            <CheckIcon size={14} weight="bold" />
-            Confirm {assumedKeys.length === 1 ? "it" : `all ${assumedKeys.length}`}
-          </Button>
-        </div>
-      )}
     </li>
   );
 }

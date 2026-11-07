@@ -660,18 +660,25 @@ read-only `/admin` page tracks when each card was last checked.
 
 ## Owner's list, 6 November 2026
 
-- **Assumed vs confirmed.** Auto-fill's ticks are stored as assumed in
-  `UserCard.prefs.assumed` (credit id to period keys, in the existing
-  `credit_prefs` jsonb, so no migration), apart from `autofill` so
-  switching auto-fill off does not turn guesses into confirmed usage.
-  `creditState` reads them from the UserCard passed as `anniversary`
-  (`assumed`, `assumedTotal`). Assumed slots are dashed outlines; tapping
-  one, or "Confirm all", confirms (`confirmCredit`); changing one by hand
-  confirms it too. Capped at `MAX_ASSUMED` keys per credit.
-- **Recovered, assumed, available, estimated.** The Tracker's "Credits
-  this year" shows money recovered (confirmed), assumed by auto-fill, and
-  still available as separate figures; the Points widget says its figure
-  is an estimate at the user's valuation, not money recovered.
+- **Auto-filled periods are marked, not questioned.** Auto-fill's ticks
+  are recorded in `UserCard.prefs.assumed` (credit id to period keys, in
+  the existing `credit_prefs` jsonb, so no migration), apart from
+  `autofill`, so switching auto-fill off keeps the marks. `creditState`
+  reads them from the UserCard passed as `anniversary` (`assumed`,
+  `assumedTotal`). Since 7 November (owner, after a ChatGPT review) there
+  is no confirm step: auto-fill is the user's choice to count a credit as
+  used. Auto-filled boxes are striped in the credit's colour with a
+  lightning mark; tapping one unticks it like any box, and any change by
+  hand drops the mark (`confirmCredit`). Totals read "$174 used, including
+  $7 auto-filled". An auto-filled period is full, so it never appears in
+  Resetting soon; the Customize drawer says so where auto-fill is switched
+  on. Capped at `MAX_ASSUMED` keys per credit. Not built: an opt-in
+  month-end "need a reminder?" check, since the app has no reminders
+  beyond the Resetting soon widget.
+- **Used, available, estimated.** The Tracker's "Credits this year" shows
+  money used (with the auto-filled part named) and still available; the
+  Points widget says its figure is an estimate at the user's valuation,
+  not money recovered.
 - **Reset wording** comes from `resetPhrase` in `lib/credits.ts`, read
   from the real windows ("$10 a month, resets on the 1st of each month",
   "twice a year, resets in Jan and Jul"). Never "resets on the calendar

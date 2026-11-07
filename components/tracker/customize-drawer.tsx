@@ -183,9 +183,13 @@ export function CustomizeDrawer({
               )}
             </p>
             <p className="mt-1 text-muted">
-              Ticks a credit for you the moment each period starts, at midnight where you are: the
-              1st for monthly credits, or your card anniversary for anniversary ones. Untick a
-              period and it stays unticked.
+              Marks a credit used for you as each period starts, at midnight where you are: the
+              1st for monthly credits, or your card anniversary for anniversary ones.
+            </p>
+            <p className="mt-2 text-muted">
+              An auto-filled credit counts as used, so it will not show in Resetting soon. On the
+              Tracker its boxes are striped with a lightning mark. Untick a period you did not use
+              and it stays unticked.
             </p>
             {!canAutoFill && (
               <Button size="sm" className="mt-3" nativeButton={false} render={<Link href="/settings#plan" />}>
@@ -298,6 +302,13 @@ function CreditPrefRow({
               Auto-fill
             </span>
           </div>
+          {autoFill && canAutoFill && !hidden && (
+            // Said where it is switched on: auto-fill also tells the
+            // reminders this credit is handled.
+            <p className="mt-1.5 text-[12px] leading-snug text-muted">
+              Marked used each period. No reset reminder for it.
+            </p>
+          )}
         </div>
 
         <Button

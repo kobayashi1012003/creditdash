@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CheckIcon } from "@phosphor-icons/react";
+import { CheckIcon, LightningIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { PERIOD_COUNT, type CreditPeriod } from "@/data/types";
 
@@ -25,7 +25,7 @@ type CheckmarkRowProps = {
   /** Slots fill a grid cell instead of a fixed 32px, so a row can be laid
    *  out as one deliberate line at any width. */
   fluid?: boolean;
-  /** Slots ticked by auto-fill and not confirmed: outlined, not solid. */
+  /** Slots ticked by auto-fill: striped with a lightning mark, not solid. */
   assumed?: (index: number) => boolean;
   /** Glow this slot as if pressed and held. Lets a demo show the hold. */
   held?: number;
@@ -156,7 +156,7 @@ export function CheckmarkRow({
               isEnded
                 ? "credit has ended"
                 : isAssumed
-                  ? "assumed used by auto-fill, not confirmed"
+                  ? "used, marked by auto-fill"
                   : full
                     ? "used"
                     : partial
@@ -169,13 +169,14 @@ export function CheckmarkRow({
             title={label}
             style={{
               ...(full && !isAssumed ? { backgroundColor: tint, borderColor: tint } : null),
-              // Assumed: the credit's colour as a dashed outline and tick on
-              // a faint wash, so it reads as "probably" next to a solid one.
+              // Auto-filled: diagonal stripes of the credit's colour and a
+              // lightning mark, so it reads apart from a box ticked by hand
+              // (solid with a tick) at a glance, in both themes.
               ...(full && isAssumed
                 ? {
                     borderColor: tint,
                     color: tint,
-                    backgroundColor: `color-mix(in oklab, ${tint} 12%, transparent)`,
+                    backgroundImage: `repeating-linear-gradient(135deg, color-mix(in oklab, ${tint} 30%, transparent) 0 3px, transparent 3px 7px)`,
                   }
                 : null),
               // A soft halo in the credit's own colour. The slot's own
@@ -200,13 +201,18 @@ export function CheckmarkRow({
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               usable && "active:scale-[0.94] hover:border-muted",
               !usable && "cursor-default",
-              (isEnded || isAssumed) && "border-dashed",
+              isEnded && "border-dashed",
               isEnded && "opacity-50",
               isCurrent && "ring-1 ring-muted ring-offset-2 ring-offset-surface",
-              full ? (isAssumed ? "border-2" : "text-surface") : "border-line bg-bg",
+              full ? (isAssumed ? "bg-bg" : "text-surface") : "border-line bg-bg",
             )}
           >
-            {full && <CheckIcon size={15} weight="bold" className="relative" />}
+            {full &&
+              (isAssumed ? (
+                <LightningIcon size={15} weight="fill" className="relative" />
+              ) : (
+                <CheckIcon size={15} weight="bold" className="relative" />
+              ))}
             {partial && (
               // Filled from the bottom by the share used, so $6 of $10
               // reads as a box a little over half full. The wrapper clips

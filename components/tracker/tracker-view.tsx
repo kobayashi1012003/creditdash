@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useId, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { PlusIcon, SlidersHorizontalIcon, WarningCircleIcon } from "@phosphor-icons/react";
+import { LightningIcon, PlusIcon, SlidersHorizontalIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { cardAnnualCreditValue, creditState, liveCredits } from "@/lib/credits";
@@ -81,9 +81,10 @@ export function TrackerView() {
   const available = states.reduce((s, x) => s + x.state.available, 0);
   const used = states.reduce((s, x) => s + x.state.usedTotal, 0);
   // Three different kinds of money, kept apart (owner, 6 November 2026):
-  // what was recorded as used, what auto-fill assumed, and what is left.
+  // used (auto-filled periods included, said so), and what is left. Auto-fill
+  // is the user's own choice to count a credit as used, so it is not asked
+  // to be confirmed (owner, 7 November 2026).
   const assumed = states.reduce((s, x) => s + x.state.assumedTotal, 0);
-  const recovered = used - assumed;
 
   // Not just "ends this month": an anniversary credit can be days from
   // resetting in May. What matters is the window closing, whenever that is.
@@ -153,16 +154,13 @@ export function TrackerView() {
                 />
                 <dl className="min-w-0 space-y-1.5 text-sm leading-snug">
                   <div>
-                    <dt className="sr-only">Recovered</dt>
-                    <dd className="text-2xl leading-none tabular-nums">{money(recovered)}</dd>
-                    <dd className="mt-1 text-muted">recovered, credits you recorded as used</dd>
+                    <dt className="sr-only">Used</dt>
+                    <dd className="text-2xl leading-none tabular-nums">{money(used)}</dd>
+                    <dd className="mt-1 text-muted">
+                      used
+                      {assumed > 0 && <>, including {money(assumed)} auto-filled</>}
+                    </dd>
                   </div>
-                  {assumed > 0 && (
-                    <div className="flex gap-1.5">
-                      <dt className="text-muted">Assumed by auto-fill</dt>
-                      <dd className="tabular-nums">{money(assumed)}</dd>
-                    </div>
-                  )}
                   <div className="flex gap-1.5">
                     <dt className="text-muted">Still available</dt>
                     <dd className="tabular-nums">
@@ -397,8 +395,8 @@ function CardCredits({
       action={
         <div className="flex items-center gap-3">
           <p className="text-sm tabular-nums text-muted max-sm:hidden">
-            {money(used - assumed)} used{assumed > 0 && <>, {money(assumed)} assumed</>} of{" "}
-            {usd(available)}
+            {money(used)} of {usd(available)}
+            {assumed > 0 && <>, including {money(assumed)} auto-filled</>}
           </p>
           <Button variant="outline" size="sm" onClick={() => setCustomizing(true)}>
             <SlidersHorizontalIcon size={15} />
@@ -443,6 +441,16 @@ function CardCredits({
           />
         ))}
       </ul>
+
+      {assumed > 0 && (
+        // One key for the striped boxes, under the credits rather than on
+        // every row.
+        <p className="mt-5 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted">
+          <LightningIcon size={14} weight="fill" aria-hidden className="mt-0.5 shrink-0" />
+          Striped boxes were marked used by auto-fill. Tap one to untick it if you did not use
+          that credit.
+        </p>
+      )}
 
       {shown.length === 0 && (
         <p className="mt-6 text-sm text-muted">Every credit on this card is hidden.</p>
