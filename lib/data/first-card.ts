@@ -1,4 +1,3 @@
-import { DEMO_WALLET } from "@/data/cards.seed";
 import type { CardArt } from "@/data/card-art.generated";
 import { STORAGE_KEY } from "@/lib/data/schema";
 
@@ -14,8 +13,8 @@ import { STORAGE_KEY } from "@/lib/data/schema";
  * arrives it draws the same card in the same place, so nothing moves.
  *
  * It is the person's real first card, never a stand-in: from a key the
- * store keeps current in both modes, else from the stored local wallet,
- * else the demo seed a brand new browser is about to be given. A stale key
+ * store keeps current in both modes, else from the stored local wallet. A
+ * brand new browser starts with an empty wallet, so it marks nothing. A stale key
  * (another device reordered the account) shows the old first card for a
  * moment, then the real one replaces it.
  *
@@ -28,8 +27,6 @@ export const FIRST_CARD_KEY = "creditdash:first-card";
 
 /** Set on <html> by the script; the skeleton's CSS keys off it. */
 export const FIRST_CARD_ATTR = "data-first-card";
-
-const SEED_FIRST = [...DEMO_WALLET].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.cardId ?? "";
 
 /**
  * The URL the skeleton paints for a card: the smallest cut, else the
@@ -54,7 +51,7 @@ function slotUrl(a: CardArt): string {
  */
 export function firstCardScript(art: Record<string, CardArt>): string {
   const urls = Object.fromEntries(Object.entries(art).map(([id, a]) => [id, slotUrl(a)]));
-  return `try{var f=localStorage.getItem(${JSON.stringify(FIRST_CARD_KEY)});if(f===null){var r=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});if(r===null){f=${JSON.stringify(SEED_FIRST)}}else{var c=(JSON.parse(r).userCards||[]).slice().sort(function(a,b){return a.sortOrder-b.sortOrder})[0];f=c&&c.cardId||""}}if(f&&/^[a-z0-9-]{1,64}$/.test(f)){document.documentElement.setAttribute(${JSON.stringify(FIRST_CARD_ATTR)},f);var u=${JSON.stringify(urls)}[f];if(u&&location.pathname==="/wallet"){var l=document.createElement("link");l.rel="preload";l.as="image";l.href=u;l.setAttribute("fetchpriority","high");document.head.appendChild(l)}}}catch(e){}`;
+  return `try{var f=localStorage.getItem(${JSON.stringify(FIRST_CARD_KEY)});if(f===null){var r=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});if(r===null){f=""}else{var c=(JSON.parse(r).userCards||[]).slice().sort(function(a,b){return a.sortOrder-b.sortOrder})[0];f=c&&c.cardId||""}}if(f&&/^[a-z0-9-]{1,64}$/.test(f)){document.documentElement.setAttribute(${JSON.stringify(FIRST_CARD_ATTR)},f);var u=${JSON.stringify(urls)}[f];if(u&&location.pathname==="/wallet"){var l=document.createElement("link");l.rel="preload";l.as="image";l.href=u;l.setAttribute("fetchpriority","high");document.head.appendChild(l)}}}catch(e){}`;
 }
 
 /**

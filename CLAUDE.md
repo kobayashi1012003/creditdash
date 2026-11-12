@@ -338,8 +338,8 @@ npm test && npm run build                     # confirm the toolchain works
   for the machine it runs on, so that file may show as modified afterwards.
   That is expected; commit it if the new machine is now the main one.
 - **Browser storage does not travel.** The demo wallet, the theme and the
-  calculator panel state live in localStorage. A new machine seeds a fresh
-  demo wallet on first load, which is correct, not a fault.
+  calculator panel state live in localStorage. A new machine starts the
+  demo with an empty wallet, which is correct, not a fault.
 - **`gh auth login`** for pushing.
 
 ## Structure
@@ -641,6 +641,15 @@ read-only `/admin` page tracks when each card was last checked.
   overstates someone above that in total (said in its fine print). Delta
   Platinum's MQD head start amount was not stated on its page and is left
   out.
+
+## The demo starts empty (11 November 2026)
+
+A new browser's demo wallet has no cards, balances or usage
+(`seededState()` in `lib/data/schema.ts`, Premium so any number of cards
+can be picked), so a visitor starts on the empty Wallet's picker (owner).
+The old `DEMO_WALLET` seed is gone. Browsers that already opened the demo
+keep the four cards they were given, since nothing records which cards
+were preset.
 
 ## Review leftovers (7 November 2026)
 
@@ -997,7 +1006,7 @@ picks the smallest copy that covers the requested width. Never enlarge.
 largest paint, and the wallet can only render after hydration (about 5s on
 a throttled phone). A tiny inline script in `<head>` reads which card is
 first (a key the store keeps current in both modes, else the stored local
-wallet, else the demo seed a new browser is about to get), marks `<html>`,
+wallet; a new browser's demo wallet is empty, so nothing), marks `<html>`,
 and preloads that card's smallest cut (480 px: on a throttled phone it
 shares the connection with the JavaScript, and the 720 took 3.2s on the
 live site); CSS paints it into the skeleton's first slot. The real `<img>`

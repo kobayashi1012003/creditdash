@@ -1,4 +1,4 @@
-import type { Card, PointBalance, UserCard } from "./types";
+import type { Card } from "./types";
 import { PENDING_CARDS } from "./cards.pending.ts";
 
 /**
@@ -745,39 +745,3 @@ export const ALL_CARDS: Card[] = [...CARDS, ...PENDING_CARDS];
 export function getCard(id: string): Card | undefined {
   return ALL_CARDS.find((c) => c.id === id);
 }
-
-/**
- * The demo wallet. Phase 2 replaces this with browser storage behind
- * lib/data/; until then it is what every screen renders.
- */
-export const DEMO_WALLET: UserCard[] = [
-  { cardId: "amex-gold", openedOn: "2023-03-14", anniversaryMonth: 3, sortOrder: 0 },
-  { cardId: "csr", openedOn: "2021-11-02", anniversaryMonth: 11, sortOrder: 1 },
-  { cardId: "venture-x", openedOn: "2024-06-21", anniversaryMonth: 6, sortOrder: 2 },
-  { cardId: "bilt", openedOn: "2025-01-09", anniversaryMonth: 1, sortOrder: 3 },
-];
-
-export const DEMO_BALANCES: PointBalance[] = [
-  { program: "amex-mr", balance: 142000, updatedAt: "2026-10-04" },
-  { program: "chase-ur", balance: 86400, updatedAt: "2026-10-04" },
-  { program: "capital-one", balance: 31250, updatedAt: "2026-09-27" },
-  { program: "bilt", balance: 12800, updatedAt: "2026-10-18" },
-];
-
-/**
- * Sample credit usage for the demo wallet, keyed by credit id. Each array has
- * one entry per period slot, holding the dollars used in that slot.
- * Phase 3 replaces this with real tracked state.
- */
-export const DEMO_USAGE: Record<string, number[]> = {
-  // Amex Gold, opened March 2023.
-  "gold-dining": [10, 10, 10, 10, 10, 10, 10, 10, 10, 4, 0, 0],
-  "gold-uber": [10, 10, 0, 10, 10, 10, 0, 10, 10, 10, 0, 0],
-  "gold-resy": [100, 0],
-  // Sapphire Reserve, opened November 2021.
-  "csr-travel": [300],
-  "csr-dining": [150, 85],
-  "csr-edit-500": [250],
-  // Venture X, opened June 2024.
-  "vx-travel": [300],
-};

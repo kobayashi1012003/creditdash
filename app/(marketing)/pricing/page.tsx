@@ -135,7 +135,7 @@ export default function PricingPage() {
         </h1>
         <PlanPanels className="mt-10" />
         <p className="mt-5 text-[13px] text-muted">
-          {!PAYMENTS_LIVE && `${PRELAUNCH_NOTE} `}The demo is the whole app, with a sample wallet.
+          {!PAYMENTS_LIVE && `${PRELAUNCH_NOTE} `}The demo is the whole app. Pick any cards to try it.
         </p>
       </section>
 

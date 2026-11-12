@@ -7,14 +7,9 @@ import {
 } from "@/data/types";
 import { localDate, parseLocalDate } from "@/lib/credits/autofill";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
-import {
-  DEMO_BALANCES,
-  DEMO_USAGE,
-  DEMO_WALLET,
-  getCard,
-} from "@/data/cards.seed";
+import { getCard } from "@/data/cards.seed";
 import type { Plan } from "@/lib/plan";
-import { currentPeriodKey, periodWindows } from "@/lib/credits/reset";
+import { currentPeriodKey } from "@/lib/credits/reset";
 
 /**
  * The persisted shape, mirroring the tables in creditdash-plan.md section 6
@@ -60,20 +55,13 @@ export type Persisted = {
 };
 
 /**
- * What a brand new browser gets. The demo wallet is seeded so the app is not
- * an empty shell on first visit; "Delete everything" in Settings clears to a
- * genuinely empty wallet rather than back to this.
+ * What a brand new browser gets: an empty wallet, so a visitor trying the
+ * demo starts by picking their own cards (owner, 11 November 2026). Premium,
+ * so the demo can hold as many cards as they like; "Delete everything" in
+ * Settings clears to the Free empty state instead.
  */
 export function seededState(): Persisted {
-  const userCards = structuredClone(DEMO_WALLET);
-  return {
-    version: SCHEMA_VERSION,
-    profile: { plan: "premium" },
-    userCards,
-    creditUsage: seedUsage(userCards),
-    pointBalances: structuredClone(DEMO_BALANCES),
-    valuations: [],
-  };
+  return { ...emptyState(), profile: { plan: "premium" } };
 }
 
 export function emptyState(): Persisted {
@@ -409,33 +397,4 @@ function isUsage(x: unknown): x is CreditUsage {
       row !== null &&
       Object.values(row).every((n) => typeof n === "number"),
   );
-}
-
-/**
- * The seed is written as slot arrays because that reads better in a data
- * file. Storage uses period keys, so the two are converted once on first run,
- * through the same window logic the Tracker uses.
- */
-function seedUsage(userCards: UserCard[]): CreditUsage {
-  const out: CreditUsage = {};
-  for (const userCard of userCards) {
-    const card = getCard(userCard.cardId);
-    if (!card) continue;
-    for (const credit of card.credits) {
-      const slots = DEMO_USAGE[credit.id];
-      if (!slots) continue;
-      const windows = periodWindows({
-        period: credit.period,
-        resetBasis: credit.resetBasis,
-        anniversaryMonth: userCard.anniversaryMonth,
-      });
-      const row: Record<string, number> = {};
-      slots.forEach((amount, i) => {
-        const window = windows[i];
-        if (window && amount > 0) row[window.key] = amount;
-      });
-      out[credit.id] = row;
-    }
-  }
-  return out;
 }

@@ -220,7 +220,7 @@ export default function LandingPage() {
         </h2>
         <PlanPanels className="mt-10" />
         <p className="mt-5 text-[13px] text-muted">
-          {!PAYMENTS_LIVE && `${PRELAUNCH_NOTE} `}The demo is the whole app, with a sample wallet.{" "}
+          {!PAYMENTS_LIVE && `${PRELAUNCH_NOTE} `}The demo is the whole app. Pick any cards to try it.{" "}
           <Link
             href="/pricing"
             className="rounded-control text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
