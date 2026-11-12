@@ -7,77 +7,36 @@ import { Button } from "@/components/ui/button";
 import { AccountButton, DashboardButton } from "@/components/landing/session-buttons";
 import { PlanPanels } from "@/components/landing/plan-panels";
 import { getCardsById } from "@/lib/catalog";
-import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
+import { PAYMENTS_LIVE, PRELAUNCH_NOTE, PREMIUM_PRICE_MONTHLY } from "@/lib/plan";
 import { usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { faqPage, jsonLd, organization, pageMetadata, softwareApplication } from "@/lib/seo";
+import { FAQ } from "@/components/landing/faq";
 
 const DESCRIPTION =
-  "Save the cards you own and see which one to use, what credits are left, and whether the annual fee pays for itself.";
+  "Track every credit card benefit and perk, see which card to use, and check whether each annual fee pays for itself. Free, with no bank login.";
 
-export const metadata: Metadata = {
-  title: { absolute: "CreditDash" },
+export const metadata: Metadata = pageMetadata({
+  path: "/",
+  title: "CreditDash: credit card benefits tracker and organizer",
   description: DESCRIPTION,
-  alternates: { canonical: "/" },
-  // Replaces the root openGraph rather than merging, so it repeats
-  // siteName and type, and names the share image (app/opengraph-image.png),
-  // which Next only adds by itself where a page sets no openGraph.
-  openGraph: {
-    type: "website",
-    siteName: "CreditDash",
-    locale: "en_US",
-    title: "CreditDash",
-    description: DESCRIPTION,
-    url: "/",
-    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
+  social: {
+    title: "CreditDash: which card to use, and every credit tracked",
+    description:
+      "A credit card benefits tracker and organizer. See which card earns the most, tick off every credit, and check each annual fee. No bank login.",
   },
-};
+});
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
 /** Section headings: the claim in ink, the consequence in muted. */
 const H2 = "font-display text-[30px] leading-[1.08] tracking-[-0.03em] sm:text-[40px] lg:text-[44px]";
 
 /**
- * schema.org description for search results, prices from lib/plan.ts.
- * Inline JSON is allowed by the CSP's script-src 'unsafe-inline' (and is
- * not executed anyway); `<` is escaped so no string can close the tag.
- * The same block is on the pricing page; keep the two in step.
+ * Structured data for search (lib/seo.ts): the app and its prices, who
+ * makes it, and the questions below. The FAQ block must match the visible
+ * questions word for word, so both read FAQ.
  */
-const JSON_LD = JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "CreditDash",
-  url: "https://creditdash.co/",
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web",
-  description: DESCRIPTION,
-  offers: [
-    { "@type": "Offer", name: "Free", price: 0, priceCurrency: "USD" },
-    {
-      "@type": "Offer",
-      name: "Premium, monthly",
-      price: PREMIUM_PRICE_MONTHLY,
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: PREMIUM_PRICE_MONTHLY,
-        priceCurrency: "USD",
-        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" },
-      },
-    },
-    {
-      "@type": "Offer",
-      name: "Premium, yearly",
-      price: PREMIUM_PRICE_YEARLY,
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: PREMIUM_PRICE_YEARLY,
-        priceCurrency: "USD",
-        referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "ANN" },
-      },
-    },
-  ],
-}).replace(/</g, "\\u003c");
+const JSON_LD = [softwareApplication(DESCRIPTION), organization(), faqPage(FAQ)].map(jsonLd);
 
 export default function LandingPage() {
   const demoCards = getCardsById(["amex-gold", "csr", "venture-x", "blue-business-plus"]);
@@ -85,14 +44,21 @@ export default function LandingPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
+      {JSON_LD.map((json, i) => (
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />
+      ))}
       {/* Hero. The working picker, not a picture of one. */}
       <section className={cn(SECTION, "pt-10 pb-14 lg:pt-16 lg:pb-20")}>
         {/* CardStack places two grid items: its stage beside the headline,
             and its controls across the full width beneath both. */}
         <div className="grid items-center gap-x-6 gap-y-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,13fr)]">
           <div>
+            {/* The one H1. Its first line says what the product is in the
+                words people search for; the headline stays as it was. */}
             <h1 className="font-display text-[46px] leading-[0.98] tracking-[-0.04em] sm:text-[64px] lg:text-[58px] xl:text-[68px]">
+              <span className="mb-5 block font-sans text-[15px] leading-snug tracking-normal text-muted">
+                Credit card benefits tracker and organizer
+              </span>
               Which card?
               <br />
               <span className="text-muted">
@@ -122,7 +88,7 @@ export default function LandingPage() {
       <section id="credits" className={cn(SECTION, "scroll-mt-32 lg:scroll-mt-24 pb-20 lg:pb-28")}>
         <h2 className={cn(H2, "max-w-[22ch]")}>
           Credits you paid for and forgot to use.{" "}
-          <span className="text-muted">The Tracker remembers every one.</span>
+          <span className="text-muted">A benefits tracker remembers every one.</span>
         </h2>
         <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed text-muted">
           Tick a credit off as you use it. The Tracker keeps the running
@@ -158,7 +124,7 @@ export default function LandingPage() {
         <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-16">
           <div>
             <h2 className={H2}>
-              The annual fee, checked every month.{" "}
+              Every card&rsquo;s annual fee, checked every month.{" "}
               <span className="text-muted">Not once, at renewal.</span>
             </h2>
             <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-muted">
@@ -229,6 +195,25 @@ export default function LandingPage() {
           </Link>
           .
         </p>
+      </section>
+
+      {/* Questions people search for. Shown in full, not folded away, and
+          repeated as FAQPage JSON-LD above, so the two must match. */}
+      <section id="faq" className={cn(SECTION, "scroll-mt-32 lg:scroll-mt-24 pb-20 lg:pb-28")}>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+          <h2 className={cn(H2, "max-w-[18ch] lg:sticky lg:top-28 lg:self-start")}>
+            Tracking credit card benefits.{" "}
+            <span className="text-muted">What people ask first.</span>
+          </h2>
+          <dl className="border-t border-line">
+            {FAQ.map(({ question, answer }) => (
+              <div key={question} className="border-b border-line py-6">
+                <dt className="text-[17px] font-medium tracking-[-0.01em]">{question}</dt>
+                <dd className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-muted">{answer}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
 
       {/* The close. Continues straight into the dark footer. */}

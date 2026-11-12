@@ -3,6 +3,8 @@
 #  - deploy-check: after each push to main, wait for Cloudflare's build and
 #    fail unless https://creditdash.co/api/version reports this commit.
 #    Daily, also check / and /wallet answer 200 and the live commit is main's.
+#  - indexnow: after deploy-check passes on a push, submit the live
+#    sitemap's URLs to IndexNow (scripts/indexnow.mjs). No secret needed.
 #  - keep-alive: Supabase Free pauses a project after a week with no
 #    activity. One read every three days counts as activity.
 #  - backup: weekly pg_dump of the whole database, encrypted, kept 90 days
@@ -71,6 +73,21 @@ jobs:
           live=$(curl -fsS "$SITE/api/version?t=$(date +%s)" | jq -r .sha)
           echo "main $main, live $live"
           [ "$live" = "$main" ] || { echo "::error::Live site serves $live but main is $main. A push did not deploy."; exit 1; }
+
+  # Runs only once deploy-check has seen this commit live, so the sitemap
+  # it submits is the one just deployed.
+  indexnow:
+    needs: deploy-check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Submit the sitemap's pages to IndexNow
+        run: node scripts/indexnow.mjs
 
   keep-alive:
     if: >-

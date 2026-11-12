@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { PageHeader } from "@/components/shell/page-header";
 import { TrackerView } from "@/components/tracker/tracker-view";
 import { CalculatorPanel } from "@/components/calculators/calculator-panel";
 
-export const metadata: Metadata = {
-  title: "Tracker",
-};
+export const metadata: Metadata = pageMetadata({
+  path: "/tracker",
+  title: "Credit card credits and travel perks tracker | CreditDash",
+  description:
+    "Tick off Amex, Chase and other statement credits as you use them. Every credit resets on its real calendar or anniversary date, so none are missed.",
+});
 
 export default function TrackerPage() {
   return (

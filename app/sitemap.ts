@@ -1,21 +1,17 @@
 import type { MetadataRoute } from "next";
+import { CARDS } from "@/data/cards.seed";
+import { CARD_PAGES_LIVE, SITEMAP_PAGES, SITE_URL, cardPageSlug } from "@/lib/seo";
 
 /**
- * The public pages. The app's own pages are left out and marked noindex
- * in app/(app)/layout.tsx. Static: Next renders this once at build.
+ * Every public, indexable page: the marketing pages and the demo. Sign-in,
+ * Settings and /admin are noindex and left out. Card pages join by
+ * themselves once CARD_PAGES_LIVE is true (lib/seo.ts). Static: Next
+ * renders this once at build.
  */
-const SITE = "https://creditdash.co";
-
-const PAGES: { path: string; priority: number }[] = [
-  { path: "/", priority: 1 },
-  { path: "/features", priority: 0.8 },
-  { path: "/pricing", priority: 0.8 },
-  { path: "/about", priority: 0.5 },
-  { path: "/signin", priority: 0.4 },
-  { path: "/privacy", priority: 0.3 },
-  { path: "/terms", priority: 0.3 },
-];
-
 export default function sitemap(): MetadataRoute.Sitemap {
-  return PAGES.map(({ path, priority }) => ({ url: `${SITE}${path}`, priority }));
+  const pages = SITEMAP_PAGES.map(({ path, priority }) => ({ url: `${SITE_URL}${path}`, priority }));
+  const cards = CARD_PAGES_LIVE
+    ? CARDS.map((card) => ({ url: `${SITE_URL}/cards/${cardPageSlug(card)}`, priority: 0.6 }))
+    : [];
+  return [...pages, ...cards];
 }

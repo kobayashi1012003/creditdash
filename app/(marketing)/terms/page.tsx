@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 import { LegalPage } from "../legal-page";
@@ -6,20 +7,11 @@ import { LegalPage } from "../legal-page";
 const DESCRIPTION =
   "The terms for using CreditDash: the Free and Premium plans, billing, cancelling and your data.";
 
-export const metadata: Metadata = {
-  title: "Terms",
+export const metadata: Metadata = pageMetadata({
+  path: "/terms",
+  title: "Terms | CreditDash",
   description: DESCRIPTION,
-  alternates: { canonical: "/terms" },
-  openGraph: {
-    type: "website",
-    siteName: "CreditDash",
-    locale: "en_US",
-    title: "Terms | CreditDash",
-    description: DESCRIPTION,
-    url: "/terms",
-    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
-  },
-};
+});
 
 export default function TermsPage() {
   return (

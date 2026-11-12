@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { PageHeader } from "@/components/shell/page-header";
 import { CalculatorsList } from "@/components/calculators/calculators-list";
 
-export const metadata: Metadata = {
-  title: "Calculators",
-};
+export const metadata: Metadata = pageMetadata({
+  path: "/calculators",
+  title: "Annual fee, points and award calculators | CreditDash",
+  description:
+    "Is this card worth its annual fee? Is an award better than paying cash? What is your spending worth in points? Three calculators that use your own cards.",
+});
 
 /**
  * Full-page versions of the same calculators the Tracker panel renders.

@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { LegalPage } from "../legal-page";
 
 const DESCRIPTION =
   "What CreditDash stores, where it is kept, and what it never asks for: no card numbers, no expiry dates, no bank logins.";
 
-export const metadata: Metadata = {
-  title: "Privacy",
+export const metadata: Metadata = pageMetadata({
+  path: "/privacy",
+  title: "Privacy | CreditDash",
   description: DESCRIPTION,
-  alternates: { canonical: "/privacy" },
-  openGraph: {
-    type: "website",
-    siteName: "CreditDash",
-    locale: "en_US",
-    title: "Privacy | CreditDash",
-    description: DESCRIPTION,
-    url: "/privacy",
-    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
-  },
-};
+});
 
 /**
  * Says what the app actually does, so it changes whenever that does. Phase 6

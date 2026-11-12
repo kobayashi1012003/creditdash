@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DashboardButton } from "@/components/landing/session-buttons";
@@ -8,22 +9,13 @@ import { WalletPreview } from "@/components/features/wallet-preview";
 import { cn } from "@/lib/cn";
 
 const DESCRIPTION =
-  "Your cards and what they earn, every credit tracked by hand, and calculators for whether a card or a redemption is worth it.";
+  "See which card earns the most, tick off every statement credit and travel perk as you use it, and check whether a card or a redemption is worth it.";
 
-export const metadata: Metadata = {
-  title: "Features",
+export const metadata: Metadata = pageMetadata({
+  path: "/features",
+  title: "Features: credit card perks tracker | CreditDash",
   description: DESCRIPTION,
-  alternates: { canonical: "/features" },
-  openGraph: {
-    type: "website",
-    siteName: "CreditDash",
-    locale: "en_US",
-    title: "Features | CreditDash",
-    description: DESCRIPTION,
-    url: "/features",
-    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
-  },
-};
+});
 
 const SECTION = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10";
 /** Feature headlines: the feature's own name, as the dashboard calls it

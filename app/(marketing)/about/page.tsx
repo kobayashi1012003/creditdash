@@ -1,25 +1,17 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { DashboardButton } from "@/components/landing/session-buttons";
 import { PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
 
 const DESCRIPTION =
-  "Who makes CreditDash, why it exists, and how it is paid for without ads.";
+  "Who makes CreditDash, a credit card organizer and benefits tracker, why it exists, and how it is paid for without ads or bank links.";
 
-export const metadata: Metadata = {
-  title: "About",
+export const metadata: Metadata = pageMetadata({
+  path: "/about",
+  title: "About CreditDash, the credit card organizer",
   description: DESCRIPTION,
-  alternates: { canonical: "/about" },
-  openGraph: {
-    type: "website",
-    siteName: "CreditDash",
-    locale: "en_US",
-    title: "About | CreditDash",
-    description: DESCRIPTION,
-    url: "/about",
-    images: { url: "/opengraph-image.png", width: 1200, height: 630, alt: "CreditDash. Which card? Answered before you pay." },
-  },
-};
+});
 
 /** A short first version; the owner will expand it. */
 export default function AboutPage() {

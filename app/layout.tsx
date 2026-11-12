@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { firstCardScript } from "@/lib/data/first-card";
 import { demoBannerScript } from "@/lib/demo-banner";
 import { CARD_ART } from "@/data/card-art.generated";
+import { SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
 const SITE_DESCRIPTION =
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
   // The canonical address, so absolute URLs in metadata (share previews,
   // the manifest) name the real domain whichever host served the page.
   // Nothing at runtime depends on it: sign-in uses the page's own origin.
-  metadataBase: new URL("https://creditdash.co"),
+  // The address itself is written once, in lib/seo.ts.
+  metadataBase: new URL(SITE_URL),
   // Pages set a short title ("Pricing"); the template adds the name. The
   // home page opts out with `absolute`.
   title: { default: "CreditDash", template: "%s | CreditDash" },

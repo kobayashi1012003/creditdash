@@ -25,8 +25,8 @@ const FOOTER = [
     ],
   },
   {
-    // Public pages only: the app's own screens are noindex, so the footer
-    // sends people (and crawlers) to sign in or the demo, not into them.
+    // Sign in, and the demo's front door. The demo's other pages are
+    // reached from its own navigation.
     title: "Account",
     links: [
       { href: "/signin", label: "Sign in" },

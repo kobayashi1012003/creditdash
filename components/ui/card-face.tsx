@@ -130,17 +130,22 @@ export function CardFace({
       )}
     >
       {imageSrc ? (
+        // Explicit width and height (the art's own, at the card ratio)
+        // rather than `fill`, so the <img> states its size for crawlers and
+        // audits. It still fills the same box, so nothing moves, the
+        // Wallet's first-card paint included.
         <Image
           src={imageSrc}
-          alt={cardLabel(card)}
+          alt={cardAlt(card)}
           loader={loader}
           unoptimized={!loader}
-          fill
+          width={art?.width || ART_WIDTH}
+          height={Math.round((art?.width || ART_WIDTH) / CARD_RATIO)}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           sizes={sizes}
           onError={() => setImageFailed(true)}
-          className="object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
         <GeneratedFace card={card} />
@@ -190,6 +195,20 @@ export function cardLabel(card: Pick<Card, "issuer" | "name">): string {
     (w) => name === w || name.startsWith(`${w} `),
   );
   return named ? card.name : `${card.issuer} ${card.name}`;
+}
+
+/** ISO/IEC 7810 ID-1, the shape of every card face. */
+const CARD_RATIO = 1.586;
+/** The usual art width, for an explicit imagePath the manifest cannot measure. */
+const ART_WIDTH = 1536;
+
+/**
+ * The art's alt text: the card's name with its issuer, said to be the card
+ * itself ("Chase Sapphire Reserve credit card"), so an image search or a
+ * screen reader knows what the picture shows.
+ */
+export function cardAlt(card: Pick<Card, "issuer" | "name">): string {
+  return `${cardLabel(card)} credit card`;
 }
 
 /**

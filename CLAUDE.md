@@ -55,9 +55,10 @@ off and returns 404.
   nothing in code names the domain. What does: Supabase URL Configuration
   (Site URL `https://creditdash.co`; Redirect URLs for `creditdash.co`,
   `localhost:3000` and `localhost:8787`), and the Google OAuth client's
-  JavaScript origins. A new host needs adding in both. `metadataBase` in
-  `app/layout.tsx` is the only place the domain is written, and only for
-  absolute links in page metadata.
+  JavaScript origins. A new host needs adding in both. `SITE_URL` in
+  `lib/seo.ts` is the only place the domain is written (since 12 November
+  2026; `metadataBase`, the sitemap, robots.txt and the JSON-LD read it),
+  and only for absolute links in metadata.
 - **The owner has a second Supabase project** (`annionmanymonths`, ref
   `chhfwvdgjrphafjipvzx`) in the same org. CreditDash is
   `wueonwuupzupptfngxou`. Check the ref in the dashboard URL before
@@ -253,6 +254,55 @@ for accessibility on mobile; the small drop is real network latency.
 
 Two classes of bug were caught by measuring rather than looking, and both are
 invisible in a screenshot. Keep measuring: see the quality floor below.
+
+## SEO (12 November 2026)
+
+The site barely showed on Google, even for "CreditDash", and the word
+"credit" pulls results toward credit repair and credit scores. Every title
+and heading therefore says "credit card", never "credit" alone.
+
+- **Target searches:** credit card benefits tracker, credit card tracking,
+  credit card organizer, credit card perks tracker, travel perks
+  organizer and tracker. Work them in where they read naturally; never
+  stuff them.
+- **Goals:** be found for the brand and those phrases; per-card pages
+  (`/cards/[slug]`) for the long tail come next. Free tools only.
+- **Metadata pattern.** Every public page exports
+  `pageMetadata({ path, title, description, social?, index? })` from
+  `lib/seo.ts`: a full title with the brand (under about 60 characters, it
+  is `absolute`, the root template is skipped), a description under about
+  155, the canonical, and Open Graph plus Twitter tags with the share
+  image. `index: false` gives `noindex, follow`. Prices in descriptions
+  read `lib/plan.ts`.
+- **What is indexed.** The marketing pages and the demo (`/wallet`,
+  `/tracker`, `/calculators`, `/compare`, `/points`; the `(app)` layout
+  no longer sets noindex). `/signin` and `/settings` are noindex, follow;
+  `/admin` noindex, nofollow. robots.txt disallows `/api/`, `/auth/` and
+  `/admin` only: a noindex page must stay crawlable or Google never sees
+  the noindex.
+- **Sitemap.** `app/sitemap.ts` lists `SITEMAP_PAGES` from `lib/seo.ts`.
+  Card pages: set `CARD_PAGES_LIVE = true` and have the page's
+  `generateStaticParams` map `CARDS` through `cardPageSlug`, so both list
+  the same cards. A new public page goes in `SITEMAP_PAGES`.
+- **JSON-LD.** `jsonLd()` serialises (escaping `<`); builders
+  `softwareApplication`, `organization`, `faqPage` and `breadcrumbList`.
+  The home page carries the first three; pricing carries
+  `softwareApplication`. Use `breadcrumbList` on card pages. FAQPage text
+  must match the visible questions word for word: both read
+  `components/landing/faq.ts`, which states facts the app must keep true
+  (prices, card count, what is never asked for).
+- **Home page.** One H1; its first line is the small keyword line
+  "Credit card benefits tracker and organizer", the headline unchanged.
+  The FAQ is shown in full, never folded away.
+- **IndexNow.** Key file `public/<key>.txt` (public by design).
+  `scripts/indexnow.mjs` submits the live sitemap's URLs to
+  api.indexnow.org; the `indexnow` job in `ops.yml` runs it after
+  `deploy-check` has seen the push live. Google does not use IndexNow;
+  Bing and others do.
+- **Card images.** `CardFace` gives the `<img>` explicit width and height
+  (the art's width at the card ratio, positioned to fill the same box),
+  alt "<issuer> <name> credit card" (`cardAlt`), and `loading="lazy"`
+  unless `priority`.
 
 ## Product principles
 
