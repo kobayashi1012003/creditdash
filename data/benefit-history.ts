@@ -29,6 +29,7 @@ export const BENEFIT_HISTORY: Record<string, BenefitChange[]> = {
   "plat-hotel": [
     { date: "2026-10-28", change: "Now includes The Hotel Collection as well as Fine Hotels and Resorts." },
     { date: "2026-11-02", change: "Renamed the Lodging credit, as Amex's terms now call it." },
+    { date: "2026-11-11", change: "Now includes Airbnb Luxe bookings. Hotel Collection and Airbnb Luxe stays need two nights or more." },
   ],
   "plat-digital": [
     { date: "2026-10-28", change: "Raised from $20 to $25 a month." },
@@ -132,4 +133,7 @@ export const BENEFIT_HISTORY: Record<string, BenefitChange[]> = {
   "dgold-rideshare": [{ date: "2026-11-01", change: AMEX_ADDED }],
   "dgold-stays": [{ date: "2026-11-01", change: AMEX_ADDED }],
   "dgold-flight": [{ date: "2026-11-01", change: AMEX_ADDED }],
+
+  // --- Blue Cash Preferred ---------------------------------------------------
+  "bcp-disney": [{ date: "2026-11-11", change: AMEX_ADDED }],
 };

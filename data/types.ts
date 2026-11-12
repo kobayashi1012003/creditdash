@@ -13,7 +13,7 @@ import type { AutoFillEntry } from "@/lib/credits/autofill";
 export type { Program } from "@/data/programs";
 export { PROGRAM_LABELS } from "@/data/programs";
 
-export type Network = "amex" | "visa" | "mastercard";
+export type Network = "amex" | "visa" | "mastercard" | "discover";
 
 /**
  * The period model lives with the reset logic in lib/credits/reset.ts, which
@@ -44,7 +44,7 @@ export type FaceStyle = {
  * the same brand switches the ranking to the boosted rate, so "Hilton" in
  * the store search picks the Hilton card.
  */
-export type Brand = "hilton" | "marriott" | "delta" | "united" | "hyatt";
+export type Brand = "hilton" | "marriott" | "delta" | "united" | "hyatt" | "american";
 
 /**
  * A higher rate on a narrower channel: the issuer's travel site, or the
@@ -66,10 +66,74 @@ export type EarnRate = {
    * total uses unless a brand says otherwise.
    */
   multiplier: number;
-  /** Annual spend cap in dollars, or null when uncapped. */
+  /** Spend cap in dollars over `capPeriod`, or null when uncapped. */
   cap: number | null;
+  /**
+   * What the cap is counted over. Absent means a year. A quarterly cap
+   * ("$2,500 each quarter") is treated as four times that a year, spread
+   * evenly, since the app takes spend as a yearly figure.
+   */
+  capPeriod?: CapPeriod;
+  /**
+   * Rates with the same group share one cap between them ("$2,500 in
+   * combined purchases"). Every rate in a group carries the same cap and
+   * period. Spend in the group fills the highest rate first.
+   */
+  capGroup?: string;
   notes?: string;
   boost?: EarnBoost;
+  /**
+   * Set only on rates worked out from a ChosenRate or RotatingRate (see
+   * effectiveEarnRates in lib/calculators/engine.ts), never in the catalog,
+   * so screens can say "your pick" or "this quarter, activate first".
+   */
+  source?: "chosen" | "rotating";
+};
+
+export type CapPeriod = "year" | "quarter";
+
+/**
+ * A bonus on categories the cardholder picks (Bank of America Customized
+ * Cash, US Bank Cash+). The pick is the user's (UserCard.prefs.earnChoices);
+ * until they make one, `defaultPicks` applies, else no bonus at all.
+ */
+export type ChosenRate = {
+  /** Stable: user picks are stored under it. */
+  id: string;
+  /** Reads before the options: "Your 3% category". */
+  label: string;
+  multiplier: number;
+  cap: number | null;
+  capPeriod?: CapPeriod;
+  capGroup?: string;
+  /** How many options the cardholder picks for this rate. */
+  picks: number;
+  /**
+   * What can be picked. An option can name spend the app has no category
+   * for (drugstores, home improvement): its `categories` is then empty and
+   * the pick is stated in words but never ranked.
+   */
+  options: { id: string; label: string; categories: Category[] }[];
+  /** The issuer's choice when the cardholder makes none. */
+  defaultPicks?: string[];
+  /** One sentence: how often the pick can change, enrollment. */
+  notes?: string;
+};
+
+/**
+ * A bonus on categories that change each calendar quarter (Discover it,
+ * Chase Freedom Flex). The catalog holds each quarter's categories; the app
+ * uses the current one. Quarters are keyed like the reset keys, "2026-Q4".
+ */
+export type RotatingRate = {
+  id: string;
+  multiplier: number;
+  cap: number | null;
+  capPeriod?: CapPeriod;
+  /** Needs activating each quarter. Said wherever the rate is stated. */
+  activate: boolean;
+  quarters: Record<string, { label: string; categories: Category[] }>;
+  notes?: string;
 };
 
 export type CardCredit = {
@@ -138,6 +202,8 @@ export type Card = {
   issuer: string;
   network: Network;
   annualFee: number;
+  /** The fee in the first year when the issuer waives or lowers it. Shown, not used in sums. */
+  firstYearFee?: number;
   program: Program;
   faceStyle: FaceStyle;
   /** Relative to public/. Falls back to the generated face when absent. */
@@ -148,9 +214,21 @@ export type Card = {
   /** The issuer's own terms page this card was checked against. */
   sourceUrl?: string;
   earnRates: EarnRate[];
+  /** Bonus categories the cardholder picks. See ChosenRate. */
+  chosenRates?: ChosenRate[];
+  /** Bonus categories that rotate each quarter. See RotatingRate. */
+  rotatingRates?: RotatingRate[];
+  /**
+   * Set by lib/data for a card in the user's wallet: their picks for each
+   * ChosenRate, by its id. Never in the catalog.
+   */
+  picks?: Record<string, string[]>;
   credits: CardCredit[];
-  /** Percent, 0 when the card charges none. */
-  foreignTransactionFee: number;
+  /**
+   * Percent, 0 when the card charges none. Null when the issuer's pages do
+   * not state it: shown as "Not stated", never guessed.
+   */
+  foreignTransactionFee: number | null;
   loungeAccess: string | null;
   /** Benefits with no cash value. See CardPerk. */
   perks?: CardPerk[];
@@ -197,6 +275,12 @@ export type TrackerPrefs = {
    * its guesses into confirmed usage.
    */
   assumed?: Record<string, string[]>;
+  /**
+   * The cardholder's picks for each of the card's ChosenRates, by rate id:
+   * option ids, at most that rate's `picks`. Kept here because this object
+   * is the one per-card settings store (user_cards.credit_prefs).
+   */
+  earnChoices?: Record<string, string[]>;
 };
 
 /** A card the demo user owns. Mirrors `user_cards`. */

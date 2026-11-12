@@ -23,6 +23,8 @@ import { CreditConditions } from "@/components/ui/credit-conditions";
 import type { Card, CardCredit, CardPerk, EarnRate, UserCard } from "@/data/types";
 import { BENEFIT_HISTORY } from "@/data/benefit-history";
 import { PROGRAM_LABELS } from "@/data/types";
+import { rateText } from "@/data/programs";
+import { capText, ChosenRateRow, RotatingRateRow } from "@/components/wallet/earn-choices";
 import { CATEGORIES, CATEGORY_LABELS, categoryStyle, type Category } from "@/lib/categories";
 import { longDate, monthName, pts, usd, usdExact } from "@/lib/format";
 import { annualValue, cardAnnualCreditValue, liveCredits, resetPhrase } from "@/lib/credits";
@@ -145,11 +147,26 @@ function Details({
 
           {card.pending ? null : (
             <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 text-[15px] sm:grid-cols-4">
-              <Fact label="Annual fee" value={card.annualFee === 0 ? "None" : usd(card.annualFee)} />
+              <Fact
+                label="Annual fee"
+                value={
+                  card.annualFee === 0
+                    ? "None"
+                    : card.firstYearFee !== undefined
+                      ? `${card.firstYearFee === 0 ? "None" : usd(card.firstYearFee)} the first year, then ${usd(card.annualFee)}`
+                      : usd(card.annualFee)
+                }
+              />
               <Fact label="Earns" value={PROGRAM_LABELS[card.program]} />
               <Fact
                 label="Abroad"
-                value={card.foreignTransactionFee === 0 ? "No foreign fee" : `${card.foreignTransactionFee}% fee`}
+                value={
+                  card.foreignTransactionFee === null
+                    ? "Fee not stated"
+                    : card.foreignTransactionFee === 0
+                      ? "No foreign fee"
+                      : `${card.foreignTransactionFee}% fee`
+                }
               />
               {userCard ? (
                 <Fact
@@ -201,7 +218,13 @@ function Details({
           <Section title="How it earns" aside={PROGRAM_LABELS[card.program]}>
             <ul className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
               {rates.map((rate) => (
-                <EarnRow key={rate.category} rate={rate} />
+                <EarnRow key={rate.category} rate={rate} program={card.program} />
+              ))}
+              {card.chosenRates?.map((rate) => (
+                <ChosenRateRow key={rate.id} card={card} rate={rate} editable={Boolean(userCard)} />
+              ))}
+              {card.rotatingRates?.map((rate) => (
+                <RotatingRateRow key={rate.id} card={card} rate={rate} />
               ))}
             </ul>
             {card.anniversaryBonus && (
@@ -323,15 +346,19 @@ function CategoryTile({ category, size = "lg" }: { category: Category; size?: "l
  * One earn rate: the best rate large, then where it applies, the anywhere
  * rate under a boost (owner, 2 November 2026), and any cap or condition.
  */
-function EarnRow({ rate }: { rate: EarnRate }) {
+function EarnRow({ rate, program }: { rate: EarnRate; program: Card["program"] }) {
   const best = rate.boost ? Math.max(rate.multiplier, rate.boost.multiplier) : rate.multiplier;
   const detail = rate.boost
     ? [
         `${rate.boost.where.charAt(0).toUpperCase()}${rate.boost.where.slice(1)}.`,
         rate.notes ? `${rate.notes}.` : null,
-        `${rate.multiplier}x elsewhere.`,
+        `${rateText(program, rate.multiplier)} elsewhere.`,
       ]
-    : [rate.notes ? `${rate.notes}.` : rate.cap ? `Up to ${usd(rate.cap)} a year.` : "No cap."];
+    : rate.notes
+      ? // Older notes state their yearly cap in words; a quarterly or shared
+        // cap is newer and easy to miss, so it is added beside the note.
+        [`${rate.notes}.`, rate.capPeriod === "quarter" || rate.capGroup ? capText(rate) : null]
+      : [capText(rate) || "No cap."];
 
   return (
     <li className="flex gap-4 border-t border-line py-4">
@@ -339,7 +366,7 @@ function EarnRow({ rate }: { rate: EarnRate }) {
       <div className="min-w-0">
         <p className="flex items-baseline gap-2">
           <span className="font-display text-[28px] leading-none tracking-[-0.03em] tabular-nums">
-            {best}x
+            {rateText(program, best)}
           </span>
           <span className="text-[15px] font-medium">{CATEGORY_LABELS[rate.category]}</span>
         </p>

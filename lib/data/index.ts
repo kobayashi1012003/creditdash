@@ -89,8 +89,20 @@ export function useImportOffer(): ImportOffer | null {
 function allEntries(data: Persisted): WalletEntry[] {
   return [...data.userCards]
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((userCard) => ({ userCard, card: getCard(userCard.cardId) }))
+    .map((userCard) => ({ userCard, card: withPicks(getCard(userCard.cardId), userCard) }))
     .filter((e): e is WalletEntry => Boolean(e.card));
+}
+
+/**
+ * The catalog card with the cardholder's category picks laid on it, so
+ * rateFor and everything after it rank their card by their own choice. A
+ * new object only when there are picks, so the catalog object is never
+ * changed.
+ */
+function withPicks(card: Card | undefined, userCard: UserCard): Card | undefined {
+  const picks = userCard.prefs?.earnChoices;
+  if (!card || !card.chosenRates?.length || !picks) return card;
+  return { ...card, picks };
 }
 
 /**
@@ -332,6 +344,26 @@ export async function setTrackerPrefs(
     }),
     (r) => remote.setPrefs(r, cardId, next),
   );
+}
+
+/**
+ * Sets the cardholder's picks for one of the card's chosen-category rates
+ * (Bank of America's 3% category, US Bank's two 5% categories). An empty
+ * list goes back to the issuer's default.
+ */
+export async function setEarnChoice(
+  cardId: string,
+  rateId: string,
+  optionIds: string[],
+): Promise<void> {
+  await setTrackerPrefs(cardId, (prefs) => {
+    const earnChoices = { ...prefs.earnChoices };
+    if (optionIds.length > 0) earnChoices[rateId] = [...new Set(optionIds)];
+    else delete earnChoices[rateId];
+    const out: TrackerPrefs = { ...prefs, earnChoices };
+    if (Object.keys(earnChoices).length === 0) delete out.earnChoices;
+    return out;
+  });
 }
 
 /** Prefs with one credit's assumed keys changed, the entry dropped when empty. */

@@ -7,6 +7,7 @@ import { MERCHANTS, type Merchant } from "@/data/merchants";
 import { searchMerchants } from "@/lib/merchants";
 import { CATEGORY_LABELS, categoryStyle, type Category } from "@/lib/categories";
 import { bestCardFor } from "@/lib/calculators/engine";
+import { rateText } from "@/data/programs";
 import { cn } from "@/lib/cn";
 import { CategoryIcon } from "@/components/ui/category-icon";
 
@@ -119,10 +120,12 @@ export function MerchantSearch({
                       <span className="block truncate text-[14px]">{m.name}</span>
                       {best && (
                         <span className="block truncate text-[12px] text-muted">
-                          Best: {best.card.name}, {best.multiplier}x
+                          Best: {best.card.name}, {rateText(best.card.program, best.multiplier)}
                           {best.boosted && best.rate.boost
-                            ? ` ${best.rate.boost.where} (${best.rate.multiplier}x elsewhere)`
-                            : ""}
+                            ? ` ${best.rate.boost.where} (${rateText(best.card.program, best.rate.multiplier)} elsewhere)`
+                            : best.rate.source === "rotating"
+                              ? " this quarter, once activated"
+                              : ""}
                         </span>
                       )}
                     </span>

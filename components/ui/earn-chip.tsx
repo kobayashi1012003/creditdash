@@ -10,6 +10,8 @@ type EarnChipProps = {
   category: Category;
   /** Points per dollar, e.g. 4 renders as "4x Dining". */
   multiplier: number;
+  /** Cash back: renders as "3% Dining". */
+  percent?: boolean;
   /**
    * Where the rate applies when it is not everywhere ("through Capital One
    * Travel"). Marks the chip with an asterisk; the caller prints the
@@ -20,7 +22,7 @@ type EarnChipProps = {
 };
 
 /** The earn rate badge that sits under a card face in the wallet. */
-export function EarnChip({ category, multiplier, where, className }: EarnChipProps) {
+export function EarnChip({ category, multiplier, percent, where, className }: EarnChipProps) {
   return (
     <span
       style={categoryStyle(category)}
@@ -32,7 +34,7 @@ export function EarnChip({ category, multiplier, where, className }: EarnChipPro
     >
       <CategoryIcon category={category} size={14} className="shrink-0" />
       <span>
-        {multiplier}x {CATEGORY_LABELS[category]}
+        {multiplier}{percent ? "%" : "x"} {CATEGORY_LABELS[category]}
         {where && (
           <>
             <span aria-hidden>*</span>

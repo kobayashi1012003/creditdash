@@ -6,6 +6,7 @@ import { CARDS, getCard } from "@/data/cards.seed";
 import { spendWorth, type SpendRow } from "@/lib/calculators/engine";
 import { setSpendInput, toSpend, useSpendInputs } from "@/lib/calculators/spend-store";
 import { useValuation } from "@/lib/data";
+import { isCashBack } from "@/data/programs";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import { EarnChip } from "@/components/ui/earn-chip";
 import { cn } from "@/lib/cn";
@@ -30,7 +31,9 @@ export function friendlyMoney(n: number) {
  */
 export function SpendWorthCalculator({ cards }: { cards: Card[] }) {
   const [cardId, setCardId] = useState(cards[0]?.id ?? CARDS[0].id);
-  const card = getCard(cardId) ?? cards[0] ?? CARDS[0];
+  // The wallet's own copy first: it carries the cardholder's category picks.
+  const card = cards.find((c) => c.id === cardId) ?? getCard(cardId) ?? cards[0] ?? CARDS[0];
+  const cash = isCashBack(card.program);
   const inputs = useSpendInputs(card.id);
   const { cpp } = useValuation(card.program);
   const result = spendWorth(card, toSpend(inputs), "year", cpp);
@@ -45,7 +48,7 @@ export function SpendWorthCalculator({ cards }: { cards: Card[] }) {
         {/* On a narrow screen the answer sits above the fields and stays in
             view while they scroll; wide, it holds the right column. */}
         <div className="sticky top-0 z-10 -mx-1 bg-surface px-1 pb-1 @2xl:row-span-2 @2xl:top-4 @2xl:mx-0 @2xl:self-start @2xl:px-0">
-          <SpendResult result={result} />
+          <SpendResult result={result} cash={cash} />
           <ValuationTag program={card.program} className="mt-2" />
         </div>
 
@@ -58,6 +61,7 @@ export function SpendWorthCalculator({ cards }: { cards: Card[] }) {
               <SpendField
                 key={row.category}
                 row={row}
+                cash={cash}
                 value={inputs[row.category] ?? null}
                 onValue={(v) => setSpendInput(card.id, row.category, v)}
               />
@@ -71,7 +75,7 @@ export function SpendWorthCalculator({ cards }: { cards: Card[] }) {
   );
 }
 
-function SpendResult({ result }: { result: ReturnType<typeof spendWorth> }) {
+function SpendResult({ result, cash }: { result: ReturnType<typeof spendWorth>; cash: boolean }) {
   if (result.totalSpend === 0) {
     return (
       <Verdict title="What will this spending earn?">
@@ -84,10 +88,14 @@ function SpendResult({ result }: { result: ReturnType<typeof spendWorth> }) {
   return (
     <Verdict
       title={
-        <>
-          {pts(points)} points, worth about{" "}
-          {friendlyMoney(result.value)}
-        </>
+        cash ? (
+          <>{friendlyMoney(result.value)} cash back</>
+        ) : (
+          <>
+            {pts(points)} points, worth about{" "}
+            {friendlyMoney(result.value)}
+          </>
+        )
       }
     >
       {result.effectiveReturn !== null && (
@@ -99,28 +107,32 @@ function SpendResult({ result }: { result: ReturnType<typeof spendWorth> }) {
 
 function SpendField({
   row,
+  cash,
   value,
   onValue,
 }: {
   row: SpendRow;
+  cash: boolean;
   value: number | null;
   onValue: (v: number | null) => void;
 }) {
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_7.5rem] items-start gap-x-3 gap-y-1 py-3 first:pt-0 last:pb-0">
       <div className="min-w-0 pt-0.5">
-        <EarnChip category={row.category} multiplier={row.rate.multiplier} />
+        <EarnChip category={row.category} multiplier={row.rate.multiplier} percent={cash} />
         {row.rate.notes && (
           <p className="mt-1.5 text-[12px] leading-snug text-muted">{row.rate.notes}</p>
         )}
         {row.rate.boost && (
           <p className="mt-0.5 text-[12px] leading-snug text-muted">
-            {row.rate.boost.multiplier}x {row.rate.boost.where}, not counted here
+            {row.rate.boost.multiplier}
+            {cash ? "%" : "x"} {row.rate.boost.where}, not counted here
           </p>
         )}
         {row.capReached && (
           <p className="mt-0.5 text-[12px] font-medium leading-snug text-ink">
-            Cap reached. Extra spend earns {row.overflowRate}x.
+            Cap reached. Extra spend earns {row.overflowRate}
+            {cash ? "%" : "x"}.
           </p>
         )}
       </div>
@@ -130,7 +142,7 @@ function SpendField({
         <NumberField
           kind="money"
           label={CATEGORY_LABELS[row.category]}
-          labelHidden={`${CATEGORY_LABELS[row.category]} spend, earns ${row.rate.multiplier}x`}
+          labelHidden={`${CATEGORY_LABELS[row.category]} spend, earns ${row.rate.multiplier}${cash ? "%" : "x"}`}
           value={value}
           onValue={onValue}
           inputClassName="text-right"
@@ -141,7 +153,7 @@ function SpendField({
             row.spend > 0 ? "text-ink" : "text-muted",
           )}
         >
-          {pts(Math.round(row.points))} points
+          {cash ? `${friendlyMoney(row.points / 100)} back` : `${pts(Math.round(row.points))} points`}
         </p>
       </div>
     </li>

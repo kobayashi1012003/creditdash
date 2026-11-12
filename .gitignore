@@ -70,3 +70,7 @@ cloudflare-env.d.ts
 .impeccable/review/
 .impeccable/hook.cache.json
 .impeccable/config.local.json
+
+# Card data study: saved issuer page text and drafts. Private, never committed
+# (the repo is public). Only the final summary, without copied bank text, goes in docs/.
+/study/

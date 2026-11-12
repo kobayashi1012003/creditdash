@@ -171,8 +171,10 @@ function defaultCard(wallet: Card[]): string {
 /** Will the benefits someone would actually use cover the annual fee? */
 export function CardWorthCalculator({ cards }: { cards: Card[] }) {
   const [cardId, setCardId] = useState(() => defaultCard(cards));
-  const found = getCard(cardId);
-  const card = found && hasFee(found) ? found : getCard(defaultCard(cards))!;
+  // The wallet's copy first: it carries the cardholder's category picks.
+  const lookup = (id: string) => cards.find((c) => c.id === id) ?? getCard(id);
+  const found = lookup(cardId);
+  const card = found && hasFee(found) ? found : lookup(defaultCard(cards))!;
 
   return (
     <div className="@container">

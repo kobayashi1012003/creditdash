@@ -34,7 +34,8 @@ import type { Card } from "@/data/types";
 import { getCard } from "@/data/cards.seed";
 import type { Merchant } from "@/data/merchants";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
-import { rankCards, rateFor } from "@/lib/calculators/engine";
+import { effectiveEarnRates, rankCards, rateFor } from "@/lib/calculators/engine";
+import { isCashBack } from "@/data/programs";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
 import { cardCount, cardLimit, FREE_CARD_LIMIT, PREMIUM_PRICE_MONTHLY, PREMIUM_PRICE_YEARLY } from "@/lib/plan";
@@ -616,6 +617,7 @@ function WalletCard({
                   key={rate.category}
                   category={rate.category}
                   multiplier={rate.multiplier}
+                  percent={isCashBack(card.program)}
                   where={rate.where}
                 />
               ))}
@@ -642,12 +644,14 @@ function WalletCard({
  */
 function topRates(card: Card) {
   const base = rateFor(card, "other");
-  const rates = card.earnRates
+  const rates = effectiveEarnRates(card)
     .filter((r) => r.category !== "other")
     .map((r) =>
       r.boost
         ? { category: r.category, multiplier: r.boost.multiplier, where: r.boost.where }
-        : { category: r.category, multiplier: r.multiplier, where: undefined },
+        : r.source === "rotating"
+          ? { category: r.category, multiplier: r.multiplier, where: "this quarter only, activate first" }
+          : { category: r.category, multiplier: r.multiplier, where: undefined },
     )
     .filter((r) => r.multiplier > base.multiplier)
     .sort((a, b) => b.multiplier - a.multiplier)

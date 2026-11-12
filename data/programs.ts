@@ -20,14 +20,19 @@
  * The tables allow any id of 1 to 32 characters.
  */
 
-export type ProgramGroup = "transferable" | "airline" | "hotel";
+export type ProgramGroup = "transferable" | "airline" | "hotel" | "cash";
 
 export const PROGRAM_GROUP_LABELS: Record<ProgramGroup, string> = {
   transferable: "Transferable",
   airline: "Airlines",
   hotel: "Hotels",
+  cash: "Cash back",
 };
 
+/**
+ * The groups a person can track and value on the Points page. Cash back is
+ * left out: a cent is a cent, so there is nothing to value or balance.
+ */
 export const PROGRAM_GROUPS: ProgramGroup[] = ["transferable", "airline", "hotel"];
 
 export const PROGRAMS = [
@@ -67,6 +72,10 @@ export const PROGRAMS = [
   { id: "marriott", label: "Marriott Bonvoy", group: "hotel", cpp: 0.8 },
   { id: "hyatt", label: "World of Hyatt", group: "hotel", cpp: 1.0 },
   { id: "wyndham", label: "Wyndham", group: "hotel", cpp: 0.6 },
+
+  // Cash back cards. Rates are percent, worth exactly one cent each, and
+  // never revalued (see isCashBack).
+  { id: "cash", label: "Cash back", group: "cash", cpp: 1.0 },
 ] as const satisfies readonly {
   id: string;
   label: string;
@@ -94,3 +103,16 @@ export const PROGRAM_GROUP = Object.fromEntries(
 export const DEFAULT_CPP = Object.fromEntries(
   PROGRAMS.map((p) => [p.id, p.cpp]),
 ) as Record<Program, number>;
+
+/**
+ * Cash back: its rates read as percent ("3% on dining") and are worth one
+ * cent each, whatever a stored valuation says. Not on the Points page.
+ */
+export function isCashBack(program: Program): boolean {
+  return PROGRAM_GROUP[program] === "cash";
+}
+
+/** "3%" for cash back, "3x" for points and miles. */
+export function rateText(program: Program, multiplier: number): string {
+  return isCashBack(program) ? `${multiplier}%` : `${multiplier}x`;
+}

@@ -41,6 +41,8 @@ const eslintConfig = defineConfig([
     ".wrangler/**",
     "node_modules/**",
     ".agents/**",
+    // Private card data study (git-ignored), throwaway scripts.
+    "study/**",
     ".claude/**",
   ]),
 ]);

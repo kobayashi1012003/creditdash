@@ -80,7 +80,7 @@ export function CatalogReview() {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {rows.map(({ card, daysSince, stale, source, ended }) => (
+            {rows.map(({ card, daysSince, stale, source, ended, missingQuarters }) => (
               <tr key={card.id} className="align-top">
                 <th scope="row" className="px-5 py-3 font-normal">
                   <span className="block">{card.name}</span>
@@ -92,7 +92,9 @@ export function CatalogReview() {
                   <span className={cn("block text-[12px]", stale ? "font-medium text-ink" : "text-muted")}>
                     {ended.length > 0
                       ? `Ended: ${ended.join(", ")}`
-                      : stale
+                      : missingQuarters.length > 0
+                        ? `Needs rotating categories for ${missingQuarters.join(" and ")}`
+                        : stale
                         ? `Due, ${daysSince} days ago`
                         : daysSince === 0
                           ? "Today"

@@ -1,4 +1,4 @@
-import type { Brand, Card, EarnRate, Program } from "@/data/types";
+import type { Brand, Card, ChosenRate, EarnRate, Program } from "@/data/types";
 import type { Category } from "@/lib/categories";
 
 /**
@@ -30,16 +30,97 @@ export function centsPerPoint(
   return typeof v === "number" && v >= 0 ? v : 0;
 }
 
+/** The calendar quarter a date falls in, keyed like RotatingRate.quarters: "2026-Q4". Local time. */
+export function quarterKey(date: Date): string {
+  return `${date.getFullYear()}-Q${Math.floor(date.getMonth() / 3) + 1}`;
+}
+
+/**
+ * The options in force for a chosen rate: the cardholder's own picks where
+ * they made them (set on the card by lib/data), else the issuer's default,
+ * else none. Unknown option ids are dropped and the count held to `picks`.
+ */
+export function picksFor(card: Card, rate: ChosenRate): string[] {
+  const wanted = card.picks?.[rate.id] ?? rate.defaultPicks ?? [];
+  return [...new Set(wanted)]
+    .filter((id) => rate.options.some((o) => o.id === id))
+    .slice(0, rate.picks);
+}
+
+/**
+ * Every rate a card earns right now: its fixed rates, plus the categories
+ * the cardholder picked and this quarter's rotating categories. Where a
+ * bonus covers a category the card already has a rate for, the higher rate
+ * wins. Everything that asks what a card earns reads through here (via
+ * rateFor), so a pick or a new quarter changes every screen at once.
+ */
+export function effectiveEarnRates(card: Card, date: Date = new Date()): EarnRate[] {
+  if (!card.chosenRates?.length && !card.rotatingRates?.length) return card.earnRates;
+  const out = [...card.earnRates];
+  const put = (rate: EarnRate) => {
+    const i = out.findIndex((r) => r.category === rate.category);
+    if (i === -1) out.push(rate);
+    else if (rate.multiplier > out[i].multiplier) {
+      // Keep a channel boost only where it still beats the bonus.
+      const boost = out[i].boost;
+      out[i] = boost && boost.multiplier > rate.multiplier ? { ...rate, boost } : rate;
+    }
+  };
+  for (const chosen of card.chosenRates ?? []) {
+    // The rate's own notes (how to change the pick) belong with the picker
+    // in the card details; here a rate only says where it came from.
+    const note = card.picks?.[chosen.id]?.length
+      ? "Your chosen category"
+      : `${card.issuer}'s default category until you choose`;
+    for (const id of picksFor(card, chosen)) {
+      const option = chosen.options.find((o) => o.id === id)!;
+      for (const category of option.categories) {
+        put({
+          category,
+          multiplier: chosen.multiplier,
+          cap: chosen.cap,
+          capPeriod: chosen.capPeriod,
+          capGroup: chosen.capGroup,
+          notes: note,
+          source: "chosen",
+        });
+      }
+    }
+  }
+  for (const rotating of card.rotatingRates ?? []) {
+    const quarter = rotating.quarters[quarterKey(date)];
+    for (const category of quarter?.categories ?? []) {
+      put({
+        category,
+        multiplier: rotating.multiplier,
+        cap: rotating.cap,
+        capPeriod: rotating.capPeriod,
+        capGroup: `rotating:${rotating.id}`,
+        notes: rotating.activate ? "Activate each quarter" : rotating.notes,
+        source: "rotating",
+      });
+    }
+  }
+  return out;
+}
+
 /**
  * What a card earns in a category. Falls back to its "everything else" rate,
  * then to 1x, so every card always has an answer.
  */
-export function rateFor(card: Card, category: Category): EarnRate {
+export function rateFor(card: Card, category: Category, date: Date = new Date()): EarnRate {
+  const rates = effectiveEarnRates(card, date);
   return (
-    card.earnRates.find((r) => r.category === category) ??
-    card.earnRates.find((r) => r.category === "other") ??
+    rates.find((r) => r.category === category) ??
+    rates.find((r) => r.category === "other") ??
     FALLBACK_RATE
   );
+}
+
+/** A rate's cap as a yearly figure: a quarterly cap counts four times. Null when uncapped. */
+export function yearlyCap(rate: EarnRate): number | null {
+  if (rate.cap === null || rate.cap === undefined) return null;
+  return rate.capPeriod === "quarter" ? rate.cap * 4 : rate.cap;
 }
 
 /**
@@ -58,9 +139,9 @@ export function pointsForSpend(
   if (!(annualSpend > 0)) return 0;
 
   const rate = rateFor(card, category);
-  const cap = rate.cap;
+  const cap = yearlyCap(rate);
 
-  if (cap === null || cap === undefined || annualSpend <= cap) {
+  if (cap === null || annualSpend <= cap) {
     return annualSpend * rate.multiplier;
   }
 
@@ -263,8 +344,8 @@ export const PER_YEAR: Record<Timeframe, number> = {
  * The categories a card has its own rate for, then "everything else" last,
  * so the spend calculator shows one field per real rate and nothing more.
  */
-export function earnCategories(card: Card): Category[] {
-  const own = card.earnRates
+export function earnCategories(card: Card, date: Date = new Date()): Category[] {
+  const own = effectiveEarnRates(card, date)
     .map((r) => r.category)
     .filter((c) => c !== "other");
   return [...new Set(own), "other"];
@@ -306,20 +387,22 @@ export function spendWorth(
   cpp: number,
 ): SpendWorth {
   const n = PER_YEAR[timeframe];
-  const base = rateFor(card, "other");
+  const categories = earnCategories(card);
+  const yearly = Object.fromEntries(
+    categories.map((c) => [c, Math.max(0, spend[c] ?? 0) * n]),
+  ) as Partial<Record<Category, number>>;
+  const earned = pointsForSpends(card, yearly);
 
-  const rows = earnCategories(card).map((category) => {
+  const rows = categories.map((category) => {
     const amount = Math.max(0, spend[category] ?? 0);
     const rate = rateFor(card, category);
-    const yearly = pointsForSpend(card, category, amount * n);
     return {
       category,
       spend: amount,
       rate,
-      points: yearly / n,
-      capReached: rate.cap !== null && amount * n > rate.cap,
-      overflowRate:
-        rate.category === "other" ? BASE_OVERFLOW_RATE : base.multiplier,
+      points: earned[category]!.points / n,
+      capReached: earned[category]!.capReached,
+      overflowRate: overflowRateFor(card, rate),
     };
   });
 
@@ -335,6 +418,56 @@ export function spendWorth(
     effectiveReturn: totalSpend > 0 ? value / totalSpend : null,
     pointsPerYear: points * n,
   };
+}
+
+/** What spend past a rate's cap earns: the card's everything-else rate, or 1x below a capped base. */
+function overflowRateFor(card: Card, rate: EarnRate): number {
+  return rate.category === "other" ? BASE_OVERFLOW_RATE : rateFor(card, "other").multiplier;
+}
+
+/**
+ * Points for a year of spend in several categories at once, respecting
+ * caps that categories share. Bank of America's 3% and 2% categories share
+ * $2,500 a quarter: $8,000 of groceries and $8,000 of gas cannot both earn
+ * their bonus in full. Spend in a shared group fills the highest rate first,
+ * which is what a cardholder choosing well would get. Categories outside a
+ * group are capped on their own, as in pointsForSpend.
+ */
+export function pointsForSpends(
+  card: Card,
+  spend: Partial<Record<Category, number>>,
+): Partial<Record<Category, { points: number; capReached: boolean }>> {
+  const out: Partial<Record<Category, { points: number; capReached: boolean }>> = {};
+  const groups = new Map<string, { category: Category; amount: number; rate: EarnRate }[]>();
+
+  for (const [category, raw] of Object.entries(spend) as [Category, number][]) {
+    const amount = Math.max(0, raw || 0);
+    const rate = rateFor(card, category);
+    const cap = yearlyCap(rate);
+    if (rate.capGroup && cap !== null) {
+      const list = groups.get(rate.capGroup) ?? [];
+      list.push({ category, amount, rate });
+      groups.set(rate.capGroup, list);
+    } else {
+      out[category] = {
+        points: pointsForSpend(card, category, amount),
+        capReached: cap !== null && amount > cap,
+      };
+    }
+  }
+
+  for (const members of groups.values()) {
+    let left = yearlyCap(members[0].rate)!;
+    for (const m of [...members].sort((a, b) => b.rate.multiplier - a.rate.multiplier)) {
+      const within = Math.min(m.amount, left);
+      left -= within;
+      out[m.category] = {
+        points: within * m.rate.multiplier + (m.amount - within) * overflowRateFor(card, m.rate),
+        capReached: m.amount > within,
+      };
+    }
+  }
+  return out;
 }
 
 /* --- which card for this purchase? --------------------------------------- */

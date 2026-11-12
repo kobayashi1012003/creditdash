@@ -642,6 +642,44 @@ read-only `/admin` page tracks when each card was last checked.
   Platinum's MQD head start amount was not stated on its page and is left
   out.
 
+## Cash back, chosen and rotating categories (11 November 2026)
+
+Built after the card data study (`study/`, private and git-ignored) found
+the model, not the AI drafting, was what kept cards from being right.
+
+- **Cash back** is the program `cash` (`data/programs.ts`, group `cash`):
+  rates read as percent everywhere through `rateText`, worth exactly 1 cent,
+  never revalued (`isCashBack`; `valuationOf` and `mergeValuations` ignore
+  stored values), and kept off the Points page and its picker.
+- **Chosen categories** (`Card.chosenRates`): the cardholder picks options;
+  an option can name spend the app has no category for (drugstores,
+  home improvement), which is stated but never ranked. Picks live in
+  `UserCard.prefs.earnChoices` (the existing `credit_prefs` jsonb, no
+  migration), are laid on the wallet's card as `card.picks` in
+  `allEntries` (lib/data), and set with `setEarnChoice`. Until picked,
+  `defaultPicks` applies (Bank of America: gas), else no bonus. The picker
+  is in the card details (`components/wallet/earn-choices.tsx`). Screens
+  that take a card id prefer the wallet's copy so picks count.
+- **Rotating categories** (`Card.rotatingRates`): each quarter keyed
+  `2026-Q4` in local time; the current quarter's categories earn the bonus,
+  stated as "this quarter, once activated". A missing quarter earns the base
+  rate. `/admin` flags a card when this quarter is missing, or next quarter
+  from 30 days before it starts (`missingQuarters`). **Enter each new
+  quarter's categories when the issuer announces them.**
+- **Caps**: `capPeriod: "quarter"` counts four times a year (spend assumed
+  even); `capGroup` makes rates share one cap, filled highest rate first
+  (`pointsForSpends`). Every member of a group carries the same cap.
+- `effectiveEarnRates` in the engine is the one place fixed, chosen and
+  rotating rates are combined; `rateFor` reads through it.
+- `firstYearFee` is shown in the card details only. `foreignTransactionFee`
+  may be `null`: the issuer does not state it ("Not stated"), never guessed.
+- Network `discover` and brand `american` added.
+- Five cash back cards added from the study (Blue Cash Preferred, Active
+  Cash, Customized Cash, Cash+, Discover it), each figure quoted from the
+  issuer's page and checked by hand. Not done: categories the owner chose
+  not to add (drugstores and others stay unranked), rules for new versus
+  existing cardholders.
+
 ## The demo starts empty (11 November 2026)
 
 A new browser's demo wallet has no cards, balances or usage

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PlusIcon, XIcon } from "@phosphor-icons/react";
 import type { Card } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
+import { rateText } from "@/data/programs";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { centsPerPoint, multiplierFor, rateFor } from "@/lib/calculators/engine";
 import { cardAnnualCreditValue } from "@/lib/credits";
@@ -38,8 +39,9 @@ export function CompareView({ all }: { all: Card[] }) {
   // The buttons stay disabled rather than offering a card already held.
   const isLoading = useIsLoading();
 
+  // A card in the wallet compares with the cardholder's own category picks.
   const chosen = ids
-    .map((id) => all.find((c) => c.id === id))
+    .map((id) => wallet.find((e) => e.card.id === id)?.card ?? all.find((c) => c.id === id))
     .filter((c): c is Card => Boolean(c));
 
   function remove(id: string) {
@@ -167,9 +169,14 @@ export function CompareView({ all }: { all: Card[] }) {
                 cards={chosen}
                 value={(c) => {
                   const rate = rateFor(c, cat);
+                  const r = (m: number) => rateText(c.program, m);
                   return rate.boost
-                    ? `${rate.boost.multiplier}x ${rate.boost.where}, ${rate.multiplier}x elsewhere`
-                    : `${rate.multiplier}x`;
+                    ? `${r(rate.boost.multiplier)} ${rate.boost.where}, ${r(rate.multiplier)} elsewhere`
+                    : rate.source === "rotating"
+                      ? `${r(rate.multiplier)} this quarter, once activated`
+                      : rate.source === "chosen"
+                        ? `${r(rate.multiplier)} as the chosen category`
+                        : r(rate.multiplier);
                 }}
                 score={(c) => centsFor(c, cat, valuations)}
               />
@@ -184,11 +191,14 @@ export function CompareView({ all }: { all: Card[] }) {
               label="Foreign transactions"
               cards={chosen}
               value={(c) =>
-                c.foreignTransactionFee === 0
-                  ? "No fee"
-                  : `${c.foreignTransactionFee}%`
+                c.foreignTransactionFee === null
+                  ? "Not stated"
+                  : c.foreignTransactionFee === 0
+                    ? "No fee"
+                    : `${c.foreignTransactionFee}%`
               }
-              score={(c) => -c.foreignTransactionFee}
+              // An unstated fee never wins the row.
+              score={(c) => (c.foreignTransactionFee === null ? -100 : -c.foreignTransactionFee)}
             />
             <Row
               label="Lounges"

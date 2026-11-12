@@ -311,6 +311,9 @@ const isId = (x: unknown): x is string => typeof x === "string" && x.length > 0 
  */
 export const MAX_ASSUMED = 24;
 
+/** Most options a cardholder can pick for one chosen-category rate. Issuers allow one to three. */
+export const MAX_EARN_PICKS = 4;
+
 /**
  * Tracker preferences from storage or the database, with anything malformed
  * dropped field by field, so one bad value never loses the rest.
@@ -354,6 +357,16 @@ export function cleanPrefs(x: unknown): TrackerPrefs | undefined {
       if (clean.length > 0) assumed[id] = clean;
     }
     if (Object.keys(assumed).length > 0) out.assumed = assumed;
+  }
+  if (typeof p.earnChoices === "object" && p.earnChoices !== null && !Array.isArray(p.earnChoices)) {
+    const choices: Record<string, string[]> = {};
+    for (const [id, picks] of Object.entries(p.earnChoices)) {
+      if (!isId(id) || !Array.isArray(picks)) continue;
+      // The engine drops ids the card does not offer; this only bounds size.
+      const clean = [...new Set(picks.filter(isId))].slice(0, MAX_EARN_PICKS);
+      if (clean.length > 0) choices[id] = clean;
+    }
+    if (Object.keys(choices).length > 0) out.earnChoices = choices;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }

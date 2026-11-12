@@ -43,7 +43,11 @@ export function ProgramSheet({
 
   const q = query.trim().toLowerCase();
   const available = PROGRAMS.filter(
-    (p) => !tracked.has(p.id) && (!q || p.label.toLowerCase().includes(q)),
+    (p) =>
+      // Cash back has no balance or value to track.
+      PROGRAM_GROUPS.includes(p.group) &&
+      !tracked.has(p.id) &&
+      (!q || p.label.toLowerCase().includes(q)),
   );
   const fromCards = available.filter((p) => suggested.has(p.id));
   const sections = [

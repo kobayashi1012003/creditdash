@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { PencilSimpleIcon } from "@phosphor-icons/react";
 import type { Program } from "@/data/types";
-import { PROGRAM_LABELS } from "@/data/programs";
+import { isCashBack, PROGRAM_LABELS } from "@/data/programs";
 import { clearValuation, setValuation, useValuation } from "@/lib/data";
 import { parseCents } from "@/lib/calculators/parse";
 import { cents, centsNumber } from "@/lib/format";
@@ -41,6 +41,9 @@ export function ValuationTag({
     returnFocus.current = true;
     setEditing(false);
   }
+
+  // A cent of cash back is a cent: nothing to value.
+  if (isCashBack(program)) return null;
 
   if (editing) {
     return (

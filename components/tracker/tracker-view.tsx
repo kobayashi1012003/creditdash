@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { LightningIcon, PlusIcon, SlidersHorizontalIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
+import { isCashBack } from "@/data/programs";
 import { cardAnnualCreditValue, creditState, liveCredits } from "@/lib/credits";
 import { daysUntilReset } from "@/lib/credits/reset";
 import { cents, longDate, money, monthName, pointsValue, pts, usd } from "@/lib/format";
@@ -198,8 +199,12 @@ export function TrackerView() {
             )}
           </Widget>
 
-          <Widget title="Points">
-            {!balance || balance.balance === 0 ? (
+          <Widget title={isCashBack(card.program) ? "Cash back" : "Points"}>
+            {isCashBack(card.program) ? (
+              <p className="text-sm leading-relaxed text-muted">
+                This card earns cash back, not points, so there is no balance to value here.
+              </p>
+            ) : !balance || balance.balance === 0 ? (
               <p className="text-sm leading-relaxed text-muted">
                 No {PROGRAM_LABELS[card.program]} balance entered yet. Add it on the{" "}
                 <Link

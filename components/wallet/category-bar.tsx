@@ -9,6 +9,7 @@ import {
   type Category,
 } from "@/lib/categories";
 import type { Ranked } from "@/lib/calculators/engine";
+import { rateText } from "@/data/programs";
 import { cn } from "@/lib/cn";
 import { CategoryIcon } from "@/components/ui/category-icon";
 
@@ -121,11 +122,20 @@ export function AnswerLine({
               // The boosted rate wins the ranking, so the anywhere rate
               // rides along as a short note rather than a disclaimer.
               <>
-                earns {top.multiplier}x on {CATEGORY_LABELS[category].toLowerCase()}{" "}
-                {top.rate.boost.where}, {top.rate.multiplier}x elsewhere.
+                earns {rateText(top.card.program, top.multiplier)} on{" "}
+                {CATEGORY_LABELS[category].toLowerCase()} {top.rate.boost.where},{" "}
+                {rateText(top.card.program, top.rate.multiplier)} elsewhere.
               </>
             ) : (
-              <>earns {top.multiplier}x on {CATEGORY_LABELS[category].toLowerCase()}.</>
+              <>
+                earns {rateText(top.card.program, top.multiplier)} on{" "}
+                {CATEGORY_LABELS[category].toLowerCase()}
+                {top.rate.source === "rotating"
+                  ? " this quarter, once activated."
+                  : top.rate.source === "chosen"
+                    ? ", your chosen category."
+                    : "."}
+              </>
             )}
           </span>
         </>

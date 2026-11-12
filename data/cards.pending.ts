@@ -54,7 +54,6 @@ export const PENDING_CARDS: Card[] = [
   // American Express
   pending("amex-green", "Amex Green", "American Express", "amex", "amex-mr", AMEX, "#4F6B4A"),
   pending("amex-blue-cash-everyday", "Blue Cash Everyday", "American Express", "amex", "amex-mr", AMEX, "#1F6FB8"),
-  pending("amex-blue-cash-preferred", "Blue Cash Preferred", "American Express", "amex", "amex-mr", AMEX, "#0E4C92"),
   pending("amex-business-gold", "Amex Business Gold", "American Express", "amex", "amex-mr", AMEX_BUSINESS, "#B8963F", "#2A2210"),
   pending("amex-business-platinum", "Amex Business Platinum", "American Express", "amex", "amex-mr", AMEX_BUSINESS, "#BFC2C6", "#1E1F21"),
   pending("delta-gold-business", "Delta SkyMiles Gold Business", "American Express", "amex", "delta", AMEX_BUSINESS, "#B8963F", "#2A2210"),

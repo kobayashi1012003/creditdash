@@ -1,5 +1,5 @@
 import type { Program, Valuation } from "@/data/types";
-import { DEFAULT_CPP } from "@/data/programs";
+import { DEFAULT_CPP, isCashBack } from "@/data/programs";
 import type { Valuations } from "@/lib/calculators/engine";
 
 /**
@@ -22,7 +22,7 @@ export function valuationOf(
   program: Program,
   userValues: readonly Valuation[],
 ): ResolvedValuation {
-  const own = userValues.find((v) => v.program === program);
+  const own = isCashBack(program) ? undefined : userValues.find((v) => v.program === program);
   const defaultCpp = DEFAULT_CPP[program];
   return own
     ? { cpp: own.centsPerPoint, source: "yours", defaultCpp }
@@ -32,7 +32,7 @@ export function valuationOf(
 /** Defaults with the user's values laid over them, as a plain map. */
 export function mergeValuations(userValues: readonly Valuation[]): Valuations {
   const out: Valuations = { ...DEFAULT_CPP };
-  for (const v of userValues) out[v.program] = v.centsPerPoint;
+  for (const v of userValues) if (!isCashBack(v.program)) out[v.program] = v.centsPerPoint;
   return out;
 }
 

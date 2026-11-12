@@ -311,6 +311,17 @@ function NetworkMark({
     );
   }
 
+  if (network === "discover") {
+    return (
+      <span
+        className="text-[clamp(0.55rem,2.6cqw,0.85rem)] font-semibold tracking-[0.08em]"
+        style={{ color: foil, opacity: 0.8 }}
+      >
+        DISCOVER
+      </span>
+    );
+  }
+
   if (network === "visa") {
     return (
       <span

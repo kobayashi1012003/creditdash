@@ -6,6 +6,7 @@ import type { Program } from "@/data/types";
 import {
   DEFAULT_CPP,
   PROGRAM_GROUP,
+  isCashBack,
   PROGRAM_GROUPS,
   PROGRAM_GROUP_LABELS,
   PROGRAM_LABELS,
@@ -54,6 +55,8 @@ export function PointsView() {
     for (const { card } of wallet) {
       // A card added before its data has no confirmed programme yet.
       if (card.pending) continue;
+      // Cash back has no balance to track or value to set.
+      if (isCashBack(card.program)) continue;
       map.set(card.program, [...(map.get(card.program) ?? []), card.name]);
     }
     return map;

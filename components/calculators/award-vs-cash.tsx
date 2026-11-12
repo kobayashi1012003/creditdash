@@ -5,6 +5,7 @@ import { CaretDownIcon } from "@phosphor-icons/react";
 import type { Card, Program } from "@/data/types";
 import { PROGRAM_GROUP, PROGRAM_LABELS } from "@/data/programs";
 import { getCard } from "@/data/cards.seed";
+import { rateText } from "@/data/programs";
 import { awardVsCash, rateFor, rewardsOnPurchase } from "@/lib/calculators/engine";
 import { useTrackedPrograms, useValuation, useValuations } from "@/lib/data";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -49,7 +50,11 @@ export function AwardVsCashCalculator({ cards }: { cards: Card[] }) {
 
   const { cpp } = useValuation(program);
   const valuations = useValuations();
-  const rewardCard = rewardCardId ? getCard(rewardCardId) : undefined;
+  // The wallet's copy first: it carries the cardholder's category picks.
+  const rewardCard = rewardCardId
+    ? (cards.find((c) => c.id === rewardCardId) ?? getCard(rewardCardId))
+    : undefined;
+  const r = (m: number) => (rewardCard ? rateText(rewardCard.program, m) : `${m}x`);
   const rewardCpp = rewardCard ? (valuations[rewardCard.program] ?? 0) : 0;
   const rewardRate = rewardCard ? rateFor(rewardCard, booking) : undefined;
   const boosted = viaBoost && !!rewardRate?.boost;
@@ -159,14 +164,14 @@ export function AwardVsCashCalculator({ cards }: { cards: Card[] }) {
                       <span>
                         Booked {rewardRate.boost.where}
                         <span className="block text-muted">
-                          Earns {rewardRate.boost.multiplier}x instead of {rewardRate.multiplier}x
+                          Earns {r(rewardRate.boost.multiplier)} instead of {r(rewardRate.multiplier)}
                         </span>
                       </span>
                     </label>
                   )}
                   <p className="text-[13px] leading-relaxed text-muted">
                     {rewardCard.name} earns{" "}
-                    {boosted && rewardRate?.boost ? rewardRate.boost.multiplier : rewardRate?.multiplier}x
+                    {r((boosted && rewardRate?.boost ? rewardRate.boost.multiplier : rewardRate?.multiplier) ?? 1)}
                     {boosted && rewardRate?.boost
                       ? ` ${rewardRate.boost.where}`
                       : ` on ${CATEGORY_LABELS[booking].toLowerCase()}`}

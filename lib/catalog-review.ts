@@ -32,7 +32,32 @@ export type ReviewRow = {
   source: string | null;
   /** Limited-time credits whose end date has passed: due for removal. */
   ended: string[];
+  /**
+   * Rotating-category quarters that need entering: this quarter's when it
+   * is missing, and next quarter's from 30 days before it starts.
+   */
+  missingQuarters: string[];
 };
+
+/** Days before a quarter starts that its rotating categories are due. */
+export const NEXT_QUARTER_DUE_DAYS = 30;
+
+const quarterOf = (d: Date) => `${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`;
+
+/** Quarter keys ("2026-Q4") a card's rotating rates still need, as of today. */
+export function missingQuarters(card: Pick<Card, "rotatingRates">, today = new Date()): string[] {
+  if (!card.rotatingRates?.length) return [];
+  const now = quarterOf(today);
+  const nextStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3 + 3, 1);
+  const next = quarterOf(nextStart);
+  const dueNext = nextStart.getTime() - today.getTime() <= NEXT_QUARTER_DUE_DAYS * DAY_MS;
+  const out = new Set<string>();
+  for (const rate of card.rotatingRates) {
+    if (!rate.quarters[now]) out.add(now);
+    if (dueNext && !rate.quarters[next]) out.add(next);
+  }
+  return [...out];
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -57,12 +82,14 @@ export function reviewCatalog(cards: Card[], today = new Date()): ReviewRow[] {
       const ended = (card.credits ?? [])
         .filter((c) => c.endsOn && endedBy(c.endsOn, today))
         .map((c) => c.name);
+      const quarters = missingQuarters(card, today);
       return {
         card,
         daysSince,
-        stale: daysSince >= staleAfterDays(card) || ended.length > 0,
+        stale: daysSince >= staleAfterDays(card) || ended.length > 0 || quarters.length > 0,
         source: card.sourceUrl ?? null,
         ended,
+        missingQuarters: quarters,
       };
     })
     .sort((a, b) => b.daysSince - a.daysSince || a.card.name.localeCompare(b.card.name));
