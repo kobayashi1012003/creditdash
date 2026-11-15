@@ -198,10 +198,12 @@ for accessibility on mobile; the small drop is real network latency.
     script, so CSP and the privacy page change too); British or American
     spelling across visible text; the gifted Premium line in
     `plan-section.tsx`; a border on selected category chips in dark mode.
-  - *Dashboard work:* a Cloudflare rate-limit rule on `/api/*`; clearing
-    sandbox `stripe_customer_id` values and their `subscriptions` rows in
-    Supabase; branding Supabase's sign-in email templates; one backup
-    restore test (steps under "Ops workflow").
+  - *Dashboard work:* clearing sandbox `stripe_customer_id` values and
+    their `subscriptions` rows in Supabase, **before** the live Stripe keys
+    go in (every row is sandbox until then); one backup restore test
+    (steps under "Ops workflow"; at least unlock a Sunday dump with `gpg`,
+    and keep the passphrase outside GitHub). Weekly backups ran on 8 and
+    15 November, about 75 KB each. Owner deferred both (15 November).
   - *Larger work:* less JavaScript before the Wallet hydrates (lazy-load
     the edit grid, drawer and sheets); auto-fill reading the account
     afresh before it runs; tests for `schema.ts`, `creditState`,
@@ -225,8 +227,15 @@ for accessibility on mobile; the small drop is real network latency.
   caps auth email near 30 an hour). DKIM, SPF on `send`, and DMARC
   `p=none` are verified; a test link landed in Gmail's Primary tab.
   `hello@creditdash.co` is Cloudflare Email Routing forwarding to the
-  owner's Gmail, which replies as it through a second Resend key. The
-  email templates are still Supabase's defaults.
+  owner's Gmail, which replies as it through a second Resend key.
+- **Sign-in emails are branded** (15 November 2026): the HTML and
+  subjects are in `docs/email-templates/` (Magic link for returning users,
+  Confirm signup as a welcome). Supabase holds the live copy; change the
+  file and paste it again. System fonts, since mail apps cannot load Geist.
+- **Cloudflare rate limit on `/api/*`** (15 November 2026): 20 requests
+  per 10 seconds per IP, then a 10 second block (the free plan's one
+  rule). Verified live: the 24th quick request got a 429. Stripe retries
+  a refused webhook, so the webhook is not excluded.
 - **Google sign-in is published** (In production since 28 October 2026),
   so any Google account can sign in. Google may still ask to verify the
   domain.
@@ -930,8 +939,8 @@ in constant time, and no secret is in git history. Changes made:
 - **`npm run test:rls`** now also reads every table unfiltered as another
   user and signed out, and tries cross-user updates.
 - **Not done, low risk:** per-user row caps on `point_balances`,
-  `valuations` and `credit_usage`, and a Cloudflare rate-limit rule on
-  `/api/*`. After any migration, confirm every public table shows
+  `valuations` and `credit_usage`. (The `/api/*` rate limit is in place
+  since 15 November.) After any migration, confirm every public table shows
   `relrowsecurity = true` (the query is in the migration's footer).
 
 ## Features page (2 November 2026)

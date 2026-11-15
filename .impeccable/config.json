@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "docs/email-templates/magic-link.html"
+        ],
+        "createdAt": "2026-11-15T20:17:07.054Z",
+        "reason": "Claude: email clients cannot load Geist web fonts, so the email template uses a system font stack"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "docs/email-templates/confirm-signup.html"
+        ],
+        "createdAt": "2026-11-15T20:26:55.015Z",
+        "reason": "Claude: email clients cannot load Geist web fonts, so the email template uses a system font stack"
+      }
+    ]
+  }
+}
