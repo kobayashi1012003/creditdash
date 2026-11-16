@@ -189,6 +189,80 @@ export const CARDS: Card[] = [
     ],
   },
   {
+    id: "chase-freedom-flex",
+    name: "Freedom Flex",
+    issuer: "Chase",
+    network: "mastercard",
+    annualFee: 0,
+    // Chase pays in Ultimate Rewards points worth 1 cent each, sold as cash
+    // back; holding a Sapphire lets them be moved there and transferred.
+    program: "chase-ur",
+    faceStyle: { base: "#1497D4", shade: "#0B74AA", foil: "#E6F4FB", finish: "matte" },
+    issuerUrl: "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex",
+    // Drafted 16 November 2026 from Chase's newsroom and recent coverage;
+    // Chase's own card page and Pricing & Terms still to be read.
+    lastVerified: "2026-11-16",
+    foreignTransactionFee: 0,
+    loungeAccess: null,
+    earnRates: [
+      { category: "flights", multiplier: 1, cap: null, boost: { multiplier: 5, where: "through Chase Travel" } },
+      { category: "hotels", multiplier: 1, cap: null, boost: { multiplier: 5, where: "through Chase Travel" } },
+      { category: "dining", multiplier: 3, cap: null, notes: "Includes takeout and eligible delivery" },
+      { category: "other", multiplier: 1, cap: null, notes: "Drugstores earn 3x" },
+    ],
+    rotatingRates: [
+      {
+        id: "flex-5",
+        multiplier: 5,
+        cap: 1500,
+        capPeriod: "quarter",
+        activate: true,
+        quarters: {
+          "2026-Q3": { label: "gas stations and EV charging, public transit and select live entertainment", categories: ["gas", "transit"] },
+          "2026-Q4": { label: "grocery stores (not Walmart or Target), dining and American Red Cross donations", categories: ["groceries", "dining"] },
+        },
+        notes: "The deadline is the 14th of the quarter's last month, and purchases from earlier in the quarter count too",
+      },
+    ],
+    credits: [],
+    perks: [
+      { id: "flex-protection", name: "Purchase and travel protection", kind: "protection", notes: "Purchase, extended warranty, trip cancellation and car rental cover" },
+    ],
+    finePrint: [
+      "Foreign transaction fees ended on 20 September 2026, and cell phone protection ended the same day.",
+      "Points can be moved to a Sapphire or Ink Preferred card you hold, then transferred to airlines and hotels.",
+    ],
+  },
+  {
+    id: "chase-freedom-unlimited",
+    name: "Freedom Unlimited",
+    issuer: "Chase",
+    network: "visa",
+    annualFee: 0,
+    // Ultimate Rewards points sold as cash back, as on the Freedom Flex.
+    program: "chase-ur",
+    faceStyle: { base: "#0B3A6E", shade: "#14264A", foil: "#E3ECF7", finish: "matte" },
+    issuerUrl: "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited",
+    // Drafted 16 November 2026 from recent coverage; Chase's own card page
+    // and Pricing & Terms still to be read.
+    lastVerified: "2026-11-16",
+    foreignTransactionFee: 3,
+    loungeAccess: null,
+    earnRates: [
+      { category: "flights", multiplier: 1.5, cap: null, boost: { multiplier: 5, where: "through Chase Travel" } },
+      { category: "hotels", multiplier: 1.5, cap: null, boost: { multiplier: 5, where: "through Chase Travel" } },
+      { category: "dining", multiplier: 3, cap: null, notes: "Includes takeout and eligible delivery" },
+      { category: "other", multiplier: 1.5, cap: null, notes: "Drugstores earn 3x" },
+    ],
+    credits: [],
+    perks: [
+      { id: "cfu-protection", name: "Purchase and travel protection", kind: "protection", notes: "Purchase, extended warranty, trip cancellation and car rental cover" },
+    ],
+    finePrint: [
+      "Points can be moved to a Sapphire or Ink Preferred card you hold, then transferred to airlines and hotels.",
+    ],
+  },
+  {
     id: "venture-x",
     name: "Venture X",
     issuer: "Capital One",

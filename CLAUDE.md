@@ -739,6 +739,16 @@ the model, not the AI drafting, was what kept cards from being right.
   not to add (drugstores and others stay unranked), rules for new versus
   existing cardholders.
 
+## Freedom Flex and Freedom Unlimited (16 November 2026)
+
+Added with the owner's art, drafted from Chase's newsroom (quarterly
+categories) and agreeing recent coverage, because Chase's card pages are
+saved by the owner, not fetched (`study/chase-inbox/`). No `sourceUrl`
+until those PDFs are read. Program `chase-ur` (points at 1 cent, worth
+more beside a Sapphire), so rates read "5x". Open questions for the
+PDFs: whether Flex dining stacks to 7% in a dining quarter (entered as
+5%), and the 2027-Q1 categories (not entered until Chase announces).
+
 ## The demo starts empty (11 November 2026)
 
 A new browser's demo wallet has no cards, balances or usage

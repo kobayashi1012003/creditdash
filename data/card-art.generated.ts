@@ -26,6 +26,8 @@ export const CARD_ART: Record<string, CardArt> = {
   "bilt-palladium": {"src":"/cards/bilt-palladium.webp","width":1536,"variants":[480,720,960]},
   "blue-business-plus": {"src":"/cards/blue-business-plus.webp","width":1536,"variants":[480,720,960]},
   "chase-amazon": {"src":"/cards/chase-amazon.webp","width":1536,"variants":[480,720,960]},
+  "chase-freedom-flex": {"src":"/cards/chase-freedom-flex.webp","width":1536,"variants":[480,720,960]},
+  "chase-freedom-unlimited": {"src":"/cards/chase-freedom-unlimited.webp","width":1536,"variants":[480,720,960]},
   "chase-prime-visa": {"src":"/cards/chase-prime-visa.webp","width":1536,"variants":[480,720,960]},
   "citi-custom-cash": {"src":"/cards/citi-custom-cash.webp","width":1536,"variants":[480,720,960]},
   "citi-double-cash": {"src":"/cards/citi-double-cash.webp","width":1536,"variants":[480,720,960]},
