@@ -197,7 +197,7 @@ export const CARDS: Card[] = [
     // Chase pays in Ultimate Rewards points worth 1 cent each, sold as cash
     // back; holding a Sapphire lets them be moved there and transferred.
     program: "chase-ur",
-    faceStyle: { base: "#1497D4", shade: "#0B74AA", foil: "#E6F4FB", finish: "matte" },
+    faceStyle: { base: "#0B4A85", shade: "#06305E", foil: "#E3F1FA", finish: "matte" },
     issuerUrl: "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex",
     // Drafted 16 November 2026 from Chase's newsroom and recent coverage;
     // Chase's own card page and Pricing & Terms still to be read.
