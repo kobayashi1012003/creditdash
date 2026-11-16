@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Dialog } from "@base-ui/react/dialog";
 import { ArrowCounterClockwiseIcon, XIcon } from "@phosphor-icons/react";
 import {
   DndContext,
   DragOverlay,
+  defaultDropAnimationSideEffects,
+  type DropAnimation,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
@@ -22,7 +25,6 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
-import { restrictToFirstScrollableAncestor } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import type { WalletEntry } from "@/lib/data";
 import { CardFace } from "@/components/ui/card-face";
@@ -40,6 +42,23 @@ import { cn } from "@/lib/cn";
  * The old in-page edit sized each card by the chips under it, and cards of
  * different heights made the drop target jump (owner, 16 November 2026).
  */
+
+/**
+ * The drop: the lifted card glides into its slot on the app's ease-out
+ * curve, and the slot's own card stays hidden until it lands, then takes
+ * its place in the same frame. Before, the slot faded back in while the
+ * lifted card was still travelling, and the two overlapped for a beat
+ * (owner, 16 November 2026). The lifted card is no longer tilted or
+ * scaled, so nothing snaps back when it settles.
+ */
+const DROP: DropAnimation = {
+  duration: 200,
+  easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+  sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0" } } }),
+};
+
+/** Cards making room slide on the same curve, a little faster. */
+const SHIFT = { duration: 180, easing: "cubic-bezier(0.23, 1, 0.32, 1)" };
 
 /** A slot is about 210px wide in the three-column dialog, 45vw on a phone. */
 const SLOT_SIZES = "(max-width: 640px) 45vw, 210px";
@@ -98,7 +117,7 @@ function Editor({ entries, onSave }: { entries: WalletEntry[]; onSave: (edit: Wa
     // A mouse moves a few pixels before it drags, so a click stays a click.
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     // A finger holds for a moment first, so a swipe still scrolls the list.
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -160,7 +179,6 @@ function Editor({ entries, onSave }: { entries: WalletEntry[]; onSave: (edit: Wa
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          modifiers={[restrictToFirstScrollableAncestor]}
           accessibility={{ announcements }}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
@@ -184,14 +202,23 @@ function Editor({ entries, onSave }: { entries: WalletEntry[]; onSave: (edit: Wa
             </ol>
           </SortableContext>
           {/* The lifted card follows the pointer above everything, and
-              settles into its new slot on drop. */}
-          <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }}>
-            {active ? (
-              <div className="rotate-[1.5deg] scale-[1.03] rounded-card shadow-lifted">
-                <CardFace card={active.card} sizes={SLOT_SIZES} />
-              </div>
-            ) : null}
-          </DragOverlay>
+              settles into its new slot on drop. Portalled to <body>: inside
+              the window, whose transform makes it the containing block for
+              fixed positioning, the overlay landed off the pointer and
+              lagged behind it. */}
+          {createPortal(
+            <DragOverlay
+              zIndex={60}
+              dropAnimation={DROP}
+            >
+              {active ? (
+                <div className="pointer-events-none rounded-card shadow-lifted">
+                  <CardFace card={active.card} sizes={SLOT_SIZES} priority />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body,
+          )}
         </DndContext>
       </div>
 
@@ -228,7 +255,7 @@ function Slot({
   const { card, userCard } = entry;
   const name = userCard.nickname ?? card.name;
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id: card.id });
+    useSortable({ id: card.id, transition: SHIFT });
 
   return (
     <li
@@ -249,8 +276,11 @@ function Slot({
           {...listeners}
           aria-label={`Move ${name}, slot ${position}`}
           className={cn(
-            "relative cursor-grab touch-manipulation rounded-card active:cursor-grabbing",
-            "transition-opacity duration-[var(--cd-dur-hover)] ease-out",
+            // No text selection, no iOS press-and-hold picture menu and no
+            // image under the finger: the hold that starts a drag must
+            // reach dnd-kit, not the browser.
+            "relative cursor-grab touch-manipulation rounded-card select-none active:cursor-grabbing",
+            "[-webkit-touch-callout:none] [&_img]:pointer-events-none",
             "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus",
             isDragging && "opacity-0",
           )}

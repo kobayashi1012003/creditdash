@@ -86,20 +86,22 @@ export function CardGallery({
         <h2 id="gallery-heading" className="font-display text-[26px] leading-[1.1] tracking-[-0.03em] sm:text-[30px]">
           Pick the cards you carry.
         </h2>
-        <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted">
-          Tick as many as you like, then add them together. Their credits, fees and earn rates show
-          straight away, and nothing is linked to a bank.
-        </p>
-
+        {/* Banks as an even grid of same-size tabs. A red badge counts the
+            cards picked at each bank, so picks made under another tab stay
+            visible after moving on. */}
         <div
           role="tablist"
           aria-label="Banks"
           onKeyDown={onKeyDown}
-          className="relative -mx-5 mt-5 flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-7 sm:px-7"
+          // One row of equal tabs that scrolls sideways on a phone; from sm
+          // an even grid, two rows of five. relative: see the quality floor.
+          className="relative -mx-5 mt-5 flex gap-1.5 overflow-x-auto px-5 pt-2 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0"
         >
           {tabs.map((b, i) => {
             const on = b === bank;
             const count = (b === ALL ? matches : matches.filter((c) => c.issuer === b)).length;
+            const pickedHere =
+              b === ALL ? 0 : picked.filter((id) => ALL_CARDS.find((c) => c.id === id)?.issuer === b).length;
             return (
               <button
                 key={b}
@@ -109,16 +111,24 @@ export function CardGallery({
                 id={`gallery-tab-${i}`}
                 aria-selected={on}
                 aria-controls="gallery-panel"
+                aria-label={`${b === ALL ? "All banks" : b}, ${count} cards${pickedHere ? `, ${pickedHere} picked` : ""}`}
                 onClick={() => setBank(b)}
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-control border px-3 py-1.5 text-[13px] font-medium",
+                  "relative flex h-10 w-[96px] shrink-0 items-center justify-center rounded-control border px-2 text-[13px] font-medium sm:w-auto sm:min-w-0",
                   "transition-[background-color,border-color,color,transform] duration-[var(--cd-dur-press)] ease-out",
                   "active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
                   on ? "border-ink bg-ink text-surface" : "border-line text-muted hover:border-muted hover:text-ink",
                 )}
               >
-                {b === ALL ? "All" : shortBank(b)}
-                <span className={cn("tabular-nums", on ? "text-surface/70" : "text-muted/80")}>{count}</span>
+                <span className="truncate">{b === ALL ? "All" : shortBank(b)}</span>
+                {pickedHere > 0 && (
+                  <span
+                    aria-hidden
+                    className="absolute -top-1.5 -right-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-pill bg-destructive px-1 text-[11px] leading-none font-semibold text-surface tabular-nums ring-2 ring-surface"
+                  >
+                    {pickedHere}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -233,9 +243,11 @@ export function CardGallery({
                         priority={i < 4}
                         sizes="(max-width: 768px) 45vw, (max-width: 1280px) 30vw, 240px"
                       />
-                      <span className="absolute top-2 right-2">
-                        <Tick on={on} />
-                      </span>
+                      {on && (
+                        <span className="absolute top-2 right-2">
+                          <Tick on />
+                        </span>
+                      )}
                     </span>
                     <span className="mt-2.5 block text-[14px] leading-snug font-medium sm:text-[15px]">
                       {card.name}

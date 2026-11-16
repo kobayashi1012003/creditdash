@@ -200,6 +200,9 @@ export function CardFace({
           fetchPriority={priority ? "high" : "auto"}
           sizes={sizes}
           onError={() => setImageFailed(true)}
+          // A card is never meant to be dragged out as a picture: the
+          // browser's own image drag would hijack the Edit window's.
+          draggable={false}
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (

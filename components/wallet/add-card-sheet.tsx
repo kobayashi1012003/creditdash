@@ -279,5 +279,7 @@ export function banksOf(cards: readonly { issuer: string }[]): string[] {
 
 /** Tab labels people actually say. */
 export function shortBank(issuer: string): string {
-  return issuer === "American Express" ? "Amex" : issuer;
+  if (issuer === "American Express") return "Amex";
+  if (issuer === "Bank of America") return "BofA";
+  return issuer;
 }

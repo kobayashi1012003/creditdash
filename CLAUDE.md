@@ -762,6 +762,14 @@ the model, not the AI drafting, was what kept cards from being right.
   every card as a real face, bank tabs, search, "No annual fee" and
   "earns extra on" chips, multi-pick, a sticky "Add N cards" bar once
   something is picked. The popular three and "Search all cards" are gone.
+  Bank tabs are an even grid (two rows of five from `sm`, one scrolling
+  row of equal tabs on phones) with a red badge counting picks per bank;
+  a card shows its tick only once picked.
+- **Edit's drag overlay is portalled to `<body>`.** Inside the dialog,
+  whose transform is the containing block for `position: fixed`, it sat
+  off the pointer. `CardFace` images are `draggable={false}`, and edit
+  slots block the iOS press-and-hold picture menu, so a hold reaches
+  dnd-kit's TouchSensor (150ms) instead of the browser.
 - **"Use which card?" folds away**, remembered per browser
   (`creditdash:picker-hidden`); folding clears the picked category.
 - **Notes (Premium, `hasFeature(plan, "notes")`).** A notepad button on
