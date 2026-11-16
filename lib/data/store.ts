@@ -9,7 +9,7 @@ import {
   STORAGE_KEY,
   type Persisted,
 } from "@/lib/data/schema";
-import { hasSessionCookie, supabase } from "@/lib/data/supabase";
+import { hasSessionCookie, sessionUserId, supabase } from "@/lib/data/supabase";
 import { FIRST_CARD_KEY } from "@/lib/data/first-card";
 import { loadAccount, SyncError, type Billing, type Remote } from "@/lib/data/remote";
 
@@ -80,8 +80,57 @@ const UNSAVED: Notice = {
 
 function emit() {
   rememberFirstCard();
+  rememberAccount();
   for (const l of listeners) l();
 }
+
+/* --- the account copy ------------------------------------------------------ */
+
+/**
+ * The signed-in wallet as last loaded, kept in this browser so the next
+ * visit draws it at once instead of a skeleton while the account loads
+ * (owner, 16 November 2026: the Wallet showed its first card, then waited).
+ * Shown read-only until the account answers; a change made in that moment
+ * waits for it (see mutate). Keyed by the user id in the session cookie, so
+ * it is never shown to anyone else, and removed on sign-out.
+ */
+const ACCOUNT_COPY_KEY = "creditdash:account-copy";
+type AccountCopy = { userId: string; account: Account; state: Persisted };
+
+let copySaved: Persisted | null = null;
+function rememberAccount() {
+  if (mode !== "account" || !remote || !account || !cache || cache === copySaved) return;
+  copySaved = cache;
+  try {
+    const copy: AccountCopy = { userId: account.userId, account, state: cache };
+    window.localStorage.setItem(ACCOUNT_COPY_KEY, JSON.stringify(copy));
+  } catch {
+    // Only a head start. Without it the next visit waits for the account.
+  }
+}
+
+function readAccountCopy(userId: string): AccountCopy | null {
+  try {
+    const copy = JSON.parse(window.localStorage.getItem(ACCOUNT_COPY_KEY) ?? "null") as AccountCopy | null;
+    if (!copy || copy.userId !== userId || typeof copy.account !== "object") return null;
+    const state = parseStored(JSON.stringify(copy.state));
+    return state ? { userId, account: copy.account, state } : null;
+  } catch {
+    return null;
+  }
+}
+
+function forgetAccountCopy() {
+  copySaved = null;
+  try {
+    window.localStorage.removeItem(ACCOUNT_COPY_KEY);
+  } catch {
+    // Nothing stored, or storage blocked: nothing to remove.
+  }
+}
+
+/** Resolves once the account has been read, or found unreachable. */
+let accountLoad: Promise<void> | null = null;
 
 /**
  * Keeps the pre-start script's hint current, so the next page load can show
@@ -149,6 +198,8 @@ function persist(state: Persisted) {
 }
 
 function enterLocal() {
+  // Signed out, or a session that no longer holds: the account's copy goes.
+  forgetAccountCopy();
   mode = "local";
   account = null;
   remote = null;
@@ -244,8 +295,24 @@ async function enterAccount(db: SupabaseClient) {
     offer = computeOffer(user.id, state);
   } catch {
     // Signed in but unreachable. Showing the browser's demo wallet here would
-    // look like the account had been replaced, so show an empty one and say
-    // why. Nothing is written in this state.
+    // look like the account had been replaced, so show this account's saved
+    // copy if there is one, else an empty wallet, and say why. Nothing is
+    // written in this state.
+    const copy = readAccountCopy(user.id);
+    if (copy) {
+      mode = "account";
+      account = copy.account;
+      remote = null;
+      cache = copy.state;
+      notice = {
+        kind: "sync",
+        message:
+          "Your account could not be reached, so this is the copy saved on this device and changes are paused. Check your connection and reload the page.",
+      };
+      loaded = true;
+      emit();
+      return;
+    }
     mode = "account";
     account = {
       userId: user.id,
@@ -282,7 +349,18 @@ function start() {
     return;
   }
 
-  void supabase().then(async (db) => {
+  // This account's wallet as last seen here, drawn now; the account read
+  // below replaces it. Until then there is no `remote`, so nothing writes.
+  const userId = sessionUserId();
+  const copy = userId ? readAccountCopy(userId) : null;
+  if (copy) {
+    mode = "account";
+    account = copy.account;
+    cache = copy.state;
+    loaded = true;
+  }
+
+  accountLoad = supabase().then(async (db) => {
     if (!db) {
       enterLocal();
       emit();
@@ -364,6 +442,9 @@ export async function mutate(
   save?: (r: Remote, before: Persisted, after: Persisted) => Promise<void>,
 ): Promise<void> {
   start();
+  // Showing the saved copy while the account loads: wait for the real
+  // account, then apply the change to that.
+  if (mode === "account" && !remote && accountLoad) await accountLoad;
   // Still reading the account: there is nothing yet to change.
   const before = cache;
   if (!before) return;
@@ -394,6 +475,16 @@ export async function mutate(
     };
   }
   emit();
+}
+
+/**
+ * Waits until the state is the account's own, not this browser's saved
+ * copy of it. For work that reads the state to decide what to write
+ * (auto-fill), which must not decide from an old copy.
+ */
+export async function settled(): Promise<void> {
+  start();
+  if (accountLoad) await accountLoad;
 }
 
 /** The account connection, for writes that are not a simple state change. */

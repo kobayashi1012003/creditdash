@@ -230,6 +230,44 @@ try {
   const anonWrite = await anon.from("point_balances").insert({ user_id: a.id, program: "amex-mr", balance: 1 });
   expect(Boolean(anonWrite.error), "A signed-out visitor cannot write");
 
+  // --- notes (migration 20261116000000): Premium to write, own rows only ---
+  const freeNote = await a.db.from("notes").insert({ user_id: a.id, note_key: "general", body: "Free tries" });
+  expect(Boolean(freeNote.error), "A cannot write a note on Free");
+  await admin.from("profiles").update({ premium_gift: true }).eq("user_id", a.id);
+  const general = await a.db.from("notes").insert({ user_id: a.id, note_key: "general", body: "Use Gold at Resy" });
+  expect(!general.error, "A can write a general note on Premium", general.error?.message);
+  const creditNote = await a.db
+    .from("notes")
+    .insert({ user_id: a.id, note_key: "amex-gold:gold-dining", user_card_id: cardId, body: "Grubhub counts" });
+  expect(!creditNote.error, "A can write a note on their own card's credit", creditNote.error?.message);
+  const cardless = await a.db.from("notes").insert({ user_id: a.id, note_key: "amex-gold:x", body: "no card" });
+  expect(Boolean(cardless.error), "A credit note must name a card");
+  const tooLong = await a.db.from("notes").insert({ user_id: a.id, note_key: "general2", body: "x".repeat(2001) });
+  expect(Boolean(tooLong.error), "A note over 2,000 characters is refused");
+  const peekNotes = await b.db.from("notes").select("user_id");
+  expect(!peekNotes.error && peekNotes.data.every((r) => r.user_id === b.id), "B reads none of A's notes", peekNotes.error?.message);
+  await admin.from("profiles").update({ premium_gift: true }).eq("user_id", b.id);
+  const onACard = await b.db
+    .from("notes")
+    .insert({ user_id: b.id, note_key: "amex-gold:gold-dining", user_card_id: cardId, body: "on A's card" });
+  expect(Boolean(onACard.error), "B cannot attach a note to A's card");
+  const asA = await b.db.from("notes").insert({ user_id: a.id, note_key: "general", body: "as A" });
+  expect(Boolean(asA.error), "B cannot write a note as A");
+  const editA = await b.db.from("notes").update({ body: "changed" }).eq("user_id", a.id).select();
+  expect(!editA.error && editA.data.length === 0, "B cannot change A's notes", editA.error?.message);
+  const delA = await b.db.from("notes").delete().eq("user_id", a.id).select();
+  expect(!delA.error && delA.data.length === 0, "B cannot delete A's notes", delA.error?.message);
+  await admin.from("profiles").update({ premium_gift: false }).eq("user_id", b.id);
+  await admin.from("profiles").update({ premium_gift: false }).eq("user_id", a.id);
+  const readOnFree = await a.db.from("notes").select("note_key").eq("user_id", a.id);
+  expect(!readOnFree.error && readOnFree.data.length === 2, "Back on Free, A still reads their notes", readOnFree.error?.message);
+  const editOnFree = await a.db.from("notes").update({ body: "edit" }).eq("note_key", "general").select();
+  expect(Boolean(editOnFree.error) || editOnFree.data.length === 0, "Back on Free, A cannot edit a note");
+  const clearOnFree = await a.db.from("notes").delete().eq("note_key", "general").select();
+  expect(!clearOnFree.error && clearOnFree.data.length === 1, "Back on Free, A can delete a note", clearOnFree.error?.message);
+  const anonNotes = await anon.from("notes").select("*");
+  expect(Boolean(anonNotes.error) || anonNotes.data.length === 0, "A signed-out visitor reads no notes");
+
   // --- the free limit holds in the database -------------------------------
   // Free holds one card (migration 20261102010000); A already has one.
   const second = await a.db.from("user_cards").insert({ user_id: a.id, card_id: "csr", anniversary_month: 1 });

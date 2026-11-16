@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react";
 import type { Card } from "@/data/types";
@@ -48,7 +48,6 @@ export function CardFace({
 }: CardFaceProps) {
   const ref = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
-  const [hovering, setHovering] = useState(false);
 
   // Card art comes from a manifest of what is actually in public/cards/,
   // generated at build time. Most cards have no art, so asking the network
@@ -86,16 +85,74 @@ export function CardFace({
       `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`,
   );
 
-  // The sheen tracks the pointer across the face.
-  const sheenX = useTransform(sx, [-0.5, 0.5], ["15%", "85%"]);
-  const sheenY = useTransform(sy, [-0.5, 0.5], ["10%", "90%"]);
-  const sheen = useTransform(
-    [sheenX, sheenY],
-    ([x, y]: string[]) =>
-      `radial-gradient(60% 80% at ${x} ${y}, rgb(255 255 255 / 0.22), transparent 70%)`,
+  const tilts = interactive && !reduceMotion;
+
+  // The glow follows the pointer from before it reaches the card: it is
+  // tracked anywhere on the page, positioned in pixels relative to the
+  // card (outside it too, so the light waits at the nearest edge), and
+  // fades in over the last GLOW_REACH pixels of the approach. Nothing jumps
+  // on entry, because by then the light is already where the pointer is.
+  const gx = useMotionValue(0);
+  const gy = useMotionValue(0);
+  const near = useMotionValue(0);
+  const glowX = useSpring(gx, GLOW_SPRING);
+  const glowY = useSpring(gy, GLOW_SPRING);
+  const glowOpacity = useSpring(near, { stiffness: 260, damping: 32 });
+  // A tight highlight on the face: a defined core that falls off quickly,
+  // rather than the old card-sized haze.
+  const spot = useTransform(
+    [glowX, glowY],
+    ([x, y]: number[]) =>
+      `radial-gradient(circle 150px at ${x}px ${y}px, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.08) 40%, transparent 68%)`,
+  );
+  // A thin lit edge nearest the pointer, the first thing to appear.
+  const rim = useTransform(
+    [glowX, glowY],
+    ([x, y]: number[]) =>
+      `radial-gradient(circle 110px at ${x}px ${y}px, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.3) 45%, transparent 75%)`,
   );
 
-  const tilts = interactive && !reduceMotion;
+  useEffect(() => {
+    if (!tilts) return;
+    let frame = 0;
+    let last: PointerEvent | null = null;
+    const measure = () => {
+      frame = 0;
+      const el = ref.current;
+      if (!el || !last) return;
+      const r = el.getBoundingClientRect();
+      const x = last.clientX - r.left;
+      const y = last.clientY - r.top;
+      // Distance to the card's edge, 0 anywhere on it.
+      const dx = Math.max(-x, 0, x - r.width);
+      const dy = Math.max(-y, 0, y - r.height);
+      const distance = Math.hypot(dx, dy);
+      if (distance > GLOW_REACH * 2) {
+        if (near.get() !== 0) near.set(0);
+        return;
+      }
+      gx.set(x);
+      gy.set(y);
+      near.set(Math.max(0, 1 - distance / GLOW_REACH));
+    };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      last = e;
+      // One measurement per frame, however many events arrive.
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const onOut = (e: PointerEvent) => {
+      // Left the window altogether.
+      if (!e.relatedTarget) near.set(0);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerout", onOut);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerout", onOut);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [tilts, gx, gy, near]);
 
   function onPointerMove(e: React.PointerEvent) {
     if (!tilts || e.pointerType !== "mouse") return;
@@ -107,7 +164,6 @@ export function CardFace({
   }
 
   function onPointerLeave() {
-    setHovering(false);
     px.set(0);
     py.set(0);
   }
@@ -116,7 +172,6 @@ export function CardFace({
     <motion.div
       ref={ref}
       onPointerMove={onPointerMove}
-      onPointerEnter={(e) => e.pointerType === "mouse" && setHovering(true)}
       onPointerLeave={onPointerLeave}
       style={tilts ? { transform } : undefined}
       className={cn(
@@ -151,14 +206,21 @@ export function CardFace({
         <GeneratedFace card={card} />
       )}
 
-      {/* Sheen. Decorative, so it is gone under reduced motion and never
+      {/* Glow. Decorative, so it is gone under reduced motion and never
           appears on touch, where there is no pointer to follow. */}
       {tilts && (
-        <motion.div
-          aria-hidden
-          style={{ background: sheen, opacity: hovering ? 1 : 0 }}
-          className="pointer-events-none absolute inset-0 transition-opacity duration-[var(--cd-dur-hover)] ease-out"
-        />
+        <>
+          <motion.div
+            aria-hidden
+            style={{ background: spot, opacity: glowOpacity }}
+            className="pointer-events-none absolute inset-0"
+          />
+          <motion.div
+            aria-hidden
+            style={{ background: rim, opacity: glowOpacity }}
+            className="card-rim pointer-events-none absolute inset-0 rounded-card"
+          />
+        </>
       )}
 
       {/* A hairline inside the edge keeps a dark card from dissolving into a
@@ -196,6 +258,11 @@ export function cardLabel(card: Pick<Card, "issuer" | "name">): string {
   );
   return named ? card.name : `${card.issuer} ${card.name}`;
 }
+
+/** How far from the card, in pixels, the glow starts to show. */
+const GLOW_REACH = 72;
+/** Follows closely, with just enough give that it never looks pinned. */
+const GLOW_SPRING = { stiffness: 520, damping: 42, mass: 0.5 };
 
 /** ISO/IEC 7810 ID-1, the shape of every card face. */
 const CARD_RATIO = 1.586;

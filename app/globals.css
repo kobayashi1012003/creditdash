@@ -383,3 +383,14 @@
 .cd-caret {
   animation: cd-caret 1.06s steps(1) infinite;
 }
+
+/* The lit edge on a card face (CardFace's glow): the element's background
+   shows only in a ring at its own edge, so the light reads as a rim. */
+.card-rim {
+  padding: 1.5px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}

@@ -6,7 +6,7 @@ import { getCard } from "@/data/cards.seed";
 import { cardCount, FREE_CARD_LIMIT } from "@/lib/plan";
 import { localDate } from "@/lib/credits/autofill";
 import { DEFAULT_CPP, isProgram } from "@/data/programs";
-import { cleanUserCard, SCHEMA_VERSION, type CreditUsage, type Persisted } from "@/lib/data/schema";
+import { cleanUserCard, SCHEMA_VERSION, type CreditUsage, type Notes, type Persisted } from "@/lib/data/schema";
 
 /**
  * The Supabase side of lib/data: reading an account into the same Persisted
@@ -54,7 +54,7 @@ function check(error: { message: string; hint?: string | null } | null) {
 }
 
 export async function loadAccount(db: SupabaseClient, userId: string) {
-  const [profile, cards, usage, balances, valuations, subs] = await Promise.all([
+  const [profile, cards, usage, balances, valuations, subs, noteRows] = await Promise.all([
     // Only what the app uses. Every migration naming these has run.
     db.from("profiles").select("plan, premium_gift, is_admin").eq("user_id", userId).maybeSingle(),
     db
@@ -79,6 +79,7 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
       .eq("user_id", userId)
       .order("current_period_end", { ascending: false, nullsFirst: false })
       .limit(1),
+    db.from("notes").select("note_key, body").eq("user_id", userId),
   ]);
   for (const r of [profile, cards, usage, balances, valuations]) check(r.error);
 
@@ -124,6 +125,19 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
       program: v.program as Program,
       centsPerPoint: Number(v.cents_per_point),
     }));
+  // Notes are kept apart from the account's other reads: until the notes
+  // migration has run the table is missing, and that must not stop an
+  // account loading. The notes are then simply empty.
+  const notes: Notes = { general: "", credits: {} };
+  for (const n of noteRows.error ? [] : (noteRows.data ?? [])) {
+    if (n.note_key === "general") {
+      notes.general = n.body;
+      continue;
+    }
+    const [cardId, creditId] = String(n.note_key).split(":");
+    if (cardId && creditId) (notes.credits[cardId] ??= {})[creditId] = n.body;
+  }
+
   const state: Persisted = {
     version: SCHEMA_VERSION,
     profile: { plan: profile.data?.plan === "premium" ? "premium" : "free" },
@@ -131,6 +145,7 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
     creditUsage,
     pointBalances,
     valuations: ownValuations,
+    notes,
   };
   // Billing is shown, never relied on: a failed read leaves Settings
   // without a renewal date, not the account unloadable.
@@ -318,6 +333,9 @@ export async function clearAccount(r: Remote) {
     r.db.from("valuations").delete().eq("user_id", r.userId),
   ]);
   for (const res of results) check(res.error);
+  // Credit notes went with their cards; the general note goes too. Not
+  // checked: before the notes migration the table does not exist.
+  await r.db.from("notes").delete().eq("user_id", r.userId);
   r.rowIds.clear();
 }
 
@@ -390,4 +408,39 @@ export async function importState(r: Remote, local: Persisted, limit: number) {
   for (const res of results) if (res) check(res.error);
 
   return { imported: cards.length, skipped: local.userCards.length - cards.length };
+}
+
+/**
+ * Saves one note, or deletes it when the text is empty. `cardId` is null
+ * for the general note. The database refuses a write on Free, which the
+ * app never attempts.
+ */
+export async function saveNote(
+  r: Remote,
+  cardId: string | null,
+  creditId: string | null,
+  body: string,
+): Promise<void> {
+  const key = cardId && creditId ? `${cardId}:${creditId}` : "general";
+  if (body.trim() === "") {
+    const res = await r.db.from("notes").delete().eq("user_id", r.userId).eq("note_key", key);
+    check(res.error);
+    return;
+  }
+  const res = await r.db.from("notes").upsert(
+    {
+      user_id: r.userId,
+      note_key: key,
+      user_card_id: cardId ? rowId(r, cardId) : null,
+      body,
+    },
+    { onConflict: "user_id,note_key" },
+  );
+  if (res.error) {
+    throw new SyncError(
+      res.error.code === "42P01" || res.error.code === "PGRST205"
+        ? "Notes are not switched on for accounts yet, so that note was not saved."
+        : NOT_SAVED,
+    );
+  }
 }

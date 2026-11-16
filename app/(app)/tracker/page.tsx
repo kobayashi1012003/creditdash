@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
+import Link from "next/link";
+import { NotepadIcon } from "@phosphor-icons/react/dist/ssr";
 import { PageHeader } from "@/components/shell/page-header";
+import { Button } from "@/components/ui/button";
 import { TrackerView } from "@/components/tracker/tracker-view";
 import { CalculatorPanel } from "@/components/calculators/calculator-panel";
 
@@ -17,6 +20,13 @@ export default function TrackerPage() {
       <PageHeader
         title="Tracker"
         description="What each card gives back, and how much of it you have taken."
+        action={
+          // The way to Notes on a phone, whose tab bar has no room for it.
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/notes" />}>
+            <NotepadIcon size={15} />
+            Notes
+          </Button>
+        }
       />
 
       {/* The panel gets its own grid column so it can stick against a

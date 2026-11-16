@@ -139,7 +139,9 @@ export default function PrivacyPage() {
         panels you left open, which card the Tracker shows, whether you closed
         the demo banner, which card to draw first so the Wallet appears
         quickly, whether you declined to copy a browser wallet into your
-        account, and, if you have not signed in, your wallet itself.
+        account, and your wallet itself: if you have not signed in, the only
+        copy; if you have, a copy of your account&apos;s wallet so it appears
+        at once on your next visit, removed when you sign out.
         Cloudflare may set a strictly necessary security cookie to protect
         the site from abuse.
       </p>

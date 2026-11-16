@@ -739,6 +739,44 @@ the model, not the AI drafting, was what kept cards from being right.
   not to add (drugstores and others stay unranked), rules for new versus
   existing cardholders.
 
+## Owner's list, 16 November 2026
+
+- **Signed-in Wallet appears at once.** `store.ts` keeps the last loaded
+  account state in localStorage (`creditdash:account-copy`), keyed by the
+  user id read synchronously from the Supabase session cookie
+  (`sessionUserId` in `supabase.ts`). It is shown with no `remote`, so
+  writes made meanwhile wait for the real account (`mutate` awaits
+  `accountLoad`), and auto-fill decides only after `settled()`. Removed on
+  sign-out or a dead session; the Privacy page says so. If the account
+  cannot be reached, the copy stays on screen, read only, with a notice.
+- **Card glow** (`CardFace`): tracked from a window `pointermove`, one
+  measurement per frame, fading in over the last 72px of approach, so the
+  light is already at the edge when the pointer crosses it. A tight
+  highlight plus a lit rim (`.card-rim` in `globals.css`).
+- **Edit is a centred window** (`components/wallet/edit-wallet-dialog.tsx`):
+  numbered same-size slots, `DragOverlay`, mouse drag after 4px, touch
+  after a 180ms hold, keyboard with named announcements. Nothing saves
+  until "Save changes" (`setCardOrder`, one write); removals confirm as
+  before. The in-page edit mode is gone.
+- **Empty Wallet is the catalog** (`components/wallet/card-gallery.tsx`):
+  every card as a real face, bank tabs, search, "No annual fee" and
+  "earns extra on" chips, multi-pick, a sticky "Add N cards" bar once
+  something is picked. The popular three and "Search all cards" are gone.
+- **"Use which card?" folds away**, remembered per browser
+  (`creditdash:picker-hidden`); folding clears the picked category.
+- **Notes (Premium, `hasFeature(plan, "notes")`).** A notepad button on
+  every Tracker credit opens a note under it; a note's first line shows
+  under the credit. `/notes` (noindex; in the sidebar, and from the
+  Tracker's header on phones, whose tab bar has no room) holds a general
+  note and every credit note by card. Notes save 600ms after typing stops
+  and on blur; empty deletes. `Persisted.notes` (`cleanNotes` validates;
+  no schema version needed, absent reads as empty). Table `notes`,
+  migration `20261116000000_notes.sql`: Premium to write, enforced by RLS;
+  Free can still read and delete. Until the migration runs, accounts load
+  with no notes and saving one says notes are not switched on. Removing a
+  card deletes its notes in both modes. Not done: the browser-wallet
+  import does not carry notes into an account.
+
 ## Freedom Flex and Freedom Unlimited (16 November 2026)
 
 Added with the owner's art, drafted from Chase's newsroom (quarterly

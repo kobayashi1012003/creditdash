@@ -67,3 +67,42 @@ export function hasSessionCookie(): boolean {
     .split(";")
     .some((c) => c.trim().startsWith(`sb-${ref}-auth-token`));
 }
+
+/**
+ * The user id inside the session cookie, read synchronously, or null.
+ * Only says whose wallet copy this browser may show while the account
+ * loads (store.ts); it proves nothing, and every read and write still goes
+ * through the real session. Mirrors @supabase/ssr's cookie format: the
+ * value, or its `.0`, `.1` chunks, URI-encoded, holding `base64-` and the
+ * session JSON in base64url.
+ */
+export function sessionUserId(): string | null {
+  if (!SUPABASE_CONFIGURED || typeof document === "undefined") return null;
+  try {
+    const name = `sb-${new URL(url!).hostname.split(".")[0]}-auth-token`;
+    const jar = new Map(
+      document.cookie.split(";").map((c) => {
+        const i = c.indexOf("=");
+        return [c.slice(0, i).trim(), c.slice(i + 1).trim()] as const;
+      }),
+    );
+    let raw = jar.get(name);
+    if (raw === undefined) {
+      const parts: string[] = [];
+      for (let i = 0; jar.has(`${name}.${i}`); i++) parts.push(jar.get(`${name}.${i}`)!);
+      raw = parts.join("");
+    }
+    let value = decodeURIComponent(raw);
+    if (value.startsWith("base64-")) {
+      const b64 = value.slice(7).replace(/-/g, "+").replace(/_/g, "/");
+      const bytes = Uint8Array.from(atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "=")), (ch) =>
+        ch.charCodeAt(0),
+      );
+      value = new TextDecoder().decode(bytes);
+    }
+    const id = JSON.parse(value)?.user?.id;
+    return typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}

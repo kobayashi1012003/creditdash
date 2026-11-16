@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { LightningIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { LightningIcon, NotepadIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import type { CardCredit } from "@/data/types";
 import { creditState, resetPhrase, type Anniversary } from "@/lib/credits";
 import type { CreditUsage } from "@/lib/data/schema";
-import { confirmCredit, setCreditUsed } from "@/lib/data";
+import { confirmCredit, setCreditUsed, useCreditNote } from "@/lib/data";
 import { money, usd, usdExact } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { CheckmarkRow } from "@/components/ui/checkmark-row";
 import { CreditConditions } from "@/components/ui/credit-conditions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NoteBox } from "@/components/notes/note-box";
 
 /**
  * Months sit in a tight grid, a row of twelve once there is room. Longer
@@ -51,6 +52,8 @@ export function CreditRow({
   autoFill?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
+  const [noting, setNoting] = useState(false);
+  const note = useCreditNote(cardId, credit.id);
   const state = creditState(credit, anniversary, usage);
   const assumedKeys = state.windows.filter((_, i) => state.assumed[i]).map((w) => w.key);
 
@@ -88,12 +91,34 @@ export function CreditRow({
               </>
             )}
           </p>
+          {/* The note's first line, so a note is seen without opening it.
+              A button: tapping it opens the note. */}
+          {note && !noting && (
+            <button
+              type="button"
+              onClick={() => setNoting(true)}
+              className="mt-1 flex max-w-full items-center gap-1.5 rounded-control text-left text-[13px] text-muted transition-colors duration-[var(--cd-dur-hover)] ease-out hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <NotepadIcon size={13} weight="fill" aria-hidden className="shrink-0" />
+              <span className="truncate">{note.split("\n")[0]}</span>
+            </button>
+          )}
         </div>
-        <div className="flex items-baseline gap-3">
+        <div className="flex items-center gap-1.5">
           <p className="text-[13px] tabular-nums text-muted">
             {money(state.usedTotal)} of {usd(state.available)}
             {state.assumedTotal > 0 && <>, including {money(state.assumedTotal)} auto-filled</>}
           </p>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setNoting((n) => !n)}
+            aria-expanded={noting}
+            aria-label={noting ? `Close the note on ${credit.name}` : note ? `Open the note on ${credit.name}` : `Add a note to ${credit.name}`}
+            className={cn(note && "text-ink")}
+          >
+            <NotepadIcon size={16} weight={note ? "fill" : "regular"} />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -137,6 +162,18 @@ export function CreditRow({
             return credit.period === "monthly" ? label.slice(0, 3) : label;
           }}
           className={SLOT_LAYOUT[credit.period]}
+        />
+      )}
+
+      {noting && (
+        <NoteBox
+          cardId={cardId}
+          creditId={credit.id}
+          value={note}
+          label={`Note on ${credit.name}`}
+          placeholder="Anything worth remembering: where it works, what you booked, a code."
+          autoFocus
+          className="mt-4 max-w-xl"
         />
       )}
 

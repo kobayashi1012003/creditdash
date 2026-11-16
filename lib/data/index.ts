@@ -13,7 +13,7 @@ import {
   type ResolvedValuation,
 } from "@/lib/valuations";
 import type { Valuations } from "@/lib/calculators/engine";
-import { emptyState, MAX_ASSUMED, type CreditUsage, type Persisted } from "@/lib/data/schema";
+import { emptyState, MAX_ASSUMED, NOTE_MAX, type CreditUsage, type Notes, type Persisted } from "@/lib/data/schema";
 import * as remote from "@/lib/data/remote";
 import { supabase, SUPABASE_CONFIGURED } from "@/lib/data/supabase";
 import {
@@ -27,6 +27,7 @@ import {
   isLoaded,
   mutate,
   reloadAccount,
+  settled,
   storedLocal,
   subscribe,
   switchToLocal,
@@ -137,6 +138,40 @@ export function useHiddenCardCount(): number {
 
 export function usePlan(): Plan {
   return useData().profile.plan;
+}
+
+export function useNotes(): Notes {
+  return useData().notes;
+}
+
+/** One credit's note on one card, or "". */
+export function useCreditNote(cardId: string, creditId: string): string {
+  return useData().notes.credits[cardId]?.[creditId] ?? "";
+}
+
+/**
+ * Saves a note: the general one when `cardId` is null, else one credit's
+ * on one card. Empty text deletes it. Premium only; on Free nothing is
+ * written, and the screens say why before anyone types.
+ */
+export async function setNote(cardId: string | null, creditId: string | null, text: string): Promise<void> {
+  if (!hasFeature(getSnapshot().profile.plan, "notes")) return;
+  const body = text.slice(0, NOTE_MAX);
+  await mutate(
+    (s) => {
+      if (!cardId || !creditId) {
+        return s.notes.general === body ? s : { ...s, notes: { ...s.notes, general: body } };
+      }
+      if ((s.notes.credits[cardId]?.[creditId] ?? "") === body) return s;
+      const row = { ...s.notes.credits[cardId] };
+      if (body.trim() === "") delete row[creditId];
+      else row[creditId] = body;
+      const credits = { ...s.notes.credits, [cardId]: row };
+      if (Object.keys(row).length === 0) delete credits[cardId];
+      return { ...s, notes: { ...s.notes, credits } };
+    },
+    (r) => remote.saveNote(r, cardId, creditId, body),
+  );
 }
 
 export function useCreditUsage(): CreditUsage {
@@ -252,6 +287,11 @@ export async function removeCard(cardId: string): Promise<void> {
       creditUsage: Object.fromEntries(
         Object.entries(s.creditUsage).filter(([id]) => !creditIds.has(id)),
       ),
+      // Its notes too, as the database cascade does.
+      notes: {
+        ...s.notes,
+        credits: Object.fromEntries(Object.entries(s.notes.credits).filter(([id]) => id !== cardId)),
+      },
     }),
     async (r, before, after) => {
       await remote.removeCard(r, cardId);
@@ -281,6 +321,27 @@ export async function reorderCards(from: number, to: number): Promise<void> {
         ...s,
         userCards: ordered.map((c, i) => ({ ...c, sortOrder: i })),
       };
+    },
+    (r, before, after) => remote.saveOrder(r, before.userCards, after.userCards),
+  );
+}
+
+/**
+ * Puts the wallet in the given order, by card id, in one write (the Edit
+ * window saves this way). Cards not named, such as those hidden on Free,
+ * keep their order after the named ones.
+ */
+export async function setCardOrder(ids: string[]): Promise<void> {
+  await mutate(
+    (s) => {
+      const ordered = [...s.userCards].sort((a, b) => a.sortOrder - b.sortOrder);
+      const named = ids
+        .map((id) => ordered.find((c) => c.cardId === id))
+        .filter((c): c is (typeof ordered)[number] => Boolean(c));
+      const rest = ordered.filter((c) => !ids.includes(c.cardId));
+      const next = [...named, ...rest];
+      if (next.every((c, i) => c.sortOrder === i && ordered[i] === c)) return s;
+      return { ...s, userCards: next.map((c, i) => ({ ...c, sortOrder: i })) };
     },
     (r, before, after) => remote.saveOrder(r, before.userCards, after.userCards),
   );
@@ -409,6 +470,8 @@ export async function runAutoFill(now = new Date()): Promise<void> {
   if (autoFilling || !isLoaded()) return;
   autoFilling = true;
   try {
+    // Decide from the account itself, never this browser's saved copy.
+    await settled();
     const state = getSnapshot();
     if (!hasFeature(state.profile.plan, "autofill")) return;
     for (const userCard of state.userCards) {

@@ -18,7 +18,7 @@ export function TabBar() {
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/92 backdrop-blur-md pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
-        {NAV.map(({ href, label, Icon }) => {
+        {NAV.filter((item) => item.phone !== false).map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             // min-w-0 matters: without it a flex item refuses to shrink

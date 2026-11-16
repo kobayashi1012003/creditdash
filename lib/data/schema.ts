@@ -33,6 +33,18 @@ export const SCHEMA_VERSION = 3;
  */
 export type CreditUsage = Record<string, Record<string, number>>;
 
+/**
+ * `notes`: the user's general note, and a note per credit, by card id then
+ * credit id. Premium to write (lib/plan.ts, and the table's policies).
+ */
+export type Notes = {
+  general: string;
+  credits: Record<string, Record<string, string>>;
+};
+
+/** Longest note, here and in the table's check. */
+export const NOTE_MAX = 2000;
+
 export type Persisted = {
   version: number;
   /** `profiles` */
@@ -52,6 +64,8 @@ export type Persisted = {
    * could tell a chosen value from an inherited one.
    */
   valuations: Valuation[];
+  /** `notes`. Absent before 16 November 2026; read as empty. */
+  notes: Notes;
 };
 
 /**
@@ -72,6 +86,7 @@ export function emptyState(): Persisted {
     creditUsage: {},
     pointBalances: [],
     valuations: [],
+    notes: { general: "", credits: {} },
   };
 }
 
@@ -133,7 +148,27 @@ export function parseStored(raw: string | null): Persisted | null {
       ? v.pointBalances.filter(isBalance)
       : base.pointBalances,
     valuations,
+    notes: cleanNotes(v.notes),
   };
+}
+
+/** Whatever was stored, as notes: strings only, trimmed to the limit. */
+export function cleanNotes(value: unknown): Notes {
+  const notes: Notes = { general: "", credits: {} };
+  if (typeof value !== "object" || value === null) return notes;
+  const v = value as Partial<Notes>;
+  if (typeof v.general === "string") notes.general = v.general.slice(0, NOTE_MAX);
+  if (typeof v.credits === "object" && v.credits !== null) {
+    for (const [cardId, row] of Object.entries(v.credits)) {
+      if (typeof row !== "object" || row === null) continue;
+      for (const [creditId, text] of Object.entries(row)) {
+        if (typeof text === "string" && text.trim() !== "") {
+          (notes.credits[cardId] ??= {})[creditId] = text.slice(0, NOTE_MAX);
+        }
+      }
+    }
+  }
+  return notes;
 }
 
 /**

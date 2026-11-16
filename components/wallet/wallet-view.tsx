@@ -4,34 +4,15 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowCounterClockwiseIcon,
-  CheckIcon,
-  DotsSixVerticalIcon,
+  CaretDownIcon,
   FunnelSimpleIcon,
-  MagnifyingGlassIcon,
   PencilSimpleIcon,
   PlusIcon,
   SortAscendingIcon,
   SparkleIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { Card } from "@/data/types";
-import { getCard } from "@/data/cards.seed";
 import type { Merchant } from "@/data/merchants";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { effectiveEarnRates, rankCards, rateFor } from "@/lib/calculators/engine";
@@ -48,10 +29,9 @@ import {
   type WalletSort,
 } from "@/lib/wallet-options";
 import {
-  addCard,
   addCards,
   removeCards,
-  reorderCards,
+  setCardOrder,
   useHiddenCardCount,
   useIsLoading,
   useOwnedCardIds,
@@ -77,10 +57,13 @@ import { PageHeader } from "@/components/shell/page-header";
 import { AnswerLine, CategoryBar } from "@/components/wallet/category-bar";
 import { CardDrawer } from "@/components/wallet/card-drawer";
 import { AddCardSheet } from "@/components/wallet/add-card-sheet";
+import { EditWalletDialog, type WalletEdit } from "@/components/wallet/edit-wallet-dialog";
+import { CardGallery } from "@/components/wallet/card-gallery";
 import { ImportOffer } from "@/components/wallet/import-offer";
 import { MerchantSearch } from "@/components/wallet/merchant-search";
 import { CARD_ART } from "@/data/card-art.generated";
 import { firstCardCss } from "@/lib/data/first-card";
+import { useStoredFlag } from "@/lib/use-stored-flag";
 
 export function WalletView() {
   const entries = useWallet();
@@ -97,17 +80,10 @@ export function WalletView() {
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [removing, setRemoving] = useState<string[]>([]);
-  const [confirmRemove, setConfirmRemove] = useState(false);
+  // An edit with removals in it, waiting on the confirm below.
+  const [pending, setPending] = useState<WalletEdit | null>(null);
   const [sort, setSort] = useState<WalletSort>({ by: "yours" });
   const [filter, setFilter] = useState<WalletFilter>(NO_FILTER);
-
-  const sensors = useSensors(
-    // A small distance threshold keeps a tap on a card from registering as a
-    // drag, so opening a card and moving one stay distinct gestures.
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
 
   const limit = cardLimit(plan);
   const room = Math.max(0, limit - entries.length - hidden);
@@ -129,10 +105,13 @@ export function WalletView() {
       title="Wallet"
       description="The cards you carry, and which one to reach for."
       action={
-        <Button variant="accent" onClick={() => setAdding(true)} disabled={isLoading || editing}>
+        // An empty wallet shows the whole catalog below instead.
+        !isLoading && entries.length === 0 ? undefined : (
+        <Button variant="accent" onClick={() => setAdding(true)} disabled={isLoading}>
           <PlusIcon size={16} weight="bold" />
           Add cards
         </Button>
+        )
       }
     />
   );
@@ -170,7 +149,6 @@ export function WalletView() {
               cards={null}
               valuations={valuations}
               ranked={null}
-              editing={false}
               searchKey={searchKey}
             />
           }
@@ -183,53 +161,46 @@ export function WalletView() {
       <>
         {header}
         <ImportOffer />
-        <EmptyWallet onAdd={() => setAdding(true)} />
+        <CardGallery
+          max={room}
+          limitNote={`The free plan holds ${cardCount(FREE_CARD_LIMIT)}. Premium saves as many cards as you own.`}
+          onConfirm={addCards}
+        />
         {sheet}
       </>
     );
   }
 
-  // Editing shows every card in the saved order, since that order is what
-  // dragging changes. Otherwise the grid is the sorted, filtered view, and
-  // the "which card" answer is chosen from what is on screen.
-  const view = editing
-    ? entries
-    : sortCards(entries.filter((e) => matchesFilter(e.card, filter)), sort, valuations);
+  // The grid is the sorted, filtered view, and the "which card" answer is
+  // chosen from what is on screen. The saved order is changed in Edit.
+  const view = sortCards(entries.filter((e) => matchesFilter(e.card, filter)), sort, valuations);
   const cards = view.map((e) => e.card);
-  const ranked =
-    category && !editing ? rankCards(cards, category, valuations, merchant?.brand) : null;
+  const ranked = category ? rankCards(cards, category, valuations, merchant?.brand) : null;
   const winnerId = ranked?.[0]?.card.id ?? null;
   const openEntry = entries.find((e) => e.card.id === openCardId) ?? null;
   const filters = activeFilterCount(filter);
   const issuers = [...new Set(entries.map((e) => e.card.issuer))].sort();
 
-  async function onDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const from = entries.findIndex((e) => e.card.id === active.id);
-    const to = entries.findIndex((e) => e.card.id === over.id);
-    await reorderCards(from, to);
-  }
-
-  function startEditing() {
-    setEditing(true);
-    pickCategory(null);
-  }
-  function finishEditing() {
-    if (removing.length > 0) setConfirmRemove(true);
-    else setEditing(false);
-  }
-  function cancelEditing() {
-    setRemoving([]);
+  // Removing deletes credit history, so an edit with removals is confirmed
+  // first; a new order alone saves at once.
+  async function saveEdit(edit: WalletEdit) {
+    if (edit.removing.length > 0) {
+      setPending(edit);
+      return;
+    }
     setEditing(false);
+    await setCardOrder(edit.order);
   }
-  async function applyRemovals() {
+  async function applyEdit() {
+    if (!pending) return;
+    const { order, removing } = pending;
+    setPending(null);
+    setEditing(false);
+    await setCardOrder(order.filter((id) => !removing.includes(id)));
     await removeCards(removing);
-    setRemoving([]);
-    setConfirmRemove(false);
-    setEditing(false);
   }
 
+  const removing = pending?.removing ?? [];
   const removingNames = removing
     .map((id) => entries.find((e) => e.card.id === id))
     .filter((e): e is WalletEntry => Boolean(e))
@@ -246,43 +217,24 @@ export function WalletView() {
         cards={cards}
         valuations={valuations}
         ranked={ranked}
-        editing={editing}
         searchKey={searchKey}
       />
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="text-[13px] text-muted" aria-live="polite">
-          {editing
-            ? removing.length > 0
-              ? `${removing.length} marked for removal`
-              : "Drag to reorder, or mark cards to remove"
-            : view.length === entries.length
-              ? `${entries.length} ${entries.length === 1 ? "card" : "cards"}${limit !== Infinity ? ` of ${limit}` : ""}`
-              : `${view.length} of ${entries.length} cards shown`}
+          {view.length === entries.length
+            ? `${entries.length} ${entries.length === 1 ? "card" : "cards"}${limit !== Infinity ? ` of ${limit}` : ""}`
+            : `${view.length} of ${entries.length} cards shown`}
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
-          {editing ? (
-            <>
-              <Button variant="ghost" size="sm" onClick={cancelEditing}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={finishEditing}>
-                <CheckIcon size={15} />
-                Done
-              </Button>
-            </>
-          ) : (
-            <>
-              {entries.length > 1 && <SortMenu sort={sort} onChange={setSort} />}
-              {entries.length > 1 && (
-                <FilterMenu filter={filter} onChange={setFilter} issuers={issuers} count={filters} />
-              )}
-              <Button variant="ghost" size="sm" onClick={startEditing}>
-                <PencilSimpleIcon size={15} />
-                Edit
-              </Button>
-            </>
+          {entries.length > 1 && <SortMenu sort={sort} onChange={setSort} />}
+          {entries.length > 1 && (
+            <FilterMenu filter={filter} onChange={setFilter} issuers={issuers} count={filters} />
           )}
+          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+            <PencilSimpleIcon size={15} />
+            Edit
+          </Button>
         </div>
       </div>
 
@@ -299,36 +251,23 @@ export function WalletView() {
           </Button>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={view.map((e) => e.card.id)} strategy={rectSortingStrategy}>
-            <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-              {view.map((entry, i) => (
-                <WalletCard
-                  key={entry.card.id}
-                  entry={entry}
-                  // The first row is the page's largest paint on every
-                  // width; everything below it can wait to be scrolled to.
-                  priority={i < 2}
-                  editing={editing}
-                  marked={removing.includes(entry.card.id)}
-                  onToggleRemove={() =>
-                    setRemoving((r) =>
-                      r.includes(entry.card.id)
-                        ? r.filter((x) => x !== entry.card.id)
-                        : [...r, entry.card.id],
-                    )
-                  }
-                  isWinner={entry.card.id === winnerId}
-                  dimmed={winnerId !== null && entry.card.id !== winnerId}
-                  onOpen={() => setOpenCardId(entry.card.id)}
-                />
-              ))}
-            </ul>
-          </SortableContext>
-        </DndContext>
+        <ul className="mt-3 grid gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+          {view.map((entry, i) => (
+            <WalletCard
+              key={entry.card.id}
+              entry={entry}
+              // The first row is the page's largest paint on every width;
+              // everything below it can wait to be scrolled to.
+              priority={i < 2}
+              isWinner={entry.card.id === winnerId}
+              dimmed={winnerId !== null && entry.card.id !== winnerId}
+              onOpen={() => setOpenCardId(entry.card.id)}
+            />
+          ))}
+        </ul>
       )}
 
-      {room === 0 && !editing && (
+      {room === 0 && (
         <div className="mt-8">
           <UpgradePanel count={entries.length} hidden={hidden} />
         </div>
@@ -336,16 +275,18 @@ export function WalletView() {
 
       {/* Removing a card deletes its credit history, so a batch of removals
           is confirmed once, naming what goes. */}
+      <EditWalletDialog open={editing} onOpenChange={setEditing} entries={entries} onSave={saveEdit} />
+
       <ConfirmDialog
-        open={confirmRemove}
-        onOpenChange={setConfirmRemove}
+        open={pending !== null}
+        onOpenChange={(open) => !open && setPending(null)}
         title={removing.length === 1 ? `Remove ${removingNames[0]}?` : `Remove ${removing.length} cards?`}
         actions={
           <>
             <ConfirmDialogClose render={<Button variant="ghost" />}>
               {removing.length === 1 ? "Keep it" : "Keep them"}
             </ConfirmDialogClose>
-            <Button variant="destructive" onClick={applyRemovals}>
+            <Button variant="destructive" onClick={applyEdit}>
               <TrashIcon size={16} />
               {removing.length === 1 ? "Remove card" : `Remove ${removing.length} cards`}
             </Button>
@@ -509,34 +450,18 @@ const WALLET_CARD_SIZES = "(max-width: 640px) 92vw, (max-width: 1280px) 45vw, 32
 
 function WalletCard({
   entry,
-  editing,
-  marked,
-  onToggleRemove,
   isWinner,
   dimmed,
   priority,
   onOpen,
 }: {
   entry: WalletEntry;
-  editing: boolean;
-  marked: boolean;
-  onToggleRemove: () => void;
   isWinner: boolean;
   dimmed: boolean;
   priority: boolean;
   onOpen: () => void;
 }) {
   const { card, userCard } = entry;
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: card.id, disabled: !editing });
-
   const name = userCard.nickname ?? card.name;
   // A nickname replaces the name under the card, but the face still prints
   // the real one. Both go in the label, so "Open Venture X" works for
@@ -546,70 +471,33 @@ function WalletCard({
 
   return (
     <li
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "transition-[transform,opacity] duration-[var(--cd-dur-hover)] ease-out",
+        "transition-transform duration-[var(--cd-dur-hover)] ease-out",
         isWinner && "-translate-y-1.5",
-        isDragging && "z-10 opacity-80",
       )}
     >
-      <div className="relative">
-        {editing ? (
-          // In edit mode the whole card is the drag target, so there is no
-          // small handle to aim at on a phone.
-          <div
-            ref={setActivatorNodeRef}
-            {...attributes}
-            {...listeners}
-            aria-label={`Move ${label}`}
-            className="cursor-grab touch-none rounded-card active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-          >
-            <CardFace card={card} priority={priority} dimmed={marked} sizes={WALLET_CARD_SIZES} />
-            <span className="pointer-events-none absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-pill bg-bg/85 text-ink backdrop-blur-sm">
-              <DotsSixVerticalIcon size={16} weight="bold" />
-            </span>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onOpen}
-            className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-            aria-label={`Open ${label}`}
-          >
-            <CardFace card={card} dimmed={dimmed} interactive priority={priority} sizes={WALLET_CARD_SIZES} />
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+        aria-label={`Open ${label}`}
+      >
+        <CardFace card={card} dimmed={dimmed} interactive priority={priority} sizes={WALLET_CARD_SIZES} />
+      </button>
 
       <div className={cn("mt-3", dimmed && "opacity-40")}>
         <div className="flex items-center justify-between gap-2">
-          <p className={cn("truncate font-medium", marked && "text-muted line-through")}>{name}</p>
-          {editing ? (
-            <Button
-              variant={marked ? "outline" : "destructive"}
-              size="sm"
-              onClick={onToggleRemove}
-              aria-pressed={marked}
-              aria-label={marked ? `Keep ${name}` : `Mark ${name} for removal`}
-            >
-              {marked ? <ArrowCounterClockwiseIcon size={15} /> : <TrashIcon size={15} />}
-              {marked ? "Keep" : "Remove"}
-            </Button>
-          ) : (
-            <p className="shrink-0 text-[13px] text-muted">
-              {card.pending
-                ? null
-                : card.annualFee === 0
-                  ? "No fee"
-                  : `${usd(card.annualFee)} a year`}
-            </p>
-          )}
+          <p className="truncate font-medium">{name}</p>
+          <p className="shrink-0 text-[13px] text-muted">
+            {card.pending
+              ? null
+              : card.annualFee === 0
+                ? "No fee"
+                : `${usd(card.annualFee)} a year`}
+          </p>
         </div>
-        {!editing && card.pending && (
-          <p className="mt-2 text-[13px] text-muted">Details coming soon</p>
-        )}
-        {!editing && !card.pending && (
+        {card.pending && <p className="mt-2 text-[13px] text-muted">Details coming soon</p>}
+        {!card.pending && (
           <>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {top.rates.map((rate) => (
@@ -695,62 +583,6 @@ function UpgradePanel({ count, hidden }: { count: number; hidden: number }) {
 }
 
 /**
- * Three widely held cards, one tap each, so a new wallet can be useful
- * before anyone has opened the catalog. A no-fee card is in the set on
- * purpose: not everyone starting out pays an annual fee.
- */
-const POPULAR_CARD_IDS = ["csp", "amex-gold", "bilt"];
-
-/** First run, or after deleting everything. */
-function EmptyWallet({ onAdd }: { onAdd: () => void }) {
-  const popular = POPULAR_CARD_IDS.map(getCard).filter((c): c is Card => Boolean(c));
-
-  return (
-    <section aria-labelledby="empty-wallet-heading">
-      <div className="max-w-[52ch]">
-        <h2 id="empty-wallet-heading" className="font-display text-2xl leading-tight">
-          Add the card you carry most.
-        </h2>
-        <p className="mt-2.5 text-[15px] leading-relaxed text-muted">
-          Its credits, fee and earn rates show straight away. Nothing is linked
-          to a bank, and you can change your mind at any time.
-        </p>
-      </div>
-
-      <h3 className="mt-8 text-sm font-medium">Popular to start with</h3>
-      {/* Three across at every width. Full-width faces on a phone would push
-          the search two screens down; CardFace scales by container query,
-          so a small face still reads as the card. */}
-      <ul className="mt-3 grid max-w-[900px] grid-cols-3 gap-x-3 gap-y-6 sm:gap-x-5">
-        {popular.map((card) => (
-          <li key={card.id} className="min-w-0">
-            <button
-              type="button"
-              onClick={() => addCard(card.id)}
-              className="group block w-full rounded-inner text-left transition-transform duration-[var(--cd-dur-press)] ease-out active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-            >
-              <CardFace card={card} interactive sizes="(max-width: 768px) 30vw, 200px" />
-              <span className="mt-2.5 line-clamp-2 text-[13px] leading-snug font-medium sm:text-[15px]">
-                {card.name}
-              </span>
-              <span className="mt-1 inline-flex items-center gap-1 text-[13px] text-muted transition-colors duration-[var(--cd-dur-hover)] ease-out group-hover:text-ink">
-                <PlusIcon size={13} weight="bold" />
-                Add
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      <Button variant="outline" size="lg" className="mt-8" onClick={onAdd}>
-        <MagnifyingGlassIcon size={18} />
-        Search all cards
-      </Button>
-    </section>
-  );
-}
-
-/**
  * The "Use which card?" panel. Its own component because it renders in two
  * states: live over the wallet, and for real above the loading skeleton.
  */
@@ -762,7 +594,6 @@ function Picker({
   cards,
   valuations,
   ranked,
-  editing,
   searchKey,
 }: {
   category: Category | null;
@@ -772,40 +603,63 @@ function Picker({
   cards: Card[] | null;
   valuations: Record<string, number>;
   ranked: ReturnType<typeof rankCards> | null;
-  editing: boolean;
   searchKey: number;
 }) {
+  // Hideable, and remembered in this browser, for someone who only uses the
+  // Wallet to look at their cards (owner, 16 November 2026).
+  const [hidden, setHidden] = useStoredFlag(PICKER_HIDDEN_KEY, false);
   return (
     <section
       aria-labelledby="picker-heading"
-      className="rounded-widget border border-line bg-surface p-5 sm:p-6"
+      className={cn("rounded-widget border border-line bg-surface", hidden ? "px-5 py-3 sm:px-6" : "p-5 sm:p-6")}
     >
-      <h2 id="picker-heading" className="mb-4 text-sm font-medium">
-        Use which card?
-      </h2>
-      <CategoryBar value={category} onChange={onChange} disabled={editing} />
-      <MerchantSearch
-        // A new key empties the box when a category is tapped instead.
-        key={searchKey}
-        cards={cards}
-        valuations={valuations}
-        disabled={editing}
-        chosen={merchant}
-        onPick={onMerchant}
-      />
-      <AnswerLine
-        category={editing ? null : category}
-        ranked={editing ? null : ranked}
-        empty={
-          editing
-            ? "Drag a card to move it, or tab to one and press space."
-            : "Pick what you are buying, or search a store, and the best card lifts out of the wallet."
-        }
-        className="mt-5"
-      />
+      <div className={cn("flex items-center justify-between gap-3", !hidden && "mb-4")}>
+        <h2 id="picker-heading" className="text-sm font-medium">
+          Use which card?
+        </h2>
+        <button
+          type="button"
+          aria-expanded={!hidden}
+          aria-controls="picker-body"
+          onClick={() => {
+            // A category left picked would keep dimming cards with nothing
+            // on screen to say why.
+            if (!hidden) onChange(null);
+            setHidden(!hidden);
+          }}
+          className="-mr-1.5 inline-flex h-8 items-center gap-1 rounded-control px-1.5 text-[13px] text-muted transition-[color,transform] duration-[var(--cd-dur-press)] ease-out hover:text-ink active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          {hidden ? "Show" : "Hide"}
+          <CaretDownIcon
+            size={13}
+            aria-hidden
+            className={cn("transition-transform duration-[var(--cd-dur-hover)] ease-out", !hidden && "rotate-180")}
+          />
+        </button>
+      </div>
+      <div id="picker-body" hidden={hidden}>
+        <CategoryBar value={category} onChange={onChange} />
+        <MerchantSearch
+          // A new key empties the box when a category is tapped instead.
+          key={searchKey}
+          cards={cards}
+          valuations={valuations}
+          chosen={merchant}
+          onPick={onMerchant}
+        />
+        <AnswerLine
+          category={category}
+          ranked={ranked}
+          empty="Pick what you are buying, or search a store, and the best card lifts out of the wallet."
+          className="mt-5"
+        />
+      </div>
     </section>
   );
 }
+
+/** Whether "Use which card?" is folded away, in this browser. */
+const PICKER_HIDDEN_KEY = "creditdash:picker-hidden";
 
 /**
  * One rule per card with art, keyed off the attribute the pre-start script

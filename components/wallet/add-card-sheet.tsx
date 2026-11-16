@@ -268,16 +268,16 @@ export function Tick({ on }: { on: boolean }) {
   );
 }
 
-const ALL = "all";
+export const ALL = "all";
 
 /** Banks in the list, most cards first, so the big issuers lead the row. */
-function banksOf(cards: readonly { issuer: string }[]): string[] {
+export function banksOf(cards: readonly { issuer: string }[]): string[] {
   const counts = new Map<string, number>();
   for (const c of cards) counts.set(c.issuer, (counts.get(c.issuer) ?? 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([b]) => b);
 }
 
 /** Tab labels people actually say. */
-function shortBank(issuer: string): string {
+export function shortBank(issuer: string): string {
   return issuer === "American Express" ? "Amex" : issuer;
 }
