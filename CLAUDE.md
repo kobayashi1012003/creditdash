@@ -1088,8 +1088,14 @@ queries, not a `dense` prop, adapt them to the 360px panel).
   the saved order. Sorting by a category ranks on value, like the answer
   line; the answer is chosen from the cards on screen.
 - **Store search** under the categories uses a built-in list,
-  `data/merchants.ts` (about 620 US merchants and kinds of place since
-  6 November 2026), searched by `lib/merchants.ts`, which is
+  `data/merchants.ts` (about 950 US merchants and kinds of place since
+  16 November 2026, 14 KB gzipped). It is **loaded on first use** (focus,
+  hover or typing in the box; `loadMerchants` in `merchant-search.tsx`),
+  never in the Wallet's first scripts, so it can keep growing. Measured on
+  16 November: about 3 ms a keystroke at 600 places and 28 ms at 6,000
+  (worst case, a typo), on a desktop; phones run 4 to 5 times slower, so
+  past about 2,000 precompute the normalised names first. Searched by
+  `lib/merchants.ts`, which is
   dependency-free and unit tested. When nothing matches as typed, it
   falls back to near misses (one typo for 4 to 7 characters, two for 8+). Picking a
   store selects its category. Notes must hold for every card in the

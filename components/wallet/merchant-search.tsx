@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
 import type { Card } from "@/data/types";
-import { MERCHANTS, type Merchant } from "@/data/merchants";
+import type { Merchant } from "@/data/merchants";
 import { searchMerchants } from "@/lib/merchants";
 import { CATEGORY_LABELS, categoryStyle, type Category } from "@/lib/categories";
 import { bestCardFor } from "@/lib/calculators/engine";
@@ -17,7 +17,18 @@ import { CategoryIcon } from "@/components/ui/category-icon";
  * one selects that category, so the wallet answers exactly as if the
  * category had been tapped. Each result already names the best card, so
  * the answer is often readable before anything is chosen.
+ *
+ * The list (about 950 places, 14 KB gzipped) is not in the Wallet's
+ * bundle: it downloads the first time the box is focused, hovered or
+ * typed in, so it never delays the Wallet's first paint.
  */
+let list: Merchant[] | null = null;
+let loading: Promise<Merchant[]> | null = null;
+function loadMerchants(): Promise<Merchant[]> {
+  loading ??= import("@/data/merchants").then((mod) => (list = mod.MERCHANTS));
+  return loading;
+}
+
 export function MerchantSearch({
   cards,
   valuations,
@@ -35,10 +46,16 @@ export function MerchantSearch({
   onPick: (merchant: Merchant | null) => void;
 }) {
   const [typed, setTyped] = useState("");
+  const [merchants, setMerchants] = useState<Merchant[] | null>(list);
   const query = chosen ? chosen.name : typed;
   const listId = useId();
-  const results = chosen ? [] : searchMerchants(MERCHANTS, query, 6);
-  const searching = !chosen && query.trim().length >= 2;
+  const results = chosen || !merchants ? [] : searchMerchants(merchants, query, 6);
+  // "Not in the list" only once the list is here to say so.
+  const searching = Boolean(merchants) && !chosen && query.trim().length >= 2;
+
+  function warm() {
+    if (!merchants) void loadMerchants().then(setMerchants);
+  }
 
   function pick(m: Merchant) {
     setTyped(m.name);
@@ -61,7 +78,10 @@ export function MerchantSearch({
           type="search"
           value={query}
           disabled={disabled}
+          onFocus={warm}
+          onPointerEnter={warm}
           onChange={(e) => {
+            warm();
             if (chosen) onPick(null);
             setTyped(e.target.value);
           }}

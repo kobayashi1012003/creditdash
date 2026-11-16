@@ -98,8 +98,9 @@ export function AnswerLine({
 }: {
   category: Category | null;
   ranked: Ranked[] | null;
-  /** Shown before a category is picked. */
-  empty: string;
+  /** Shown before a category is picked. Without it the line stays empty
+   *  (and takes no room) until there is an answer. */
+  empty?: string;
   /** Announce changes. Off while something other than the user is driving. */
   live?: boolean;
   className?: string;
@@ -139,9 +140,9 @@ export function AnswerLine({
             )}
           </span>
         </>
-      ) : (
+      ) : empty ? (
         <span className="text-muted">{empty}</span>
-      )}
+      ) : null}
     </p>
   );
 }

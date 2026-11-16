@@ -647,12 +647,10 @@ function Picker({
           chosen={merchant}
           onPick={onMerchant}
         />
-        <AnswerLine
-          category={category}
-          ranked={ranked}
-          empty="Pick what you are buying, or search a store, and the best card lifts out of the wallet."
-          className="mt-5"
-        />
+        {/* No prompt before a pick (owner, 16 November 2026): the
+            buttons and the search say what to do. The line stays mounted,
+            empty and without margin, so the answer is still announced. */}
+        <AnswerLine category={category} ranked={ranked} className={category && ranked?.length ? "mt-5" : undefined} />
       </div>
     </section>
   );
