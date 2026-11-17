@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
       "lib/use-stored-value.ts",
       "lib/use-stored-flag.ts",
       "lib/demo-banner.ts",
+      "lib/upgrade-intent.ts",
       "scripts/**",
     ],
     rules: {

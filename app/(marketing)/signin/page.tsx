@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { UpgradeNotice } from "@/components/auth/upgrade-notice";
 
 const DESCRIPTION =
   "Sign in to CreditDash with Google or an emailed link, or try the demo without an account.";
@@ -30,6 +31,7 @@ export default function SignInPage() {
         saved to an account.
       </p>
 
+      <UpgradeNotice />
       <SignInForm />
 
       <p className="mt-8 text-[13px] leading-relaxed text-muted">

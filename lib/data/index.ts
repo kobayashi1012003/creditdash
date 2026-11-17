@@ -867,3 +867,13 @@ export function csvCell(value: string): string {
   const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return `"${safe.replaceAll('"', '""')}"`;
 }
+
+/** Resolves once the state is the account's own, not this browser's saved copy. */
+export function whenAccountReady(): Promise<void> {
+  return settled();
+}
+
+/** The current plan, read outside React (UpgradeRunner). */
+export function currentPlan(): Plan {
+  return getSnapshot().profile.plan;
+}

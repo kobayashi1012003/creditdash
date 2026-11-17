@@ -647,7 +647,15 @@ though ranking and Compare's winners still use value.
   after hydration when a session cookie exists. Sign out loads the data
   layer on click only, keeping it out of the marketing pages' bundle.
 - **Plan panels** are one component (`components/landing/plan-panels.tsx`)
-  for the home page and `/pricing`, on a subgrid so the lists align.
+  for the home page and `/pricing`, on a subgrid so the lists and the
+  buttons align. **Each ends in a button** (`plan-cta.tsx`, 17 November
+  2026): Free creates an account or opens the dashboard; Premium monthly
+  and yearly go straight to Stripe Checkout when signed in. Signed out,
+  the choice is kept for an hour (`lib/upgrade-intent.ts`), sign-in says
+  "Next: Premium yearly" (`upgrade-notice.tsx`), and `UpgradeRunner` in
+  the app shell opens Checkout once the account has loaded, or Settings'
+  plan section if the account is already Premium or Stripe refuses. The
+  data layer loads only on press, so marketing pages stay light.
 - **The hero's card stack** places two grid items (stage, controls) with
   `display: contents`, so the category row spans the hero's full width:
   one row from `md`, wrapping on phones. "Change cards" picks two to four

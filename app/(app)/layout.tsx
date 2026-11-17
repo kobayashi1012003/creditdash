@@ -4,6 +4,7 @@ import { SkipLink } from "@/components/shell/skip-link";
 import { StorageNotice } from "@/components/shell/storage-notice";
 import { DemoBanner } from "@/components/shell/demo-banner";
 import { AutoFillRunner } from "@/components/shell/autofill-runner";
+import { UpgradeRunner } from "@/components/shell/upgrade-runner";
 
 /*
  * No robots rule here: signed out, these pages are the public demo, which
@@ -33,6 +34,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </main>
       <TabBar />
       <AutoFillRunner />
+      <UpgradeRunner />
     </div>
   );
 }
