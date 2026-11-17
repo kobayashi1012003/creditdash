@@ -14,7 +14,7 @@ export type Plan = "free" | "premium";
  * (CLAUDE.md, "Going live with Stripe"); every prelaunch line beside a price
  * or sign-up button reads this, so going live is this one edit.
  */
-export const PAYMENTS_LIVE = false;
+export const PAYMENTS_LIVE = true;
 
 /** Said beside prices and sign-up buttons while PAYMENTS_LIVE is false. */
 export const PRELAUNCH_NOTE = "Prelaunch: free accounts are open, Premium payments are not switched on yet.";

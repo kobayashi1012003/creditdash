@@ -20,10 +20,14 @@ that plan, the plan wins, and the deviation gets recorded here.
 ## Where the build has got to
 
 Phases 0 to 8 of `creditdash-plan.md` are built. **Phase 7 (Stripe)
-passed end to end in the Stripe sandbox on 29 October 2026, but the live
-site has no Stripe keys yet**, so Upgrade there says payments are not
-switched on. Going live is dashboard work only; the steps are under
-"Billing" in the data layer section. **Phase 8 (real card data) is built
+passed end to end in the Stripe sandbox on 29 October 2026, and live
+payments were switched on on 17 November 2026**: the owner cleared the
+sandbox Stripe rows, set up live mode (account, portal, event destination
+for the four events, `STRIPE_SECRET_KEY` as a "full access except
+sensitive operations" key and `STRIPE_WEBHOOK_SECRET`, both Worker
+Secrets) and `PAYMENTS_LIVE` became true. Still to prove: one real
+subscribe and cancel on the live site, and that the live-mode product
+carries both lookup keys. **Phase 8 (real card data) is built
 for the American Express cards** (1 November 2026); more issuers follow as
 the owner sends terms links.
 
