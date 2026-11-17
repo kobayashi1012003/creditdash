@@ -310,6 +310,11 @@
   html {
     color-scheme: light;
     @apply font-sans;
+    /* Room for the scrollbar is kept on every page, scrolling or not, so a
+       short page (About, Sign in) is exactly as wide as a long one and
+       moving between them shifts nothing (owner, 17 November 2026).
+       Phones and overlay scrollbars take no room, so nothing changes there. */
+    scrollbar-gutter: stable;
   }
 
   .dark {
