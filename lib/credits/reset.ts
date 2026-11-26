@@ -315,3 +315,60 @@ export function daysUntilReset(options: CycleOptions): number | null {
   if (!window) return null;
   return Math.ceil((window.end.getTime() - on.getTime()) / 86_400_000);
 }
+
+/* --- History by year (owner, 26 November 2026) ----------------------------
+ *
+ * The Tracker can show any year from when a card was opened. A year shows
+ * each calendar credit's January to December, and each anniversary
+ * credit's card year that STARTS in that year (owner's choice), so every
+ * card year belongs to exactly one year. The current year is the exception:
+ * it always shows what is running now, so a card year that began last year
+ * and is still open shows under both. Nothing here stores anything; usage
+ * is kept under each window's key forever, so history is only a matter of
+ * which windows to draw. All dates are the device's local time.
+ */
+
+/** The date that selects `year`'s cycle: 1 January, or the anniversary in that year. */
+export function cycleInYear(
+  year: number,
+  options: Pick<CycleOptions, "resetBasis" | "anniversaryMonth" | "anniversaryDay">,
+): Date {
+  if (options.resetBasis === "calendar") return new Date(year, 0, 1);
+  return anchoredDate(year, normaliseMonth(options.anniversaryMonth) - 1, normaliseDay(options.anniversaryDay));
+}
+
+/**
+ * The years a card's Tracker offers, newest first: from the year it was
+ * opened (`YYYY-MM-DD`) to this one. A missing, unreadable or future date
+ * gives this year alone.
+ */
+export function trackerYears(openedOn: string | undefined, now: Date = new Date()): number[] {
+  const thisYear = now.getFullYear();
+  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(openedOn ?? "");
+  const opened = match ? Number(match[1]) : thisYear;
+  const first = Math.min(Math.max(opened, thisYear - 50), thisYear);
+  const years: number[] = [];
+  for (let y = thisYear; y >= first; y--) years.push(y);
+  return years;
+}
+
+/**
+ * The span a set of windows covers, for a past year's heading: "Jan to Dec
+ * 2025", or "Nov 2025 to Oct 2026" for a card year, or with days when the
+ * card year starts mid-month ("Mar 14 2025 to Mar 13 2026").
+ */
+export function cycleLabel(windows: PeriodWindow[]): string {
+  if (windows.length === 0) return "";
+  const from = windows[0].start;
+  const end = windows[windows.length - 1].end;
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1);
+  if (from.getDate() !== 1) {
+    return `${MONTH_SHORT[from.getMonth()]} ${from.getDate()} ${from.getFullYear()} to ${
+      MONTH_SHORT[last.getMonth()]
+    } ${last.getDate()} ${last.getFullYear()}`;
+  }
+  if (from.getFullYear() === last.getFullYear()) {
+    return `${MONTH_SHORT[from.getMonth()]} to ${MONTH_SHORT[last.getMonth()]} ${from.getFullYear()}`;
+  }
+  return `${MONTH_SHORT[from.getMonth()]} ${from.getFullYear()} to ${MONTH_SHORT[last.getMonth()]} ${last.getFullYear()}`;
+}

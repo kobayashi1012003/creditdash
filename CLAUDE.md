@@ -797,6 +797,37 @@ the model, not the AI drafting, was what kept cards from being right.
   card deletes its notes in both modes. Not done: the browser-wallet
   import does not carry notes into an account.
 
+## Credit history by year (26 November 2026)
+
+Usage was always kept under each window's key forever, so history needed
+no new storage, only a way to draw other years (owner's choices):
+
+- **A year shows** each calendar credit's January to December and each
+  anniversary credit's card year that **starts** in that year, so every
+  card year belongs to one year. **The current year shows what runs now**,
+  so a card year begun last year and still open appears under both.
+  `cycleInYear`, `trackerYears` and `cycleLabel` in `lib/credits/reset.ts`;
+  `creditStateIn` in `lib/credits.ts`. `creditState` takes `now` apart from
+  `on`, so a past year never marks a slot as current or ending soon.
+- **Years offered** run from the card's opened date to this one, newest
+  first, in a switcher above the Tracker's widgets (Free and Premium).
+  "Opened on" now shows for every card, not only anniversary ones, since
+  setting it earlier is how someone moving their records in unlocks
+  earlier years. A past year shows "Credits in 2025" and a "Filling in
+  2025" note in place of Resetting soon and Points; ticks and Amounts save
+  under that year's keys like any change.
+- **The device's local time** decides the year, like every other date in
+  the app. `useToday` (`lib/use-today.ts`) redraws the Tracker at local
+  midnight and on return to the foreground, so New Year's Eve rolls over
+  on screen. `lib/credits/history.test.ts` proves a year's history keys
+  equal the keys ticked while it was current, the 31 December to 1 January
+  rollover, and Feb 29 anniversaries, in four timezones.
+- **Known limits:** past years show today's catalog credits, so a credit
+  added in 2026 also appears in 2025 (nothing records when each began; see
+  `data/benefit-history.ts`), and a credit whose id changed keeps its old
+  usage under the old id, which no longer shows. Removing a card still
+  deletes its whole history, as the confirm says.
+
 ## Freedom Flex and Freedom Unlimited (16 November 2026)
 
 Added with the owner's art, drafted from Chase's newsroom (quarterly

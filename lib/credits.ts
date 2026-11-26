@@ -1,5 +1,5 @@
 import type { Card, CardCredit, TrackerPrefs } from "@/data/types";
-import { expiresWithin, periodWindows, recentWindows } from "@/lib/credits/reset";
+import { cycleInYear, expiresWithin, periodWindows, recentWindows } from "@/lib/credits/reset";
 import { creditEnded, offeredPeriods, windowOffered } from "@/lib/credits/limited";
 import type { CreditUsage } from "@/lib/data/schema";
 
@@ -77,6 +77,12 @@ export function creditState(
   anniversary: Anniversary,
   usage: CreditUsage,
   on = new Date(),
+  /**
+   * The real time. `on` picks which cycle to draw; `now` decides which
+   * slot is open and whether it ends soon, so a past year never shows a
+   * month as current or ending.
+   */
+  now: Date = on,
 ): CreditState {
   const options = {
     period: credit.period,
@@ -100,9 +106,26 @@ export function creditState(
     assumedTotal: usedTotal(used.filter((_, i) => assumed[i])),
     offered: windows.map((w) => windowOffered(credit, w)),
     available: annualValue(credit, anniversary, on),
-    currentIndex: windows.findIndex((w) => on >= w.start && on < w.end),
-    expiringSoon: expiresWithin(options),
+    currentIndex: windows.findIndex((w) => now >= w.start && now < w.end),
+    expiringSoon:
+      windows.some((w) => now >= w.start && now < w.end) && expiresWithin({ ...options, on: now }),
   };
+}
+
+/**
+ * A credit in one year of the Tracker's history (lib/credits/reset.ts,
+ * "History by year"). `year` null, or this year, is what runs now; a past
+ * year is its calendar year, or the card year that starts in it.
+ */
+export function creditStateIn(
+  credit: CardCredit,
+  anniversary: Anniversary,
+  usage: CreditUsage,
+  year: number | null,
+  now = new Date(),
+): CreditState {
+  if (year === null || year === now.getFullYear()) return creditState(credit, anniversary, usage, now, now);
+  return creditState(credit, anniversary, usage, cycleInYear(year, { resetBasis: credit.resetBasis, ...anniversary }), now);
 }
 
 /**

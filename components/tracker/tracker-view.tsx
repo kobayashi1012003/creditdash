@@ -7,8 +7,9 @@ import { LightningIcon, PlusIcon, SlidersHorizontalIcon, WarningCircleIcon } fro
 import type { Card, UserCard } from "@/data/types";
 import { PROGRAM_LABELS } from "@/data/types";
 import { isCashBack } from "@/data/programs";
-import { cardAnnualCreditValue, creditState, liveCredits } from "@/lib/credits";
-import { daysUntilReset } from "@/lib/credits/reset";
+import { cardAnnualCreditValue, creditState, creditStateIn, liveCredits } from "@/lib/credits";
+import { daysUntilReset, trackerYears } from "@/lib/credits/reset";
+import { useToday } from "@/lib/use-today";
 import { cents, longDate, money, monthName, pointsValue, pts, usd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import {
@@ -45,6 +46,9 @@ export function TrackerView() {
   const isLoading = useIsLoading();
   const [storedId, setStoredId] = useStoredValue(TRACKER_CARD_KEY);
   const reduceMotion = useReducedMotion();
+  // Redraws at local midnight, so New Year's Eve rolls over on screen.
+  useToday();
+  const [pickedYear, setPickedYear] = useState<number | null>(null);
 
   if (isLoading) return <TrackerSkeleton />;
 
@@ -72,12 +76,20 @@ export function TrackerView() {
   }
 
   const { card, userCard } = selected;
+  // History by year (lib/credits/reset.ts). null is what runs now; a past
+  // year is offered back to the year the card was opened.
+  const thisYear = new Date().getFullYear();
+  const years = trackerYears(userCard.openedOn);
+  const year = pickedYear !== null && pickedYear !== thisYear && years.includes(pickedYear) ? pickedYear : null;
   // Hidden credits leave the totals as well as the list: hiding one says
-  // it is not worth tracking.
-  const { shown } = arrangeCredits(liveCredits(card.credits), userCard.prefs);
+  // it is not worth tracking. A past year keeps credits that ended later.
+  const { shown } = arrangeCredits(
+    liveCredits(card.credits, year === null ? new Date() : new Date(year, 0, 1)),
+    userCard.prefs,
+  );
   const states = shown.map((credit) => ({
     credit,
-    state: creditState(credit, userCard, usage),
+    state: creditStateIn(credit, userCard, usage, year),
   }));
   const available = states.reduce((s, x) => s + x.state.available, 0);
   const used = states.reduce((s, x) => s + x.state.usedTotal, 0);
@@ -121,10 +133,12 @@ export function TrackerView() {
         <CardSwitcher entries={entries} selectedId={card.id} onSelect={setStoredId} />
       )}
 
+      {years.length > 1 && <YearSwitcher years={years} year={year ?? thisYear} onSelect={(y) => setPickedYear(y === thisYear ? null : y)} />}
+
       {/* Keyed by card, so switching fades the new card's numbers in rather
           than swapping them under the reader's eye. */}
       <motion.div
-        key={card.id}
+        key={`${card.id}:${year ?? "now"}`}
         initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "translateY(6px)" }}
         animate={reduceMotion ? { opacity: 1 } : { opacity: 1, transform: "translateY(0px)" }}
         transition={{ duration: 0.22, ease: EASE_OUT }}
@@ -143,7 +157,7 @@ export function TrackerView() {
         ) : (
         <>
         <div className="grid gap-5 @md:grid-cols-2 @3xl:grid-cols-3">
-          <Widget title="Credits this year">
+          <Widget title={year === null ? "Credits this year" : `Credits in ${year}`}>
             {available === 0 ? (
               <p className="text-sm leading-relaxed text-muted">This card has no credits to use.</p>
             ) : (
@@ -173,6 +187,7 @@ export function TrackerView() {
             )}
           </Widget>
 
+          {year === null && (
           <Widget title="Resetting soon">
             {expiring.length === 0 ? (
               <p className="text-sm leading-relaxed text-muted">
@@ -198,7 +213,9 @@ export function TrackerView() {
               </ul>
             )}
           </Widget>
+          )}
 
+          {year === null && (
           <Widget title={isCashBack(card.program) ? "Cash back" : "Points"}>
             {isCashBack(card.program) ? (
               <p className="text-sm leading-relaxed text-muted">
@@ -227,9 +244,13 @@ export function TrackerView() {
               </div>
             )}
           </Widget>
+          )}
+          {year !== null && (
+            <PastYearNote year={year} onBack={() => setPickedYear(null)} />
+          )}
         </div>
 
-        <CardCredits card={card} userCard={userCard} usage={usage} />
+        <CardCredits card={card} userCard={userCard} usage={usage} year={year} canGoBack={years.length > 1} />
         </>
         )}
       </motion.div>
@@ -364,17 +385,27 @@ function CardCredits({
   card,
   userCard,
   usage,
+  year,
+  canGoBack,
 }: {
   card: Card;
   userCard: UserCard;
   usage: CreditUsage;
+  /** A past year, or null for what runs now. */
+  year: number | null;
+  /** Whether earlier years exist yet, for the Opened on hint. */
+  canGoBack: boolean;
 }) {
   const [customizing, setCustomizing] = useState(false);
   const valuations = useValuations();
-  const { shown, hidden } = arrangeCredits(liveCredits(card.credits), userCard.prefs);
-  const available = shown.reduce((s, c) => s + creditState(c, userCard, usage).available, 0);
-  const used = shown.reduce((s, c) => s + creditState(c, userCard, usage).usedTotal, 0);
-  const assumed = shown.reduce((s, c) => s + creditState(c, userCard, usage).assumedTotal, 0);
+  const { shown, hidden } = arrangeCredits(
+    liveCredits(card.credits, year === null ? new Date() : new Date(year, 0, 1)),
+    userCard.prefs,
+  );
+  const stateOf = (c: (typeof shown)[number]) => creditStateIn(c, userCard, usage, year);
+  const available = shown.reduce((s, c) => s + stateOf(c).available, 0);
+  const used = shown.reduce((s, c) => s + stateOf(c).usedTotal, 0);
+  const assumed = shown.reduce((s, c) => s + stateOf(c).assumedTotal, 0);
   const autofill = userCard.prefs?.autofill ?? {};
   // Points that post by themselves each anniversary count toward the fee
   // from the start of the card year, with nothing to tick.
@@ -412,9 +443,12 @@ function CardCredits({
     >
       <FeeBar annualFee={card.annualFee} creditsUsed={used + bonusDollars} />
 
-      {card.credits.some((c) => c.resetBasis === "anniversary") && (
-        <AnniversaryField userCard={userCard} cardName={userCard.nickname ?? card.name} />
-      )}
+      <OpenedField
+        userCard={userCard}
+        cardName={userCard.nickname ?? card.name}
+        anniversary={card.credits.some((c) => c.resetBasis === "anniversary")}
+        canGoBack={canGoBack}
+      />
 
       {bonus && (
         <div className="mt-5 flex items-start justify-between gap-4 rounded-inner border border-line px-3.5 py-3">
@@ -443,6 +477,7 @@ function CardCredits({
             usage={usage}
             tint={creditTint(credit, userCard.prefs)}
             autoFill={Boolean(autofill[credit.id])}
+            year={year}
           />
         ))}
       </ul>
@@ -483,22 +518,43 @@ function CardCredits({
 }
 
 /**
- * When the card's anniversary credits reset. The date the card was opened
- * sets the day (Venture X's travel credit renews on the exact date), not
- * just the month. Until someone sets it, they reset on the 1st.
+ * When the card was opened. It sets the day anniversary credits reset on
+ * (Venture X's travel credit renews on the exact date), and how far back
+ * the year switcher goes, so someone moving their records into CreditDash
+ * sets it first to fill in earlier years.
  */
-function AnniversaryField({ userCard, cardName }: { userCard: UserCard; cardName: string }) {
+function OpenedField({
+  userCard,
+  cardName,
+  anniversary,
+  canGoBack,
+}: {
+  userCard: UserCard;
+  cardName: string;
+  anniversary: boolean;
+  canGoBack: boolean;
+}) {
   const id = useId();
   const day = userCard.anniversaryDay;
   const month = monthName(userCard.anniversaryMonth);
   return (
     <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-inner bg-bg px-3.5 py-2.5">
       <p className="text-[13px] leading-snug">
-        <span className="text-muted">Anniversary credits reset on </span>
-        <span className="font-medium">
-          {month} {day ?? 1}
-        </span>
-        {!day && <span className="text-muted">. Set the date you opened the card for the exact day.</span>}
+        {anniversary ? (
+          <>
+            <span className="text-muted">Anniversary credits reset on </span>
+            <span className="font-medium">
+              {month} {day ?? 1}
+            </span>
+            {!day && <span className="text-muted">. Set the date you opened the card for the exact day.</span>}
+          </>
+        ) : (
+          <span className="text-muted">
+            {canGoBack
+              ? "Earlier years go back to the date you opened the card."
+              : "Had this card before this year? Set the date you opened it to fill in earlier years."}
+          </span>
+        )}
       </p>
       <label htmlFor={id} className="flex items-center gap-2 text-[13px] text-muted">
         Opened on
@@ -515,6 +571,65 @@ function AnniversaryField({ userCard, cardName }: { userCard: UserCard; cardName
         />
       </label>
     </div>
+  );
+}
+
+/**
+ * The years a card can show, newest first, one tap each. A radio group:
+ * one tab stop, arrow keys move and choose, like the card switcher.
+ */
+function YearSwitcher({
+  years,
+  year,
+  onSelect,
+}: {
+  years: number[];
+  year: number;
+  onSelect: (year: number) => void;
+}) {
+  const index = years.indexOf(year);
+  const { onKeyDown, itemProps } = useRovingFocus(years.length, index, (i) => onSelect(years[i]));
+  return (
+    <div className="relative -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div role="radiogroup" aria-label="Year" onKeyDown={onKeyDown} className="flex w-max items-center gap-1.5">
+        {years.map((y, i) => {
+          const on = y === year;
+          return (
+            <button
+              key={y}
+              {...itemProps(i)}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onSelect(y)}
+              className={cn(
+                "h-8 shrink-0 rounded-control border px-3 text-[13px] font-medium tabular-nums",
+                "transition-[background-color,border-color,color,transform] duration-[var(--cd-dur-press)] ease-out active:scale-[0.97]",
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                on ? "border-ink bg-ink text-surface" : "border-line text-muted hover:border-muted hover:text-ink",
+              )}
+            >
+              {y}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Beside a past year's totals: what this view is for, and the way back. */
+function PastYearNote({ year, onBack }: { year: number; onBack: () => void }) {
+  return (
+    <Widget title={`Filling in ${year}`}>
+      <p className="text-sm leading-relaxed text-muted">
+        Tick a box, or use Amounts, to record what you used. It saves like any other change, and this
+        year&apos;s credits are not touched.
+      </p>
+      <Button variant="outline" size="sm" className="mt-4" onClick={onBack}>
+        Back to {new Date().getFullYear()}
+      </Button>
+    </Widget>
   );
 }
 

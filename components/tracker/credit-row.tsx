@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { LightningIcon, NotepadIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import type { CardCredit } from "@/data/types";
-import { creditState, resetPhrase, type Anniversary } from "@/lib/credits";
+import { creditStateIn, resetPhrase, type Anniversary, type CreditState } from "@/lib/credits";
+import { cycleLabel } from "@/lib/credits/reset";
 import type { CreditUsage } from "@/lib/data/schema";
 import { confirmCredit, setCreditUsed, useCreditNote } from "@/lib/data";
 import { money, usd, usdExact } from "@/lib/format";
@@ -26,6 +27,14 @@ const SLOT_LAYOUT: Record<CardCredit["period"], string> = {
   annual: "grid max-w-[12rem] grid-cols-1",
 };
 
+/** How often a credit pays, for a past year's line ("$10 a month, Jan to Dec 2025"). */
+const PER: Record<CardCredit["period"], string> = {
+  monthly: "a month",
+  quarterly: "a quarter",
+  semiannual: "twice a year",
+  annual: "a year",
+};
+
 /**
  * One credit: the period slots, what has been used, and when it resets.
  *
@@ -40,6 +49,7 @@ export function CreditRow({
   usage,
   tint,
   autoFill = false,
+  year = null,
 }: {
   cardId: string;
   credit: CardCredit;
@@ -50,11 +60,14 @@ export function CreditRow({
   tint: string;
   /** Ticked automatically as each period opens (Premium). */
   autoFill?: boolean;
+  /** A past year to show and fill in, or null for what runs now. */
+  year?: number | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [noting, setNoting] = useState(false);
   const note = useCreditNote(cardId, credit.id);
-  const state = creditState(credit, anniversary, usage);
+  const state = creditStateIn(credit, anniversary, usage, year);
+  const past = year !== null && year !== new Date().getFullYear();
   const assumedKeys = state.windows.filter((_, i) => state.assumed[i]).map((w) => w.key);
 
   // A period set by hand is the user's own record, no longer a guess.
@@ -69,7 +82,7 @@ export function CreditRow({
         <div className="min-w-0">
           <p className="text-[15px]">
             {credit.name} <CreditConditions credit={credit} className="ml-1" />
-            {autoFill && (
+            {autoFill && !past && (
               <span className="ml-1 inline-flex items-center gap-1 rounded-control bg-panel px-1.5 py-px align-middle text-[11.5px] leading-snug text-muted">
                 <LightningIcon size={11} weight="fill" aria-hidden />
                 Auto-fill
@@ -77,7 +90,9 @@ export function CreditRow({
             )}
           </p>
           <p className="text-[13px] text-muted">
-            {usd(credit.amount)} {resetPhrase(credit, anniversary)}
+            {past
+              ? `${usd(credit.amount)} ${PER[credit.period]}, ${cycleLabel(state.windows)}`
+              : `${usd(credit.amount)} ${resetPhrase(credit, anniversary)}`}
             {/* Only while something is left to use: a period already marked
                 used, by hand or by auto-fill, needs no warning. */}
             {state.expiringSoon &&
@@ -192,7 +207,7 @@ function AmountGrid({
   onSet,
 }: {
   credit: CardCredit;
-  state: ReturnType<typeof creditState>;
+  state: CreditState;
   onSet: (key: string, amount: number) => void;
 }) {
   return (
