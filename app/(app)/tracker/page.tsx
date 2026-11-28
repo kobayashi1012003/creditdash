@@ -5,7 +5,6 @@ import { NotepadIcon } from "@phosphor-icons/react/dist/ssr";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { TrackerView } from "@/components/tracker/tracker-view";
-import { CalculatorPanel } from "@/components/calculators/calculator-panel";
 
 export const metadata: Metadata = pageMetadata({
   path: "/tracker",
@@ -29,23 +28,10 @@ export default function TrackerPage() {
         }
       />
 
-      {/* The panel gets its own grid column so it can stick against a
-          scrolling Tracker rather than float over it. On mobile the grid
-          collapses and the panel renders itself as a button and a sheet.
-
-          The grid must stretch, not start-align: a sticky element can only
-          travel inside its containing block, so a wrapper collapsed to the
-          panel's own height leaves it nothing to stick within and it scrolls
-          away with the page.
-
-          Below lg the panel's floating button sits over the page's foot,
-          so the grid leaves room for it under the last line. */}
-      <div className="grid gap-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:grid-cols-[minmax(0,1fr)_auto] lg:pb-0">
-        <TrackerView />
-        <div className="contents lg:block lg:h-full">
-          <CalculatorPanel />
-        </div>
-      </div>
+      {/* The calculators live on their own page; the Tracker no longer
+          carries a docked panel or a floating button (owner, 27 November
+          2026). */}
+      <TrackerView />
     </>
   );
 }

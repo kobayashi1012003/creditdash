@@ -98,6 +98,8 @@ export function PlanSection({
   const gifted = account?.gifted === true;
   const ending = plan === "premium" && !gifted && billing?.cancelAtPeriodEnd;
   const hiddenIfFree = gifted ? 0 : Math.max(0, saved - FREE_CARD_LIMIT);
+  const unsettled =
+    billing !== null && !["canceled", "incomplete_expired"].includes(billing.status);
 
   function manage() {
     // Warn before the portal, where cancelling happens, if cancelling would
@@ -118,6 +120,15 @@ export function PlanSection({
           {busy ? "Opening Stripe" : `$${PREMIUM_PRICE_MONTHLY} a month`}
         </Button>
         {!PAYMENTS_LIVE && <p className="text-[13px] leading-relaxed text-muted">{PRELAUNCH_NOTE}</p>}
+        {/* A subscription still on the account (unpaid, paused, a first
+            payment being confirmed) is settled in the portal; Checkout
+            refuses a second one. */}
+        {unsettled && (
+          <Button variant="ghost" className="w-full" onClick={() => go("portal")} disabled={busy}>
+            <ArrowSquareOutIcon size={16} />
+            Manage billing
+          </Button>
+        )}
       </div>
     ) : ACCOUNTS_ENABLED ? (
       <Button className="mt-4 w-full" nativeButton={false} render={<Link href="/signin" />}>

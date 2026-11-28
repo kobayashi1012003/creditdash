@@ -8,17 +8,22 @@ import type { NextConfig } from "next";
  * cannot run yet. Everything else is locked to this origin plus Supabase.
  * When Google Identity Services ships, add https://accounts.google.com to
  * script-src, connect-src and frame-src.
+ *
+ * Cloudflare Turnstile (lib/turnstile.ts) is the one third-party origin: its
+ * script, and the frame it runs its check in. Only /signin loads it.
  */
+const TURNSTILE = "https://challenges.cloudflare.com";
 const SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_WS = SUPABASE.replace(/^https:/, "wss:");
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline' ${TURNSTILE}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
   `connect-src 'self' ${SUPABASE} ${SUPABASE_WS}`.trim(),
+  `frame-src ${TURNSTILE}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

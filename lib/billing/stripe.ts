@@ -43,6 +43,43 @@ export function planFromSubscriptions(
 }
 
 /**
+ * Statuses that mean a subscription is still on the customer, paid or not.
+ * Any of these refuses a new Checkout, so nobody ends up paying twice:
+ * `incomplete` is a first payment still being confirmed, and `unpaid` or
+ * `paused` is settled in the Customer Portal, not with a second
+ * subscription. Only `canceled` and `incomplete_expired` are over.
+ */
+const OPEN_STATUSES: ReadonlySet<string> = new Set([
+  "active",
+  "trialing",
+  "past_due",
+  "incomplete",
+  "unpaid",
+  "paused",
+]);
+
+/** True when a customer already has a subscription a new Checkout would duplicate. */
+export function hasOpenSubscription(subs: readonly SubscriptionLike[]): boolean {
+  return subs.some((s) => OPEN_STATUSES.has(s.status));
+}
+
+export type OpenCheckout = { id: string; url: string | null; metadata?: Record<string, string> | null };
+
+/**
+ * Sorts a customer's open Checkout sessions for a new request: one for the
+ * same price is handed back again (a double click, a second tab, the
+ * sign-in carry-on), and every other one is to be expired, so that at most
+ * one payable Checkout exists per customer at a time.
+ */
+export function sortOpenCheckouts(
+  sessions: readonly OpenCheckout[],
+  price: string,
+): { reuse: OpenCheckout | null; expire: string[] } {
+  const reuse = sessions.find((s) => s.url && s.metadata?.price === price) ?? null;
+  return { reuse, expire: sessions.filter((s) => s !== reuse).map((s) => s.id) };
+}
+
+/**
  * The row stored in `subscriptions` for one Stripe subscription.
  *
  * Newer Stripe API versions moved `current_period_end` from the

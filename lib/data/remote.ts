@@ -53,6 +53,42 @@ function check(error: { message: string; hint?: string | null } | null) {
   throw new SyncError(NOT_SAVED);
 }
 
+type UsageRow = { credit_id: string; period_key: string; amount_used: number | string };
+
+/**
+ * Every credit_usage row, read a page at a time. Supabase returns at most
+ * 1,000 rows a request, and with year history a wallet passes that in a
+ * couple of years; a single read would silently drop the rest, and the
+ * Tracker would show ticked periods as unused. Pages follow the primary key
+ * so none is skipped or read twice, and the loop runs until the exact count
+ * is reached, whatever the project's row cap is set to.
+ */
+async function allUsage(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ data: UsageRow[] | null; error: { message: string } | null }> {
+  const PAGE = 1000;
+  const rows: UsageRow[] = [];
+  let total: number | null = null;
+  // Bounded, so a count that never matches cannot loop forever.
+  for (let page = 0; page < 200; page++) {
+    const res = await db
+      .from("credit_usage")
+      .select("credit_id, period_key, amount_used", page === 0 ? { count: "exact" } : undefined)
+      .eq("user_id", userId)
+      .order("user_card_id")
+      .order("credit_id")
+      .order("period_key")
+      .range(rows.length, rows.length + PAGE - 1);
+    if (res.error) return { data: null, error: res.error };
+    if (page === 0) total = res.count;
+    rows.push(...(res.data as UsageRow[]));
+    if (res.data.length === 0) break;
+    if (total !== null ? rows.length >= total : res.data.length < PAGE) break;
+  }
+  return { data: rows, error: null };
+}
+
 export async function loadAccount(db: SupabaseClient, userId: string) {
   const [profile, cards, usage, balances, valuations, subs, noteRows] = await Promise.all([
     // Only what the app uses. Every migration naming these has run.
@@ -64,10 +100,7 @@ export async function loadAccount(db: SupabaseClient, userId: string) {
       .select("*")
       .eq("user_id", userId)
       .order("sort_order"),
-    db
-      .from("credit_usage")
-      .select("credit_id, period_key, amount_used")
-      .eq("user_id", userId),
+    allUsage(db, userId),
     db
       .from("point_balances")
       .select("program, balance, updated_at")

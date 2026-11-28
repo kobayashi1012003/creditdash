@@ -106,6 +106,14 @@ export default function PrivacyPage() {
           identifies you) to the same logs.
         </li>
         <li>
+          <strong>Cloudflare Turnstile</strong>, only on the sign-in page,
+          once you start typing an email address. It is Cloudflare&apos;s
+          check that a person, not a script, is asking for a sign-in email.
+          It looks at signals from your browser, such as how it behaves and
+          your IP address, and does not use them for advertising. It is the
+          one script on CreditDash from another company.
+        </li>
+        <li>
           <strong>Supabase</strong> runs sign-in and stores signed-in
           accounts, as described above.
         </li>
@@ -143,7 +151,8 @@ export default function PrivacyPage() {
         copy; if you have, a copy of your account&apos;s wallet so it appears
         at once on your next visit, removed when you sign out.
         Cloudflare may set a strictly necessary security cookie to protect
-        the site from abuse.
+        the site from abuse, and Turnstile on the sign-in page may store
+        what it needs for its check.
       </p>
 
       <h2>Advertising</h2>

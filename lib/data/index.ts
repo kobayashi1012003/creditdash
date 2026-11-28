@@ -675,35 +675,55 @@ export async function signInWithGoogle(): Promise<string | null> {
  * suits a phone, where a mail app often opens the link in a different
  * browser, which cannot finish the sign-in. Returns an error, or null.
  */
-export async function sendSignInLink(email: string): Promise<string | null> {
+export async function sendSignInLink(
+  email: string,
+  captchaToken?: string,
+): Promise<string | null> {
   const db = await supabase();
   if (!db) return "Accounts are not switched on in this build.";
   const { error } = await db.auth.signInWithOtp({
     email: email.trim(),
-    options: { emailRedirectTo: callbackUrl() },
+    options: { emailRedirectTo: callbackUrl(), captchaToken },
   });
   if (!error) return null;
   if (error.status === 429) {
     return "Too many links were sent just now. Wait a few minutes, then try again.";
   }
+  if (/captcha/i.test(error.message)) return BOT_CHECK_FAILED;
   return "That link could not be sent. Check the address and try again.";
 }
+
+/** Shown when Turnstile could not vouch for this browser (lib/turnstile.ts). */
+export const BOT_CHECK_FAILED =
+  "This browser could not be checked just now, so no email was sent. Reload the page and try again, or continue with Google.";
 
 /**
  * Signs in with the code from the sign-in email. On success the session
  * cookie is set in this browser, and the caller loads /wallet so the store
  * starts in account mode exactly as it does after the email link.
  */
-export async function verifySignInCode(email: string, code: string): Promise<string | null> {
+export async function verifySignInCode(
+  email: string,
+  code: string,
+  captchaToken?: string,
+): Promise<string | null> {
   const db = await supabase();
   if (!db) return "Accounts are not switched on in this build.";
   const token = code.replace(/\D/g, "");
   if (token.length < 6) return "Type all 6 digits of the code from the email.";
-  const { error } = await db.auth.verifyOtp({ email: email.trim(), token, type: "email" });
+  // The token rides along in case Supabase checks it here too; where it
+  // does not, it is ignored.
+  const { error } = await db.auth.verifyOtp({
+    email: email.trim(),
+    token,
+    type: "email",
+    options: { captchaToken },
+  });
   if (!error) return null;
   if (error.status === 429) {
     return "Too many tries just now. Wait a few minutes, then send yourself a new code.";
   }
+  if (/captcha/i.test(error.message)) return BOT_CHECK_FAILED;
   return "That code is wrong or has expired. Check the latest email, or send a new code.";
 }
 
@@ -780,6 +800,8 @@ async function accessToken(): Promise<string | null> {
 
 const BILLING_ERRORS: Record<string, string> = {
   already_premium: "This account already has Premium. Reload the page to see it.",
+  already_subscribed:
+    "This account already has a subscription, so nothing new was started. Open Manage billing in Settings to see it.",
   not_configured: "Payments are not switched on yet.",
   no_price: "Payments are not switched on yet.",
   no_customer: "There is no billing on this account yet.",

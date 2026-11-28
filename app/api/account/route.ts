@@ -38,11 +38,17 @@ export async function DELETE(request: NextRequest) {
   // cancels every subscription on it at once. If Stripe refuses, the account
   // stays, because deleting it anyway would leave a charge running with no
   // account left to cancel it from.
-  const { data: profile } = await admin
+  // A failed read must stop here: treating it as "no Stripe customer" would
+  // delete the account and leave a paying subscription running.
+  const { data: profile, error: profileError } = await admin
     .from("profiles")
     .select("stripe_customer_id")
     .eq("user_id", data.user.id)
     .maybeSingle();
+  if (profileError) {
+    console.error("account delete: profile read", profileError.message);
+    return NextResponse.json({ error: "delete_failed" }, { status: 500 });
+  }
   if (profile?.stripe_customer_id) {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) return NextResponse.json({ error: "not_configured" }, { status: 503 });
@@ -59,6 +65,16 @@ export async function DELETE(request: NextRequest) {
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id);
   if (deleteError) {
+    console.error("account delete: auth user", deleteError.message);
+    // The Stripe customer may already be gone. Forget it, so a later
+    // checkout makes a new one instead of failing on "no such customer".
+    if (profile?.stripe_customer_id) {
+      await admin
+        .from("profiles")
+        .update({ stripe_customer_id: null })
+        .eq("user_id", data.user.id)
+        .eq("stripe_customer_id", profile.stripe_customer_id);
+    }
     return NextResponse.json({ error: "delete_failed" }, { status: 500 });
   }
 

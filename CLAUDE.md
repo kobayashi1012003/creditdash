@@ -1042,6 +1042,37 @@ in constant time, and no secret is in git history. Changes made:
   since 15 November.) After any migration, confirm every public table shows
   `relrowsecurity = true` (the query is in the migration's footer).
 
+## Security audit fixes, batch 1 (28 November 2026)
+
+From a read-only audit (findings SEC-01 to SEC-16, in chat). Batch 1:
+
+- **SEC-01, Turnstile on email sign-in** (`lib/turnstile.ts`). Sending a
+  sign-in email goes from the browser straight to Supabase, past the
+  `/api/*` rate limit. The widget loads only when the email field is
+  focused on `/signin`, runs invisibly (`interaction-only`), and its token
+  goes with `signInWithOtp` (and `verifyOtp`, harmlessly) as
+  `captchaToken`; a token is single use, so the widget resets after each.
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is public and goes in `.env.production`;
+  without it nothing loads. CSP allows `https://challenges.cloudflare.com`
+  in `script-src` and `frame-src`. Privacy names it. **Order matters:**
+  ship the site key first, then switch on CAPTCHA protection in Supabase
+  Auth with the Turnstile secret key, or email sign-in stops.
+  Local testing: Cloudflare's test key `1x00000000000000000000AA`.
+- **SEC-03 and SEC-15, account deletion.** A failed profile read stops the
+  deletion (it used to read as "no Stripe customer" and delete anyway); if
+  deleting the auth user fails after Stripe, the dead customer id is
+  cleared.
+- **SEC-04, one subscription.** Checkout refuses a customer with any
+  subscription not `canceled` or `incomplete_expired`
+  (`hasOpenSubscription`), reuses an open Checkout for the same price,
+  expires the others (`sortOpenCheckouts`, keyed on `metadata[price]`), and
+  sends an idempotency key so a double click makes one session. Settings
+  shows Manage billing on Free when a subscription is still open.
+- **SEC-05, paged usage.** `loadAccount` reads `credit_usage` 1,000 rows at
+  a time in primary-key order until the exact count (`allUsage`).
+- **SEC-08** is a Stripe dashboard setting: subscriptions whose retries all
+  fail are cancelled, so `past_due` cannot keep Premium for ever.
+
 ## Features page (2 November 2026)
 
 `app/(marketing)/features/page.tsx`: three features in the owner's order,

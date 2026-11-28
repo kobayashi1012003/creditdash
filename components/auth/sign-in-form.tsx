@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import {
   CheckCircleIcon,
@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/cn";
+import { botCheckToken, readyBotCheckToken, startBotCheck, stopBotCheck } from "@/lib/turnstile";
 import {
   ACCOUNTS_ENABLED,
+  BOT_CHECK_FAILED,
   prepareSignIn,
   sendSignInLink,
   signInWithGoogle,
@@ -64,7 +66,19 @@ export function SignInForm() {
   // background, so pressing a button sends you on without a wait.
   useEffect(() => {
     prepareSignIn();
+    return stopBotCheck;
   }, []);
+
+  // Where Cloudflare Turnstile draws a box, on the rare occasion it wants a
+  // click (lib/turnstile.ts). Empty and invisible otherwise.
+  const botCheck = useRef<HTMLDivElement>(null);
+
+  /** Sends the email, with a Turnstile token when one is required. */
+  async function send(address: string): Promise<string | null> {
+    const token = await botCheckToken(botCheck.current);
+    if (token === null) return BOT_CHECK_FAILED;
+    return sendSignInLink(address, token);
+  }
 
   if (account) {
     return (
@@ -99,7 +113,7 @@ export function SignInForm() {
     e.preventDefault();
     setBusy("email");
     setError(null);
-    const problem = await sendSignInLink(email);
+    const problem = await send(email);
     setBusy(null);
     if (problem) setError(problem);
     else {
@@ -112,7 +126,7 @@ export function SignInForm() {
     if (!sentTo || busy) return;
     setBusy("code");
     setError(null);
-    const problem = await verifySignInCode(sentTo, value);
+    const problem = await verifySignInCode(sentTo, value, readyBotCheckToken());
     if (problem) {
       setError(problem);
       setBusy(null);
@@ -203,7 +217,7 @@ export function SignInForm() {
               onClick={async () => {
                 setBusy("email");
                 setError(null);
-                const problem = await sendSignInLink(sentTo);
+                const problem = await send(sentTo);
                 setBusy(null);
                 setCode("");
                 if (problem) setError(problem);
@@ -237,6 +251,7 @@ export function SignInForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={() => void startBotCheck(botCheck.current)}
             disabled={!ACCOUNTS_ENABLED}
             className="h-11 rounded-inner px-3.5 text-base"
           />
@@ -252,6 +267,8 @@ export function SignInForm() {
           </Button>
         </form>
       )}
+
+      <div ref={botCheck} className="mt-3 flex justify-center empty:hidden" />
 
       <Button
         variant="ghost"

@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import {
   eventCustomer,
   form,
+  hasOpenSubscription,
   planFromSubscriptions,
   signWebhook,
+  sortOpenCheckouts,
   subscriptionRow,
   verifyWebhook,
   WEBHOOK_TOLERANCE,
@@ -129,5 +131,36 @@ describe("eventCustomer", () => {
     assert.equal(eventCustomer({ data: { object: { customer: { id: "cus_2" } } } }), "cus_2");
     assert.equal(eventCustomer({ data: { object: {} } }), null);
     assert.equal(eventCustomer({}), null);
+  });
+});
+
+describe("hasOpenSubscription", () => {
+  test("any subscription still on the customer blocks a second Checkout", () => {
+    for (const status of ["active", "trialing", "past_due", "incomplete", "unpaid", "paused"]) {
+      assert.equal(hasOpenSubscription([{ status: "canceled" }, { status }]), true, status);
+    }
+  });
+  test("ended subscriptions do not", () => {
+    assert.equal(hasOpenSubscription([]), false);
+    assert.equal(hasOpenSubscription([{ status: "canceled" }, { status: "incomplete_expired" }]), false);
+  });
+});
+
+describe("sortOpenCheckouts", () => {
+  const monthly = { id: "cs_m", url: "https://checkout.stripe.com/m", metadata: { price: "price_m" } };
+  const yearly = { id: "cs_y", url: "https://checkout.stripe.com/y", metadata: { price: "price_y" } };
+  const old = { id: "cs_old", url: "https://checkout.stripe.com/o", metadata: {} };
+
+  test("the same price is reused and the rest expire", () => {
+    assert.deepEqual(sortOpenCheckouts([monthly, yearly, old], "price_m"), {
+      reuse: monthly,
+      expire: ["cs_y", "cs_old"],
+    });
+  });
+  test("a new price expires everything open", () => {
+    assert.deepEqual(sortOpenCheckouts([monthly], "price_y"), { reuse: null, expire: ["cs_m"] });
+  });
+  test("nothing open, nothing to do", () => {
+    assert.deepEqual(sortOpenCheckouts([], "price_m"), { reuse: null, expire: [] });
   });
 });
